@@ -3,7 +3,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { CreditCard, QrCode, User, Mail, CreditCard as IdCard, Loader2 } from "lucide-react";
 import axios from "axios";
 import { countries } from "@/lib/countries";
@@ -49,9 +49,10 @@ export default function CheckoutForm({ price, productName, productKey }: { price
   const searchParams = useSearchParams();
   const [method, setMethod] = useState<PaymentMethod>("CREDIT_CARD");
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+
   const [pixData, setPixData] = useState<{ qrCodeBase64: string; copyPaste: string } | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const router = useRouter();
 
   // Dados do cliente
   const [customer, setCustomer] = useState({ name: "", email: "", cpfCnpj: "", phone: "" });
@@ -149,7 +150,11 @@ export default function CheckoutForm({ price, productName, productKey }: { price
             copyPaste: response.data.qrCode.payload,
           });
         } else {
-          setSuccess(true);
+          // Dispara a conversão de Purchase para o Facebook
+          if (typeof window !== "undefined" && (window as any).fbq) {
+            (window as any).fbq('track', 'Purchase', { value: price, currency: 'BRL' });
+          }
+          router.push(`/sucesso?product=${productKey}`);
         }
       }
     } catch (err: unknown) {
@@ -160,18 +165,6 @@ export default function CheckoutForm({ price, productName, productKey }: { price
       setLoading(false);
     }
   };
-
-  if (success) {
-    return (
-      <div className="text-center py-8">
-        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CreditCard size={32} />
-        </div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">Pagamento Aprovado!</h3>
-        <p className="text-gray-600">Sua inscrição no {productName} foi confirmada.</p>
-      </div>
-    );
-  }
 
   if (pixData) {
     return (
