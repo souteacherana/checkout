@@ -151,8 +151,12 @@ export default function CheckoutForm({ price, productName, productKey }: { price
           });
         } else {
           // Dispara a conversão de Purchase para o Facebook
-          if (typeof window !== "undefined" && (window as any).fbq) {
-            (window as any).fbq('track', 'Purchase', { value: price, currency: 'BRL' });
+          try {
+            if (typeof window !== "undefined" && (window as any).fbq) {
+              (window as any).fbq('track', 'Purchase', { value: price, currency: 'BRL' });
+            }
+          } catch (e) {
+            console.warn("Erro ao disparar Pixel (provável AdBlock):", e);
           }
           router.push(`/sucesso?product=${productKey}`);
         }
