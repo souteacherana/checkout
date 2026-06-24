@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { asaasService } from '@/lib/asaas';
 import { supabase } from '@/lib/supabase';
 import { getProductPrice, calculateTotalValue } from '@/lib/products';
+import { astronService } from '@/lib/astron';
 
 export async function POST(request: Request) {
   console.log("Iniciando checkout. Chave do Asaas atual:", process.env.ASAAS_API_KEY ? "EXISTS" : "MISSING", "Lenght:", process.env.ASAAS_API_KEY?.length);
@@ -109,6 +110,17 @@ export async function POST(request: Request) {
           utm_term: paymentData.utms?.term,
           utm_content: paymentData.utms?.content,
         }]);
+      }
+
+      // 3. Integração com Astron Members (Se for cartão e estiver CONFIRMADO)
+      if ((payment.status === 'CONFIRMED' || payment.status === 'RECEIVED') && paymentData.productKey === 'LOW') {
+        const courseId = process.env.ASTRON_COURSE_ID || '2994849';
+        await astronService.enrollStudent({
+          name: customerData.name,
+          email: customerData.email,
+          phone: customerData.phone,
+          courseId: courseId,
+        });
       }
 
       return NextResponse.json({
