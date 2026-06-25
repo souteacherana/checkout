@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { astronService } from '@/lib/astron';
 
 export async function POST(req: Request) {
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
       console.log(`[Webhook Asaas] Pagamento confirmado: ${paymentId}`);
 
       // Buscar o checkout no Supabase usando o paymentId
-      const { data: checkout, error: fetchError } = await supabase
+      const { data: checkout, error: fetchError } = await supabaseAdmin
         .from('checkouts')
         .select('*')
         .eq('payment_id', paymentId)
@@ -36,8 +36,16 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Checkout not found' }, { status: 404 });
       }
 
+      // Validação Anti-Fraude: Confere se o valor pago bate com o valor da intenção de compra
+      if (Number(payment.value) !== Number(checkout.amount)) {
+        console.error(`🚨 ALERTA DE FRAUDE/ERRO: Valor pago (${payment.value}) é diferente do valor do checkout (${checkout.amount}) para o pagamento ${paymentId}`);
+        // Atualizamos o banco como FRAUD_ATTEMPT ou PENDING REVIEW, mas não liberamos
+        await supabaseAdmin.from('checkouts').update({ status: 'PAYMENT_MISMATCH_REVIEW' }).eq('id', checkout.id);
+        return NextResponse.json({ error: 'Payment value mismatch' }, { status: 400 });
+      }
+
       // Atualizar o status do checkout para PAID
-      const { error: updateError } = await supabase
+      const { error: updateError } = await supabaseAdmin
         .from('checkouts')
         .update({ status: 'PAID' })
         .eq('id', checkout.id);

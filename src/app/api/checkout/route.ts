@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { asaasService } from '@/lib/asaas';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getProductPrice, calculateTotalValue } from '@/lib/products';
 
 export async function POST(request: Request) {
@@ -9,6 +9,14 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { sessionId, paymentMethod, customerData, paymentData } = body;
+
+    // 0. Validação de segurança do payload
+    if (!paymentMethod || !customerData || !paymentData) {
+      return NextResponse.json({ error: 'Payload incompleto' }, { status: 400 });
+    }
+    if (!customerData.name || !customerData.email || !customerData.cpfCnpj) {
+      return NextResponse.json({ error: 'Dados do cliente incompletos' }, { status: 400 });
+    }
 
     // 1. Criar Cliente no Asaas
     const customer = await asaasService.createCustomer({
@@ -38,14 +46,14 @@ export async function POST(request: Request) {
 
       // Atualiza o banco de dados
       if (sessionId) {
-        await supabase.from('checkouts').update({
+        await supabaseAdmin.from('checkouts').update({
           status: 'PIX_PENDING',
           amount: value,
           payment_method: 'PIX',
           payment_id: payment.id,
         }).eq('id', sessionId);
       } else {
-        await supabase.from('checkouts').insert([{
+        await supabaseAdmin.from('checkouts').insert([{
           customer_name: customerData.name,
           customer_email: customerData.email,
           customer_phone: customerData.phone,
@@ -91,14 +99,14 @@ export async function POST(request: Request) {
 
       // Atualiza o banco de dados
       if (sessionId) {
-        await supabase.from('checkouts').update({
+        await supabaseAdmin.from('checkouts').update({
           status: payment.status === 'CONFIRMED' || payment.status === 'RECEIVED' ? 'PAID' : 'PENDING',
           amount: value,
           payment_method: 'CREDIT_CARD',
           payment_id: payment.id,
         }).eq('id', sessionId);
       } else {
-        await supabase.from('checkouts').insert([{
+        await supabaseAdmin.from('checkouts').insert([{
           customer_name: customerData.name,
           customer_email: customerData.email,
           customer_phone: customerData.phone,
