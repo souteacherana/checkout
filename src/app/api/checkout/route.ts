@@ -41,7 +41,8 @@ export async function POST(request: Request) {
         await supabase.from('checkouts').update({
           status: 'PIX_PENDING',
           amount: value,
-          payment_method: 'PIX'
+          payment_method: 'PIX',
+          payment_id: payment.id,
         }).eq('id', sessionId);
       } else {
         await supabase.from('checkouts').insert([{
@@ -52,6 +53,7 @@ export async function POST(request: Request) {
           status: 'PIX_PENDING',
           amount: value,
           payment_method: 'PIX',
+          payment_id: payment.id,
           utm_source: paymentData.utms?.source,
           utm_medium: paymentData.utms?.medium,
           utm_campaign: paymentData.utms?.campaign,
@@ -92,7 +94,8 @@ export async function POST(request: Request) {
         await supabase.from('checkouts').update({
           status: payment.status === 'CONFIRMED' || payment.status === 'RECEIVED' ? 'PAID' : 'PENDING',
           amount: value,
-          payment_method: 'CREDIT_CARD'
+          payment_method: 'CREDIT_CARD',
+          payment_id: payment.id,
         }).eq('id', sessionId);
       } else {
         await supabase.from('checkouts').insert([{
@@ -103,6 +106,7 @@ export async function POST(request: Request) {
           status: payment.status === 'CONFIRMED' || payment.status === 'RECEIVED' ? 'PAID' : 'PENDING',
           amount: value,
           payment_method: 'CREDIT_CARD',
+          payment_id: payment.id,
           utm_source: paymentData.utms?.source,
           utm_medium: paymentData.utms?.medium,
           utm_campaign: paymentData.utms?.campaign,

@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const asaasApi = axios.create({
-  baseURL: process.env.ASAAS_API_URL || 'https://sandbox.asaas.com/api/v3',
+  baseURL: process.env.ASAAS_API_URL || 'https://api.asaas.com/v3',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -32,7 +32,7 @@ export const asaasService = {
   },
 
   // Criar cobrança via PIX
-  async createPixPayment(data: { customer: string; value: number; description: string }) {
+  async createPixPayment(data: { customer: string; value: number; description: string; externalReference?: string }) {
     try {
       const response = await asaasApi.post('/payments', {
         customer: data.customer,
@@ -40,6 +40,7 @@ export const asaasService = {
         value: data.value,
         dueDate: new Date(new Date().getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Vence amanhã
         description: data.description,
+        externalReference: data.externalReference,
       });
       return response.data;
     } catch (err: unknown) {
@@ -69,6 +70,7 @@ export const asaasService = {
     creditCard: { holderName: string; number: string; expiryMonth: string; expiryYear: string; ccv: string };
     creditCardHolderInfo: { name: string; email: string; cpfCnpj: string; postalCode: string; addressNumber: string; phone: string };
     installmentCount?: number;
+    externalReference?: string;
   }) {
     try {
       const payload: any = {
@@ -79,6 +81,7 @@ export const asaasService = {
         description: data.description,
         creditCard: data.creditCard,
         creditCardHolderInfo: data.creditCardHolderInfo,
+        externalReference: data.externalReference,
       };
 
       if (data.installmentCount && data.installmentCount > 1) {
