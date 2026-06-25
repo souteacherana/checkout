@@ -6,6 +6,15 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
+    // Validação de segurança do Token do Webhook
+    const asaasToken = req.headers.get('asaas-access-token');
+    const expectedToken = process.env.ASAAS_WEBHOOK_TOKEN;
+    
+    if (!expectedToken || asaasToken !== expectedToken) {
+      console.error('Webhook Inválido: Token ausente ou incorreto.');
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
     // O Asaas envia o webhook com o evento e os dados do pagamento
     const { event, payment } = body;
 
