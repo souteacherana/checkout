@@ -32,8 +32,9 @@ export async function POST(req: Request) {
         .single();
 
       if (fetchError || !checkout) {
-        console.error(`Checkout não encontrado para o pagamento ${paymentId}`);
-        return NextResponse.json({ error: 'Checkout not found' }, { status: 404 });
+        console.warn(`Checkout não encontrado no banco para o pagamento ${paymentId}. Ignorando evento (provavelmente gerado externo ao nosso checkout).`);
+        // Retornamos 200 OK para o Asaas não achar que o webhook falhou e não nos penalizar.
+        return NextResponse.json({ success: true, message: 'Checkout not found locally, ignored.' }, { status: 200 });
       }
 
       // Validação Anti-Fraude: Confere se o valor pago bate com o valor da intenção de compra
