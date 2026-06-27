@@ -145,33 +145,20 @@ export default function CheckoutForm({ price, productName, productKey }: { price
 
       if (response.data.success) {
         if (method === "PIX") {
-          // Dispara a conversão de Purchase para o Facebook (Pix Gerado)
-          try {
-            if (typeof window !== "undefined" && (window as any).fbq) {
-              (window as any).fbq('track', 'Purchase', { value: price, currency: 'BRL', content_name: productName });
-            }
-          } catch (e) {
-            console.warn("Erro ao disparar Pixel (provável AdBlock):", e);
-          }
-
           setPixData({
             qrCodeBase64: response.data.qrCode.encodedImage,
             copyPaste: response.data.qrCode.payload,
           });
         } else {
-          // Dispara a conversão de Purchase para o Facebook (Cartão)
+          // Dispara a conversão de Purchase para o Facebook
           try {
             if (typeof window !== "undefined" && (window as any).fbq) {
-              (window as any).fbq('track', 'Purchase', { value: price, currency: 'BRL', content_name: productName });
+              (window as any).fbq('track', 'Purchase', { value: price, currency: 'BRL' });
             }
           } catch (e) {
             console.warn("Erro ao disparar Pixel (provável AdBlock):", e);
           }
-          
-          // Aguarda 500ms para garantir que a requisição do pixel foi enviada antes de mudar de página
-          setTimeout(() => {
-            router.push(`/sucesso?product=${productKey}`);
-          }, 500);
+          router.push(`/sucesso?product=${productKey}`);
         }
       }
     } catch (err: unknown) {
@@ -277,8 +264,8 @@ export default function CheckoutForm({ price, productName, productKey }: { price
             type="button"
             onClick={() => setMethod("CREDIT_CARD")}
             className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${method === "CREDIT_CARD"
-                ? "border-[var(--theme-accent)] bg-[var(--theme-accent)]/5 text-[var(--theme-accent)]"
-                : "border-gray-200 text-gray-500 hover:border-gray-300"
+              ? "border-[var(--theme-accent)] bg-[var(--theme-accent)]/5 text-[var(--theme-accent)]"
+              : "border-gray-200 text-gray-500 hover:border-gray-300"
               }`}
           >
             <CreditCard size={24} className="mb-2" />
@@ -289,8 +276,8 @@ export default function CheckoutForm({ price, productName, productKey }: { price
             type="button"
             onClick={() => setMethod("PIX")}
             className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${method === "PIX"
-                ? "border-[#10B981] bg-[#10B981]/5 text-[#10B981]"
-                : "border-gray-200 text-gray-500 hover:border-gray-300"
+              ? "border-[#10B981] bg-[#10B981]/5 text-[#10B981]"
+              : "border-gray-200 text-gray-500 hover:border-gray-300"
               }`}
           >
             <QrCode size={24} className="mb-2" />
