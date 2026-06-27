@@ -145,20 +145,33 @@ export default function CheckoutForm({ price, productName, productKey }: { price
 
       if (response.data.success) {
         if (method === "PIX") {
+          // Dispara a conversão de Purchase para o Facebook (Pix Gerado)
+          try {
+            if (typeof window !== "undefined" && (window as any).fbq) {
+              (window as any).fbq('track', 'Purchase', { value: price, currency: 'BRL', content_name: productName });
+            }
+          } catch (e) {
+            console.warn("Erro ao disparar Pixel (provável AdBlock):", e);
+          }
+
           setPixData({
             qrCodeBase64: response.data.qrCode.encodedImage,
             copyPaste: response.data.qrCode.payload,
           });
         } else {
-          // Dispara a conversão de Purchase para o Facebook
+          // Dispara a conversão de Purchase para o Facebook (Cartão)
           try {
             if (typeof window !== "undefined" && (window as any).fbq) {
-              (window as any).fbq('track', 'Purchase', { value: price, currency: 'BRL' });
+              (window as any).fbq('track', 'Purchase', { value: price, currency: 'BRL', content_name: productName });
             }
           } catch (e) {
             console.warn("Erro ao disparar Pixel (provável AdBlock):", e);
           }
-          router.push(`/sucesso?product=${productKey}`);
+          
+          // Aguarda 500ms para garantir que a requisição do pixel foi enviada antes de mudar de página
+          setTimeout(() => {
+            router.push(`/sucesso?product=${productKey}`);
+          }, 500);
         }
       }
     } catch (err: unknown) {
