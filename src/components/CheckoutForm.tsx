@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CreditCard, QrCode, User, Mail, CreditCard as IdCard, Loader2 } from "lucide-react";
 import axios from "axios";
@@ -53,6 +53,21 @@ export default function CheckoutForm({ price, productName, productKey }: { price
   const [pixData, setPixData] = useState<{ qrCodeBase64: string; copyPaste: string } | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const router = useRouter();
+
+  // Rastreio do Facebook: Iniciar Checkout (Dispara assim que a tela abre)
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined" && (window as any).fbq) {
+        (window as any).fbq('track', 'InitiateCheckout', { 
+          value: price, 
+          currency: 'BRL', 
+          content_name: productName 
+        });
+      }
+    } catch (e) {
+      console.warn("Erro ao disparar Pixel (provável AdBlock):", e);
+    }
+  }, [price, productName]);
 
   // Dados do cliente
   const [customer, setCustomer] = useState({ name: "", email: "", cpfCnpj: "", phone: "" });
@@ -159,19 +174,8 @@ export default function CheckoutForm({ price, productName, productKey }: { price
             copyPaste: response.data.qrCode.payload,
           });
         } else {
-          // Dispara a conversão de Purchase para o Facebook (Cartão)
-          try {
-            if (typeof window !== "undefined" && (window as any).fbq) {
-              (window as any).fbq('track', 'Purchase', { value: price, currency: 'BRL', content_name: productName });
-            }
-          } catch (e) {
-            console.warn("Erro ao disparar Pixel (provável AdBlock):", e);
-          }
-          
-          // Aguarda 500ms para garantir que a requisição do pixel foi enviada antes de mudar de página
-          setTimeout(() => {
-            router.push(`/sucesso?product=${productKey}`);
-          }, 500);
+          // O Purchase do Cartão será disparado de forma segura na página de /sucesso
+          router.push(`/sucesso?product=${productKey}`);
         }
       }
     } catch (err: unknown) {

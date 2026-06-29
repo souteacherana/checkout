@@ -3,12 +3,31 @@
 import { useSearchParams } from "next/navigation";
 import { CheckCircle } from "lucide-react";
 import { THEMES } from "@/lib/products";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
   const productKey = searchParams?.get("product") || "DEFAULT";
   const workshopConfig = THEMES[productKey] || THEMES["DEFAULT"];
+
+  useEffect(() => {
+    // Evita duplicidade se o cliente apertar F5 na página de sucesso
+    const trackKey = `fbq_purchase_${productKey}`;
+    if (!sessionStorage.getItem(trackKey)) {
+      try {
+        if (typeof window !== "undefined" && (window as any).fbq) {
+          (window as any).fbq('track', 'Purchase', { 
+            value: workshopConfig.price, 
+            currency: 'BRL',
+            content_name: workshopConfig.title
+          });
+          sessionStorage.setItem(trackKey, "true");
+        }
+      } catch (e) {
+        console.warn("Erro ao disparar Pixel (provável AdBlock):", e);
+      }
+    }
+  }, [productKey, workshopConfig.price, workshopConfig.title]);
 
   return (
     <main
