@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { asaasService } from '@/lib/asaas';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { getProductPrice, calculateTotalValue } from '@/lib/products';
+import { getProductPrice, calculateTotalValue, THEMES } from '@/lib/products';
 
 export async function POST(request: Request) {
   console.log("Iniciando checkout. Chave do Asaas atual:", process.env.ASAAS_API_KEY ? "EXISTS" : "MISSING", "Lenght:", process.env.ASAAS_API_KEY?.length);
@@ -51,6 +51,7 @@ export async function POST(request: Request) {
           amount: value,
           payment_method: 'PIX',
           payment_id: payment.id,
+          product_name: THEMES[paymentData.productKey]?.title,
         }).eq('id', sessionId);
       } else {
         await supabaseAdmin.from('checkouts').insert([{
@@ -62,6 +63,7 @@ export async function POST(request: Request) {
           amount: value,
           payment_method: 'PIX',
           payment_id: payment.id,
+          product_name: THEMES[paymentData.productKey]?.title,
           utm_source: paymentData.utms?.source,
           utm_medium: paymentData.utms?.medium,
           utm_campaign: paymentData.utms?.campaign,
@@ -104,6 +106,7 @@ export async function POST(request: Request) {
           amount: value,
           payment_method: 'CREDIT_CARD',
           payment_id: payment.id,
+          product_name: THEMES[paymentData.productKey]?.title,
         }).eq('id', sessionId);
       } else {
         await supabaseAdmin.from('checkouts').insert([{
@@ -115,6 +118,7 @@ export async function POST(request: Request) {
           amount: value,
           payment_method: 'CREDIT_CARD',
           payment_id: payment.id,
+          product_name: THEMES[paymentData.productKey]?.title,
           utm_source: paymentData.utms?.source,
           utm_medium: paymentData.utms?.medium,
           utm_campaign: paymentData.utms?.campaign,
