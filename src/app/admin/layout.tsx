@@ -2,20 +2,23 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Store, LogOut, ShieldAlert } from "lucide-react";
+import { LayoutDashboard, Store, LogOut, ShieldAlert, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { getUserRole } from "./actions";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string>("VIEWER");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user?.email) {
         setUserEmail(session.user.email);
+        getUserRole(session.user.email).then(role => setUserRole(role));
       }
     });
   }, []);
@@ -30,7 +33,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return <>{children}</>;
   }
 
-  const isSuperAdmin = userEmail === "henryccost@gmail.com";
+  const isSuperAdmin = userRole === "SUPERADMIN";
+  const isAdmin = userRole === "SUPERADMIN" || userRole === "ADMIN";
 
   return (
     <div className="flex h-screen bg-[#f8fafc] overflow-hidden">
@@ -58,7 +62,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             Dashboard
           </Link>
 
-          {isSuperAdmin ? (
+          {isAdmin ? (
             <Link 
               href="/admin/checkouts" 
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
@@ -71,11 +75,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               Páginas de Checkout
             </Link>
           ) : (
-             <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 cursor-not-allowed" title="Apenas o Super Admin tem acesso">
+             <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 cursor-not-allowed" title="Apenas Administradores têm acesso">
               <Store size={18} />
               Páginas de Checkout
               <ShieldAlert size={14} className="ml-auto text-gray-300" />
             </div>
+          )}
+
+          {isSuperAdmin && (
+            <Link 
+              href="/admin/equipe" 
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                pathname?.startsWith('/admin/equipe')
+                  ? 'bg-emerald-50 text-emerald-700' 
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <Users size={18} />
+              Equipe
+            </Link>
           )}
         </nav>
 
