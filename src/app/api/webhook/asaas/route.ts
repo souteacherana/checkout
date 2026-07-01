@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { astronService } from '@/lib/astron';
+import { sendCapiEvent } from '@/lib/capi';
 
 export async function POST(req: Request) {
   try {
@@ -72,6 +73,27 @@ export async function POST(req: Request) {
         await astronService.forwardAsaasWebhook(body);
       } else {
         console.log(`Produto (${checkout.product_name}) não requer integração com Astron.`);
+      }
+
+      // Se foi pago via PIX, envia o evento de Purchase pro CAPI (já que não foi enviado no checkout)
+      if (checkout.payment_method === 'PIX' && checkout.product_key) {
+        const { data: productDB } = await supabaseAdmin
+          .from('products')
+          .select('fb_pixel_id, fb_capi_token')
+          .eq('slug', checkout.product_key.toLowerCase())
+          .single();
+
+        if (productDB?.fb_pixel_id && productDB?.fb_capi_token) {
+          console.log("Enviando CAPI Purchase para PIX pago...");
+          await sendCapiEvent(
+            productDB.fb_pixel_id, 
+            productDB.fb_capi_token, 
+            { email: checkout.customer_email, phone: checkout.customer_phone }, 
+            Number(checkout.amount), 
+            checkout.product_name || "Produto", 
+            paymentId
+          );
+        }
       }
 
       return NextResponse.json({ success: true, message: 'Payment processed and student added' });
