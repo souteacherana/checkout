@@ -17,6 +17,7 @@ export default function AdminDashboard() {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [filterSearch, setFilterSearch] = useState<string>('');
   const [filterUtm, setFilterUtm] = useState<string>('');
+  const [filterProduct, setFilterProduct] = useState<string>('ALL');
   const [sortBy, setSortBy] = useState<string>('date_desc');
 
   const fetchCheckouts = async () => {
@@ -96,6 +97,7 @@ export default function AdminDashboard() {
   // Processamento dos dados (Filtros e Sort)
   const processedCheckouts = [...checkouts]
     .filter(c => filterStatus === 'ALL' || c.status === filterStatus)
+    .filter(c => filterProduct === 'ALL' || c.product_name === filterProduct)
     .filter(c => filterSearch === '' || 
       (c.customer_name?.toLowerCase() || '').includes(filterSearch.toLowerCase()) || 
       (c.customer_email?.toLowerCase() || '').includes(filterSearch.toLowerCase()) ||
@@ -144,9 +146,6 @@ export default function AdminDashboard() {
           <div className="flex gap-3">
             <button onClick={exportToCSV} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-sm transition-all hover:shadow-emerald-600/20 hover:-translate-y-0.5">
               <Download size={16} /> Exportar CSV
-            </button>
-            <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50 shadow-sm transition-all">
-              <LogOut size={16} /> Sair
             </button>
           </div>
         </div>
@@ -236,6 +235,18 @@ export default function AdminDashboard() {
                   className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-gray-900"
                 />
               </div>
+
+              {/* Produto */}
+              <select
+                value={filterProduct}
+                onChange={(e) => setFilterProduct(e.target.value)}
+                className="w-full md:w-48 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-gray-700 bg-white"
+              >
+                <option value="ALL">Todos os Produtos</option>
+                {Array.from(new Set(checkouts.map(c => c.product_name))).filter(Boolean).map(p => (
+                  <option key={String(p)} value={String(p)}>{String(p)}</option>
+                ))}
+              </select>
 
               {/* Status */}
               <select

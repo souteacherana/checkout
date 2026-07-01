@@ -3,8 +3,7 @@ import { Suspense } from "react";
 import CheckoutForm from "@/components/CheckoutForm";
 import { ShieldCheck } from "lucide-react";
 import { notFound } from "next/navigation";
-
-import { THEMES } from "@/lib/products";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 interface PageProps {
   params: {
@@ -12,12 +11,18 @@ interface PageProps {
   };
 }
 
-export default function ProdutoCheckout({ params }: PageProps) {
-  // Pega a key a partir do slug (ex: /vst -> VST)
-  const themeKey = params.produto.toUpperCase();
-  const workshopConfig = THEMES[themeKey];
+export default async function ProdutoCheckout({ params }: PageProps) {
+  // Pega a key a partir do slug (ex: /vst)
+  const slug = params.produto.toLowerCase();
+  
+  // Busca dinamicamente do banco de dados (ignorando o RLS com admin para garantir que rode sempre no servidor)
+  const { data: workshopConfig } = await supabaseAdmin
+    .from('products')
+    .select('*')
+    .eq('slug', slug)
+    .single();
 
-  // Se não existir o produto configurado no THEMES, mostra página 404
+  // Se não existir o produto configurado no Banco, mostra página 404
   if (!workshopConfig) {
     notFound();
   }
@@ -26,10 +31,10 @@ export default function ProdutoCheckout({ params }: PageProps) {
     <main
       className="min-h-screen pb-12 pt-6 px-4 sm:px-6 flex flex-col items-center selection:bg-[var(--theme-accent)] selection:text-white"
       style={
-        workshopConfig.accentColor
+        workshopConfig.accent_color
           ? ({
-            "--theme-accent": workshopConfig.accentColor,
-            "--theme-accent-hover": workshopConfig.accentColorHover,
+            "--theme-accent": workshopConfig.accent_color,
+            "--theme-accent-hover": workshopConfig.accent_color_hover || workshopConfig.accent_color,
           } as React.CSSProperties)
           : undefined
       }
@@ -49,10 +54,10 @@ export default function ProdutoCheckout({ params }: PageProps) {
         </header>
 
         {/* Banner do Workshop */}
-        {workshopConfig.imageSrc && (
+        {workshopConfig.image_src && (
           <div className="w-full h-32 sm:h-36 mb-6 rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex-shrink-0">
             <img
-              src={workshopConfig.imageSrc}
+              src={workshopConfig.image_src}
               alt={`Banner do ${workshopConfig.title}`}
               className="w-full h-full object-cover"
             />
@@ -76,7 +81,7 @@ export default function ProdutoCheckout({ params }: PageProps) {
         {/* Formulário de Checkout */}
         <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 p-6 sm:p-8">
           <Suspense fallback={<div className="text-center py-4 text-gray-500">Carregando formulário...</div>}>
-            <CheckoutForm price={workshopConfig.price} productName={workshopConfig.title} productKey={themeKey} />
+            <CheckoutForm price={workshopConfig.price} productName={workshopConfig.title} productKey={slug.toUpperCase()} />
           </Suspense>
         </div>
 
