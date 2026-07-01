@@ -1,12 +1,26 @@
+/* eslint-disable @next/next/no-img-element */
 import { Suspense } from "react";
 import CheckoutForm from "@/components/CheckoutForm";
 import { ShieldCheck } from "lucide-react";
+import { notFound } from "next/navigation";
+
 import { THEMES } from "@/lib/products";
 
-export default function LowTicketPage() {
-  // Fixa o tema para LOW
-  const themeKey = "LOW";
+interface PageProps {
+  params: {
+    produto: string;
+  };
+}
+
+export default function ProdutoCheckout({ params }: PageProps) {
+  // Pega a key a partir do slug (ex: /vst -> VST)
+  const themeKey = params.produto.toUpperCase();
   const workshopConfig = THEMES[themeKey];
+
+  // Se não existir o produto configurado no THEMES, mostra página 404
+  if (!workshopConfig) {
+    notFound();
+  }
 
   return (
     <main
@@ -37,7 +51,6 @@ export default function LowTicketPage() {
         {/* Banner do Workshop */}
         {workshopConfig.imageSrc && (
           <div className="w-full h-32 sm:h-36 mb-6 rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex-shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={workshopConfig.imageSrc}
               alt={`Banner do ${workshopConfig.title}`}
