@@ -3,6 +3,47 @@ import { NextResponse } from 'next/server';
 import { asaasService } from '@/lib/asaas';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getProductPrice, calculateTotalValue, THEMES } from '@/lib/products';
+import crypto from 'crypto';
+
+// Função para enviar evento Purchase via API de Conversões do Facebook (CAPI)
+async function sendCapiEvent(pixelId: string, token: string, customerData: any, value: number, productName: string, eventId: string, clientIp: string | null, userAgent: string | null) {
+  try {
+    const hash = (data: string) => data ? crypto.createHash('sha256').update(data.trim().toLowerCase()).digest('hex') : undefined;
+    
+    const payload = {
+      data: [
+        {
+          event_name: 'Purchase',
+          event_time: Math.floor(Date.now() / 1000),
+          action_source: 'website',
+          event_id: eventId,
+          user_data: {
+            em: [hash(customerData.email)],
+            ph: [hash(customerData.phone)],
+            client_ip_address: clientIp,
+            client_user_agent: userAgent,
+          },
+          custom_data: {
+            value: value,
+            currency: 'BRL',
+            content_name: productName,
+          }
+        }
+      ]
+    };
+
+    const res = await fetch(`https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${token}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+    console.log("CAPI Result:", result);
+  } catch (error) {
+    console.error("Erro ao enviar evento CAPI:", error);
+  }
+}
+
 
 export async function POST(request: Request) {
   console.log("Iniciando checkout. Chave do Asaas atual:", process.env.ASAAS_API_KEY ? "EXISTS" : "MISSING", "Lenght:", process.env.ASAAS_API_KEY?.length);
@@ -31,7 +72,21 @@ export async function POST(request: Request) {
       ? calculateTotalValue(basePrice, paymentData.installments || 1)
       : basePrice;
 
-    const description = paymentData.productName || THEMES[paymentData.productKey]?.title || "Pedido via Checkout";
+    // Busca configurações extras do produto (como CAPI) no DB
+    const { data: productDB } = await supabaseAdmin
+      .from('products')
+      .select('fb_pixel_id, fb_capi_token, title')
+      .eq('slug', paymentData.productKey.toLowerCase())
+      .single();
+
+    const description = paymentData.productName || productDB?.title || THEMES[paymentData.productKey]?.title || "Pedido via Checkout";
+
+    // Preparar dados do CAPI
+    const clientIp = request.headers.get('x-forwarded-for');
+    const userAgent = request.headers.get('user-agent');
+    const fbPixelId = productDB?.fb_pixel_id;
+    const fbCapiToken = productDB?.fb_capi_token;
+
 
     // 2. Criar Cobrança
     if (paymentMethod === 'PIX') {
@@ -143,6 +198,12 @@ export async function POST(request: Request) {
           utm_term: paymentData.utms?.term,
           utm_content: paymentData.utms?.content,
         }]);
+      }
+
+      // Se pagou via cartão e foi Aprovado, envia pro CAPI
+      if ((payment.status === 'CONFIRMED' || payment.status === 'RECEIVED') && fbPixelId && fbCapiToken) {
+        // Dispara de forma assíncrona
+        sendCapiEvent(fbPixelId, fbCapiToken, customerData, value, description, payment.id, clientIp, userAgent);
       }
 
       return NextResponse.json({

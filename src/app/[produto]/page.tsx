@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { Suspense } from "react";
 import CheckoutForm from "@/components/CheckoutForm";
+import Script from "next/script";
 import { ShieldCheck } from "lucide-react";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -57,6 +58,16 @@ export default async function ProdutoCheckout({ params }: PageProps) {
             Pagamento 100% seguro e criptografado
           </p>
         </header>
+
+        {/* Pixel Dinâmico do Produto (se configurado) */}
+        {workshopConfig.fb_pixel_id && workshopConfig.fb_pixel_id !== process.env.NEXT_PUBLIC_FB_PIXEL_ID && (
+          <Script id={`pixel-${workshopConfig.fb_pixel_id}`} strategy="afterInteractive">
+            {`
+              fbq('init', '${workshopConfig.fb_pixel_id}');
+              fbq('track', 'PageView');
+            `}
+          </Script>
+        )}
 
         {/* Banner do Workshop */}
         {workshopConfig.image_src && (

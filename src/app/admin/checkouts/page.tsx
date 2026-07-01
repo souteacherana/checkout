@@ -11,7 +11,7 @@ export default function CheckoutsManager() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<any>({
-    slug: '', title: '', price: '', accent_color: '', accent_color_hover: '', image_src: ''
+    slug: '', title: '', price: '', accent_color: '', accent_color_hover: '', image_src: '', fb_pixel_id: '', fb_capi_token: ''
   });
 
   useEffect(() => {
@@ -47,7 +47,9 @@ export default function CheckoutsManager() {
         price: Number(formData.price),
         accent_color: formData.accent_color,
         accent_color_hover: formData.accent_color_hover,
-        image_src: formData.image_src
+        image_src: formData.image_src,
+        fb_pixel_id: formData.fb_pixel_id || null,
+        fb_capi_token: formData.fb_capi_token || null
       }).eq('id', formData.id);
       
       if (error) alert("Erro ao atualizar: " + error.message);
@@ -59,12 +61,14 @@ export default function CheckoutsManager() {
         price: Number(formData.price),
         accent_color: formData.accent_color,
         accent_color_hover: formData.accent_color_hover,
-        image_src: formData.image_src
+        image_src: formData.image_src,
+        fb_pixel_id: formData.fb_pixel_id || null,
+        fb_capi_token: formData.fb_capi_token || null
       }]);
       if (error) alert("Erro ao criar: " + error.message);
     }
     
-    setFormData({ slug: '', title: '', price: '', accent_color: '', accent_color_hover: '', image_src: '' });
+    setFormData({ slug: '', title: '', price: '', accent_color: '', accent_color_hover: '', image_src: '', fb_pixel_id: '', fb_capi_token: '' });
     setIsEditing(false);
     fetchProducts();
   };
@@ -128,8 +132,23 @@ export default function CheckoutsManager() {
                 <input type="text" value={formData.accent_color_hover || ''} onChange={e => setFormData({...formData, accent_color_hover: e.target.value})} className="w-full border border-gray-300 rounded-lg px-3 py-2 uppercase focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="#059669" />
               </div>
             </div>
-            <div className="md:col-span-2 flex justify-end gap-3 mt-4 border-t pt-4">
-              <button type="button" onClick={() => { setIsEditing(false); setFormData({ slug: '', title: '', price: '', accent_color: '', accent_color_hover: '', image_src: '' }); }} className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg transition-colors">Cancelar</button>
+            
+            <div className="md:col-span-2 pt-2 border-t mt-2">
+              <h3 className="text-sm font-bold text-gray-800 mb-4">Configurações de Rastreio (Opcional)</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">ID do Pixel do Facebook</label>
+                  <input type="text" value={formData.fb_pixel_id || ''} onChange={e => setFormData({...formData, fb_pixel_id: e.target.value})} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="Ex: 1084815880338708" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Token da API de Conversões (CAPI)</label>
+                  <input type="text" value={formData.fb_capi_token || ''} onChange={e => setFormData({...formData, fb_capi_token: e.target.value})} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="Ex: EAAZAf..." />
+                </div>
+              </div>
+            </div>
+            
+            <div className="md:col-span-2 flex justify-end gap-3 mt-2 border-t pt-4">
+              <button type="button" onClick={() => { setIsEditing(false); setFormData({ slug: '', title: '', price: '', accent_color: '', accent_color_hover: '', image_src: '', fb_pixel_id: '', fb_capi_token: '' }); }} className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg transition-colors">Cancelar</button>
               <button type="submit" disabled={loading} className="px-6 py-2 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors shadow-sm">{loading ? 'Salvando...' : 'Salvar Produto'}</button>
             </div>
           </form>
