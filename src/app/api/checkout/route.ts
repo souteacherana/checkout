@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       ? calculateTotalValue(basePrice, paymentData.installments || 1)
       : basePrice;
 
-    const description = "Pedido via Checkout";
+    const description = paymentData.productName || THEMES[paymentData.productKey]?.title || "Pedido via Checkout";
 
     // 2. Criar Cobrança
     if (paymentMethod === 'PIX') {
@@ -51,9 +51,14 @@ export async function POST(request: Request) {
           amount: value,
           payment_method: 'PIX',
           payment_id: payment.id,
-          product_name: THEMES[paymentData.productKey]?.title,
+          product_name: paymentData.productName || THEMES[paymentData.productKey]?.title,
           product_key: paymentData.productKey,
           installments: 1,
+          utm_source: paymentData.utms?.source,
+          utm_medium: paymentData.utms?.medium,
+          utm_campaign: paymentData.utms?.campaign,
+          utm_term: paymentData.utms?.term,
+          utm_content: paymentData.utms?.content,
         }).eq('id', sessionId);
       } else {
         await supabaseAdmin.from('checkouts').insert([{
@@ -110,9 +115,14 @@ export async function POST(request: Request) {
           amount: value,
           payment_method: 'CREDIT_CARD',
           payment_id: payment.id,
-          product_name: THEMES[paymentData.productKey]?.title,
+          product_name: paymentData.productName || THEMES[paymentData.productKey]?.title,
           product_key: paymentData.productKey,
           installments: paymentData.installments || 1,
+          utm_source: paymentData.utms?.source,
+          utm_medium: paymentData.utms?.medium,
+          utm_campaign: paymentData.utms?.campaign,
+          utm_term: paymentData.utms?.term,
+          utm_content: paymentData.utms?.content,
         }).eq('id', sessionId);
       } else {
         await supabaseAdmin.from('checkouts').insert([{

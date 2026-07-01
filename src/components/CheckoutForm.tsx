@@ -150,6 +150,7 @@ export default function CheckoutForm({ price, productName, productKey }: { price
         },
         paymentData: {
           productKey,
+          productName,
           installments,
           creditCard: method === "CREDIT_CARD" ? card : undefined,
           utms, // Repassa as UTMs para o backend
