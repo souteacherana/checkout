@@ -45,36 +45,40 @@ export default function AdminDashboard() {
     router.push("/admin/login");
   };
 
-  const exportToCSV = () => {
-    const headers = ["Criação", "ID", "Status", "Cliente", "E-mail", "Telefone", "Produto", "UTM Source", "UTM Campaign", "Ganho"];
-    const rows = checkouts.map(c => [
-      new Date(c.created_at).toLocaleString('pt-BR'),
-      c.id,
-      c.status,
-      c.customer_name || "-",
-      c.customer_email || "-",
-      c.customer_phone || "-",
-      c.product_name || "-",
-      c.utm_source || "-",
-      c.utm_campaign || "-",
-      c.amount || "0"
-    ]);
+  const exportToCSV = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+      const response = await fetch('/api/admin/export', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erro ao exportar');
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `checkouts_${new Date().getTime()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // O nome do arquivo já vem nos headers, mas podemos garantir aqui também
+      a.download = `Vendas_Tier_S_${new Date().getTime()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Erro ao exportar CSV. Verifique o console.");
+      console.error(e);
+    }
   };
 
   // Métricas
   const totalPaid = checkouts.filter(c => c.status === 'PAID').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
-  const liquidPaid = totalPaid * 0.95; // Simulação de ganho líquido (tirando 5% taxa Asaas)
+  // Usa o net_value real retornado pelo webhook Asaas. Para vendas antigas sem net_value, simula 95%.
+  const liquidPaid = checkouts.filter(c => c.status === 'PAID').reduce((acc, curr) => acc + Number(curr.net_value || (Number(curr.amount || 0) * 0.95)), 0);
   const totalPending = checkouts.filter(c => c.status === 'PENDING').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
   
   const countPaid = checkouts.filter(c => c.status === 'PAID').length;

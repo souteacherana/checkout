@@ -52,6 +52,8 @@ export async function POST(request: Request) {
           payment_method: 'PIX',
           payment_id: payment.id,
           product_name: THEMES[paymentData.productKey]?.title,
+          product_key: paymentData.productKey,
+          installments: 1,
         }).eq('id', sessionId);
       } else {
         await supabaseAdmin.from('checkouts').insert([{
@@ -64,6 +66,8 @@ export async function POST(request: Request) {
           payment_method: 'PIX',
           payment_id: payment.id,
           product_name: THEMES[paymentData.productKey]?.title,
+          product_key: paymentData.productKey,
+          installments: 1,
           utm_source: paymentData.utms?.source,
           utm_medium: paymentData.utms?.medium,
           utm_campaign: paymentData.utms?.campaign,
@@ -107,6 +111,8 @@ export async function POST(request: Request) {
           payment_method: 'CREDIT_CARD',
           payment_id: payment.id,
           product_name: THEMES[paymentData.productKey]?.title,
+          product_key: paymentData.productKey,
+          installments: paymentData.installments || 1,
         }).eq('id', sessionId);
       } else {
         await supabaseAdmin.from('checkouts').insert([{
@@ -119,6 +125,8 @@ export async function POST(request: Request) {
           payment_method: 'CREDIT_CARD',
           payment_id: payment.id,
           product_name: THEMES[paymentData.productKey]?.title,
+          product_key: paymentData.productKey,
+          installments: paymentData.installments || 1,
           utm_source: paymentData.utms?.source,
           utm_medium: paymentData.utms?.medium,
           utm_campaign: paymentData.utms?.campaign,

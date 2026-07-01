@@ -45,10 +45,18 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Payment value mismatch' }, { status: 400 });
       }
 
-      // Atualizar o status do checkout para PAID
+      // Atualizar o status do checkout para PAID e salvar os metadados TIER S
       const { error: updateError } = await supabaseAdmin
         .from('checkouts')
-        .update({ status: 'PAID' })
+        .update({ 
+          status: 'PAID',
+          net_value: payment.netValue,
+          payment_date: payment.paymentDate ? new Date(payment.paymentDate).toISOString() : new Date().toISOString(),
+          credit_date: payment.creditDate ? new Date(payment.creditDate).toISOString() : (payment.estimatedCreditDate ? new Date(payment.estimatedCreditDate).toISOString() : null),
+          asaas_invoice_url: payment.invoiceUrl,
+          asaas_invoice_number: payment.invoiceNumber,
+          asaas_payload: body
+        })
         .eq('id', checkout.id);
 
       if (updateError) {
