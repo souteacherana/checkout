@@ -25,6 +25,8 @@ export async function sendCapiEvent(
             ph: [hash(customerData.phone)],
             client_ip_address: clientIp || undefined,
             client_user_agent: userAgent || undefined,
+            fbp: customerData.fbp || undefined,
+            fbc: customerData.fbc || undefined,
           },
           custom_data: {
             value: value,

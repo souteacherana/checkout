@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { CreditCard, QrCode, User, Mail, CreditCard as IdCard, Loader2 } from "lucide-react";
+import { CreditCard, QrCode, User, Mail, CreditCard as IdCard, Loader2, CheckCircle, XCircle, Timer } from "lucide-react";
 import axios from "axios";
 import { countries } from "@/lib/countries";
 
@@ -43,6 +43,14 @@ const isValidCpf = (cpf: string) => {
   return true;
 };
 
+const getCookie = (name: string) => {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift();
+  return null;
+}
+
 type PaymentMethod = "CREDIT_CARD" | "PIX";
 
 export default function CheckoutForm({ price, productName, productKey }: { price: number; productName: string; productKey: string }) {
@@ -52,6 +60,12 @@ export default function CheckoutForm({ price, productName, productKey }: { price
 
   const [pixData, setPixData] = useState<{ qrCodeBase64: string; copyPaste: string } | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [paymentId, setPaymentId] = useState<string | null>(null);
+  
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [isExpired, setIsExpired] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(900); // 15 minutos
+
   const router = useRouter();
 
   // Rastreio do Facebook: Iniciar Checkout (Dispara assim que a tela abre)
@@ -68,6 +82,52 @@ export default function CheckoutForm({ price, productName, productKey }: { price
       console.warn("Erro ao disparar Pixel (provável AdBlock):", e);
     }
   }, [price, productName]);
+
+  // Timer e Polling para PIX
+  useEffect(() => {
+    if (pixData && !isSuccess && !isExpired && paymentId) {
+      const timer = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            setIsExpired(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      const poller = setInterval(async () => {
+        try {
+          const res = await axios.get(`/api/checkout/status?paymentId=${paymentId}`);
+          if (res.data.status === 'PAID') {
+            setIsSuccess(true);
+            clearInterval(poller);
+            clearInterval(timer);
+          }
+        } catch (e) {}
+      }, 3000);
+
+      return () => {
+        clearInterval(timer);
+        clearInterval(poller);
+      };
+    }
+  }, [pixData, isSuccess, isExpired, paymentId]);
+
+  const checkPaymentManual = async () => {
+    if (!paymentId) return;
+    try {
+      const res = await axios.get(`/api/checkout/status?paymentId=${paymentId}`);
+      if (res.data.status === 'PAID') {
+        setIsSuccess(true);
+      } else {
+        alert("Pagamento ainda não identificado. Aguarde alguns segundos e tente novamente.");
+      }
+    } catch (e) {
+      alert("Erro ao checar pagamento.");
+    }
+  };
 
   // Dados do cliente
   const [customer, setCustomer] = useState({ name: "", email: "", cpfCnpj: "", phone: "" });
@@ -146,7 +206,9 @@ export default function CheckoutForm({ price, productName, productKey }: { price
         paymentMethod: method,
         customerData: {
           ...customer,
-          phone: `${countryCode}${customer.phone.replace(/\D/g, "")}`
+          phone: `${countryCode}${customer.phone.replace(/\D/g, "")}`,
+          fbp: getCookie('_fbp'),
+          fbc: getCookie('_fbc')
         },
         paymentData: {
           productKey,
@@ -160,6 +222,8 @@ export default function CheckoutForm({ price, productName, productKey }: { price
       const response = await axios.post("/api/checkout", payload);
 
       if (response.data.success) {
+        setPaymentId(response.data.paymentId);
+        
         if (method === "PIX") {
           // Dispara a conversão de Purchase para o Facebook (Pix Gerado)
           try {
@@ -174,9 +238,20 @@ export default function CheckoutForm({ price, productName, productKey }: { price
             qrCodeBase64: response.data.qrCode.encodedImage,
             copyPaste: response.data.qrCode.payload,
           });
+          setTimeLeft(900);
+          setIsExpired(false);
         } else {
-          // O Purchase do Cartão será disparado de forma segura na página de /sucesso
-          router.push(`/sucesso?product=${productKey}`);
+          // O Purchase do Cartão será disparado de forma segura no frontend
+          try {
+            const trackKey = `fbq_purchase_${productKey}`;
+            if (!sessionStorage.getItem(trackKey)) {
+              if (typeof window !== "undefined" && (window as any).fbq) {
+                (window as any).fbq('track', 'Purchase', { value: price, currency: 'BRL', content_name: productName });
+                sessionStorage.setItem(trackKey, "true");
+              }
+            }
+          } catch (e) {}
+          setIsSuccess(true);
         }
       }
     } catch (err: unknown) {
@@ -188,13 +263,54 @@ export default function CheckoutForm({ price, productName, productKey }: { price
     }
   };
 
+  if (isSuccess) {
+    return (
+      <div className="text-center py-8 animate-in fade-in zoom-in duration-500">
+        <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+          <CheckCircle size={40} strokeWidth={2.5} />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Pagamento Aprovado!</h2>
+        <p className="text-gray-600 mb-6 font-medium">Sua compra foi confirmada com sucesso.</p>
+        <div className="bg-gray-50 rounded-xl p-4 text-sm text-left border border-gray-100 mb-6">
+          <p className="font-semibold mb-1">🎉 Acesso Liberado!</p>
+          <p>Enviamos as instruções de acesso para o seu e-mail. Verifique também a caixa de spam.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isExpired) {
+    return (
+      <div className="text-center py-8 animate-in fade-in zoom-in duration-500">
+        <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+          <XCircle size={40} strokeWidth={2.5} />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Tempo Esgotado</h2>
+        <p className="text-gray-600 mb-6">O tempo limite para o pagamento deste Pix expirou.</p>
+        <button 
+          onClick={() => {
+            setPixData(null);
+            setIsExpired(false);
+            setPaymentId(null);
+          }}
+          className="btn-primary w-full"
+        >
+          Tentar Novamente
+        </button>
+      </div>
+    );
+  }
+
   if (pixData) {
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+
     return (
       <div className="text-center py-4">
         <h3 className="text-xl font-bold text-gray-900 mb-2">Pagamento via Pix</h3>
-        <p className="text-sm text-gray-600 mb-6">Escaneie o QR Code abaixo no app do seu banco:</p>
+        <p className="text-sm text-gray-600 mb-4">Escaneie o QR Code abaixo no app do seu banco:</p>
 
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center mb-4">
           <img
             src={`data:image/png;base64,${pixData.qrCodeBase64}`}
             alt="QR Code Pix"
@@ -202,7 +318,12 @@ export default function CheckoutForm({ price, productName, productKey }: { price
           />
         </div>
 
-        <div className="w-full text-left">
+        <div className="flex justify-center items-center gap-2 mb-6 text-[var(--theme-accent)] font-semibold bg-[var(--theme-accent)]/10 py-2 px-4 rounded-full mx-auto w-fit">
+          <Timer size={18} />
+          <span>{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}</span>
+        </div>
+
+        <div className="w-full text-left mb-6">
           <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Ou código Copia e Cola:</p>
           <div className="flex gap-2">
             <input
@@ -213,12 +334,19 @@ export default function CheckoutForm({ price, productName, productKey }: { price
             <button
               type="button"
               onClick={() => { navigator.clipboard.writeText(pixData.copyPaste); alert("Copiado!"); }}
-              className="px-4 py-2 bg-[var(--theme-accent)] text-white rounded-lg text-sm font-semibold hover:opacity-90"
+              className="px-4 py-2 bg-[var(--theme-accent)] text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity whitespace-nowrap"
             >
               Copiar
             </button>
           </div>
         </div>
+
+        <button 
+          onClick={checkPaymentManual}
+          className="text-sm font-medium text-gray-500 hover:text-gray-800 underline decoration-gray-300 underline-offset-4"
+        >
+          Já realizei o pagamento
+        </button>
       </div>
     );
   }

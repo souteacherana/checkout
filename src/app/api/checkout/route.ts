@@ -74,6 +74,8 @@ export async function POST(request: Request) {
           utm_campaign: paymentData.utms?.campaign,
           utm_term: paymentData.utms?.term,
           utm_content: paymentData.utms?.content,
+          fb_fbp: customerData.fbp || null,
+          fb_fbc: customerData.fbc || null,
         }).eq('id', sessionId);
       } else {
         await supabaseAdmin.from('checkouts').insert([{
@@ -93,6 +95,8 @@ export async function POST(request: Request) {
           utm_campaign: paymentData.utms?.campaign,
           utm_term: paymentData.utms?.term,
           utm_content: paymentData.utms?.content,
+          fb_fbp: customerData.fbp || null,
+          fb_fbc: customerData.fbc || null,
         }]);
       }
 
@@ -138,6 +142,8 @@ export async function POST(request: Request) {
           utm_campaign: paymentData.utms?.campaign,
           utm_term: paymentData.utms?.term,
           utm_content: paymentData.utms?.content,
+          fb_fbp: customerData.fbp || null,
+          fb_fbc: customerData.fbc || null,
         }).eq('id', sessionId);
       } else {
         await supabaseAdmin.from('checkouts').insert([{
@@ -157,13 +163,15 @@ export async function POST(request: Request) {
           utm_campaign: paymentData.utms?.campaign,
           utm_term: paymentData.utms?.term,
           utm_content: paymentData.utms?.content,
+          fb_fbp: customerData.fbp || null,
+          fb_fbc: customerData.fbc || null,
         }]);
       }
 
       // Se pagou via cartão e foi Aprovado, envia pro CAPI
       if ((payment.status === 'CONFIRMED' || payment.status === 'RECEIVED') && fbPixelId && fbCapiToken) {
         // Dispara de forma assíncrona
-        sendCapiEvent(fbPixelId, fbCapiToken, customerData, value, description, payment.id, clientIp, userAgent);
+        sendCapiEvent(fbPixelId, fbCapiToken, { ...customerData, fbp: customerData.fbp, fbc: customerData.fbc }, value, description, payment.id, clientIp, userAgent);
       }
 
       return NextResponse.json({

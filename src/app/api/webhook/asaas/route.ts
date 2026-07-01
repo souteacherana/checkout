@@ -88,7 +88,7 @@ export async function POST(req: Request) {
           await sendCapiEvent(
             productDB.fb_pixel_id, 
             productDB.fb_capi_token, 
-            { email: checkout.customer_email, phone: checkout.customer_phone }, 
+            { email: checkout.customer_email, phone: checkout.customer_phone, fbp: checkout.fb_fbp, fbc: checkout.fb_fbc }, 
             Number(checkout.amount), 
             checkout.product_name || "Produto", 
             paymentId
