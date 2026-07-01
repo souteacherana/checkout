@@ -5,6 +5,8 @@ import { ShieldCheck } from "lucide-react";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
   params: {
     produto: string;
@@ -12,8 +14,11 @@ interface PageProps {
 }
 
 export default async function ProdutoCheckout({ params }: PageProps) {
+  // Await params to avoid Next.js 15 dynamic routing errors, and fallback gracefully
+  const resolvedParams = await Promise.resolve(params);
+  
   // Pega a key a partir do slug (ex: /vst)
-  const slug = params.produto.toLowerCase();
+  const slug = resolvedParams.produto.toLowerCase();
   
   // Busca dinamicamente do banco de dados (ignorando o RLS com admin para garantir que rode sempre no servidor)
   const { data: workshopConfig } = await supabaseAdmin

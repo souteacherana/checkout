@@ -117,13 +117,13 @@ export default function AdminDashboard() {
       return 0;
     });
 
-  // Métricas Globais (Independente dos filtros)
-  const totalPaid = checkouts.filter(c => c.status === 'PAID').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
-  const liquidPaid = checkouts.filter(c => c.status === 'PAID').reduce((acc, curr) => acc + Number(curr.net_value || (Number(curr.amount || 0) * 0.95)), 0);
-  const totalPending = checkouts.filter(c => c.status === 'PENDING').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
-  const countPaid = checkouts.filter(c => c.status === 'PAID').length;
-  const countPending = checkouts.filter(c => c.status === 'PENDING').length;
-  const countPixPending = checkouts.filter(c => c.status === 'PIX_PENDING').length;
+  // Métricas Globais (Baseadas nos Filtros)
+  const totalPaid = processedCheckouts.filter(c => c.status === 'PAID').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+  const liquidPaid = processedCheckouts.filter(c => c.status === 'PAID').reduce((acc, curr) => acc + Number(curr.net_value || (Number(curr.amount || 0) * 0.95)), 0);
+  const totalPending = processedCheckouts.filter(c => c.status === 'PENDING').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+  const countPaid = processedCheckouts.filter(c => c.status === 'PAID').length;
+  const countPending = processedCheckouts.filter(c => c.status === 'PENDING').length;
+  const countPixPending = processedCheckouts.filter(c => c.status === 'PIX_PENDING').length;
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#f8fafc]">
@@ -141,7 +141,7 @@ export default function AdminDashboard() {
             <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white">
               <TrendingUp size={18} />
             </div>
-            <h1 className="text-xl font-bold text-gray-900 tracking-tight">Dashboard Tier S</h1>
+            <h1 className="text-xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
           </div>
           <div className="flex gap-3">
             <button onClick={exportToCSV} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-sm transition-all hover:shadow-emerald-600/20 hover:-translate-y-0.5">
@@ -193,7 +193,7 @@ export default function AdminDashboard() {
             </div>
             <div>
               <p className="text-sm text-gray-500 font-medium mb-0.5">Faturas Pagas</p>
-              <p className="text-2xl font-bold text-gray-900">{countPaid} <span className="text-sm font-normal text-gray-400">/ {checkouts.length}</span></p>
+              <p className="text-2xl font-bold text-gray-900">{countPaid} <span className="text-sm font-normal text-gray-400">/ {processedCheckouts.length}</span></p>
             </div>
           </div>
 

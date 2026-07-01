@@ -55,7 +55,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             }`}
           >
             <LayoutDashboard size={18} />
-            Painel de Vendas
+            Dashboard
           </Link>
 
           {isSuperAdmin ? (
