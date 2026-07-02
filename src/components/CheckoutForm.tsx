@@ -207,8 +207,8 @@ export default function CheckoutForm({ price, productName, productKey }: { price
         customerData: {
           ...customer,
           phone: `${countryCode}${customer.phone.replace(/\D/g, "")}`,
-          fbp: getCookie('_fbp'),
-          fbc: getCookie('_fbc')
+          fbp: getCookie('_fbp') || searchParams?.get('fbp') || null,
+          fbc: getCookie('_fbc') || searchParams?.get('fbc') || null
         },
         paymentData: {
           productKey,

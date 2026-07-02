@@ -42,7 +42,8 @@ export async function POST(request: Request) {
     const description = paymentData.productName || productDB?.title || THEMES[paymentData.productKey]?.title || "Pedido via Checkout";
 
     // Preparar dados do CAPI
-    const clientIp = request.headers.get('x-forwarded-for');
+    const forwardedFor = request.headers.get('x-forwarded-for');
+    const clientIp = forwardedFor ? forwardedFor.split(',')[0].trim() : null;
     const userAgent = request.headers.get('user-agent');
     const fbPixelId = productDB?.fb_pixel_id;
     const fbCapiToken = productDB?.fb_capi_token;
