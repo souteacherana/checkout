@@ -11,6 +11,7 @@ import { Download, LogOut, CheckCircle, AlertCircle, RefreshCw, Search, Filter, 
 export default function AdminDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [checkouts, setCheckouts] = useState<any[]>([]);
 
   // Filtros e Ordenação
@@ -22,14 +23,45 @@ export default function AdminDashboard() {
 
   const fetchCheckouts = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    
+    // Fetch Asaas checkouts
+    const { data: asaasData, error: asaasError } = await supabase
       .from('checkouts')
       .select('*')
       .order('created_at', { ascending: false });
-    
-    if (!error && data) {
-      setCheckouts(data);
+      
+    // Fetch Eduzz sales
+    const { data: eduzzData, error: eduzzError } = await supabase
+      .from('eduzz_sales')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    let combined: any[] = [];
+
+    if (!asaasError && asaasData) {
+      combined = [...asaasData.map(c => ({ ...c, source: 'Asaas' }))];
     }
+    
+    if (!eduzzError && eduzzData) {
+      const mappedEduzz = eduzzData.map(e => ({
+        id: e.id,
+        created_at: e.created_at,
+        status: (e.status === 'Pago' || e.status === 'Paid' || e.status === 'Aprovado') ? 'PAID' : ((e.status === 'Aguardando Pagamento' || e.status === 'Pix') ? 'PIX_PENDING' : 'PENDING'),
+        customer_name: e.client_name,
+        customer_email: e.client_email,
+        customer_phone: e.client_phone,
+        product_name: e.product_name,
+        amount: e.value,
+        net_value: Number(e.value) * 0.95, // estimativa
+        utm_source: 'Eduzz',
+        utm_campaign: 'Histórico',
+        source: 'Eduzz'
+      }));
+      combined = [...combined, ...mappedEduzz];
+    }
+    
+    combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    setCheckouts(combined);
     setLoading(false);
   };
 
@@ -52,16 +84,52 @@ export default function AdminDashboard() {
     router.push("/admin/login");
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, source?: string) => {
     if (!confirm("Tem certeza que deseja excluir esta venda permanentemente? Esta ação não pode ser desfeita.")) return;
     
     // Optimistic UI update
     setCheckouts(prev => prev.filter(c => c.id !== id));
     
-    const { error } = await supabase.from('checkouts').delete().eq('id', id);
-    if (error) {
-      alert("Erro ao excluir venda.");
-      fetchCheckouts(); // revert
+    if (source === 'Eduzz') {
+       const { error } = await supabase.from('eduzz_sales').delete().eq('id', id);
+       if (error) {
+         alert("Erro ao excluir venda da Eduzz.");
+         fetchCheckouts(); // revert
+       }
+    } else {
+       const { error } = await supabase.from('checkouts').delete().eq('id', id);
+       if (error) {
+         alert("Erro ao excluir venda.");
+         fetchCheckouts(); // revert
+       }
+    }
+  };
+
+  const handleSyncEduzz = async () => {
+    try {
+      setSyncing(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const res = await fetch('/api/admin/sync-eduzz', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+      
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Sincronização concluída! ${data.count} registros importados da Eduzz.`);
+        fetchCheckouts();
+      } else {
+        alert(`Erro na sincronização: ${data.error || 'Erro desconhecido'}`);
+      }
+    } catch(e) {
+      console.error(e);
+      alert("Erro ao conectar com a Eduzz.");
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -144,6 +212,9 @@ export default function AdminDashboard() {
             <h1 className="text-xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
           </div>
           <div className="flex gap-3">
+            <button onClick={handleSyncEduzz} disabled={syncing} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 shadow-sm transition-all disabled:opacity-50">
+              <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Sincronizando...' : 'Sincronizar Eduzz'}
+            </button>
             <button onClick={exportToCSV} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-sm transition-all hover:shadow-emerald-600/20 hover:-translate-y-0.5">
               <Download size={16} /> Exportar CSV
             </button>
@@ -323,6 +394,9 @@ export default function AdminDashboard() {
                       ) : (
                         <span className="text-gray-300">-</span>
                       )}
+                      {c.source === 'Eduzz' && (
+                         <span className="inline-block mt-1 px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[9px] font-bold uppercase tracking-wider">Via Eduzz</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-right font-bold text-gray-900">
                       {new Intl.NumberFormat('pt-BR', {style: 'currency', currency: 'BRL'}).format(c.amount || 0)}
@@ -330,7 +404,7 @@ export default function AdminDashboard() {
                     </td>
                     <td className="px-6 py-4 text-center">
                       <button 
-                        onClick={() => handleDelete(c.id)}
+                        onClick={() => handleDelete(c.id, c.source)}
                         className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                         title="Excluir Venda"
                       >
