@@ -20,6 +20,7 @@ export default function AdminDashboard() {
   const [filterUtm, setFilterUtm] = useState<string>('');
   const [filterProduct, setFilterProduct] = useState<string>('ALL');
   const [sortBy, setSortBy] = useState<string>('date_desc');
+  const [showEduzzData, setShowEduzzData] = useState<boolean>(true);
 
   const fetchCheckouts = async () => {
     setLoading(true);
@@ -164,6 +165,7 @@ export default function AdminDashboard() {
 
   // Processamento dos dados (Filtros e Sort)
   const processedCheckouts = [...checkouts]
+    .filter(c => showEduzzData ? true : c.source !== 'Eduzz')
     .filter(c => filterStatus === 'ALL' || c.status === filterStatus)
     .filter(c => filterProduct === 'ALL' || c.product_name === filterProduct)
     .filter(c => filterSearch === '' || 
@@ -332,20 +334,35 @@ export default function AdminDashboard() {
               </select>
             </div>
 
-            {/* Ordenação */}
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <ArrowUpDown size={16} className="text-gray-400" />
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full md:w-48 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-gray-700 bg-gray-50"
+            {/* Ordenação e Toggle Eduzz */}
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              {/* Toggle Eduzz */}
+              <button 
+                onClick={() => setShowEduzzData(!showEduzzData)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${showEduzzData ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
+                title={showEduzzData ? "Ocultar dados da Eduzz" : "Mostrar dados da Eduzz"}
               >
-                <option value="date_desc">Data (Mais recentes)</option>
-                <option value="date_asc">Data (Mais antigas)</option>
-                <option value="name_asc">Nome (A - Z)</option>
-                <option value="name_desc">Nome (Z - A)</option>
-                <option value="utm_asc">Agrupar por UTM</option>
-              </select>
+                <div className={`w-8 h-4 rounded-full relative transition-colors ${showEduzzData ? 'bg-indigo-500' : 'bg-gray-300'}`}>
+                  <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${showEduzzData ? 'translate-x-4' : ''}`}></div>
+                </div>
+                <span>Histórico Eduzz</span>
+              </button>
+
+              {/* Ordenação */}
+              <div className="flex items-center gap-2">
+                <ArrowUpDown size={16} className="text-gray-400" />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full md:w-48 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-gray-700 bg-gray-50"
+                >
+                  <option value="date_desc">Data (Mais recentes)</option>
+                  <option value="date_asc">Data (Mais antigas)</option>
+                  <option value="name_asc">Nome (A - Z)</option>
+                  <option value="name_desc">Nome (Z - A)</option>
+                  <option value="utm_asc">Agrupar por UTM</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
