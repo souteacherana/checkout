@@ -48,10 +48,14 @@ export async function POST(req: Request) {
     let allSales: any[] = [];
     let page = 1;
     let hasMore = true;
+    
+    // Eduzz API requires startDate and endDate
+    const startDate = '2020-01-01'; // Get everything from 2020
+    const endDate = new Date().toISOString().split('T')[0]; // Today
 
     console.log("Fetching sales from Eduzz...");
     while (hasMore && page <= 5) { // Limit to 5 pages max per sync to avoid timeouts for now
-      const salesUrl = `https://api.eduzz.com/myeduzz/v1/sales?page=${page}&limit=50`;
+      const salesUrl = `https://api.eduzz.com/myeduzz/v1/sales?page=${page}&limit=50&startDate=${startDate}&endDate=${endDate}`;
       
       const salesRes = await fetch(salesUrl, {
         headers: {
