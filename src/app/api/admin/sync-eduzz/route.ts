@@ -49,12 +49,16 @@ export async function POST(req: Request) {
     let page = 1;
     let hasMore = true;
     
-    // Eduzz API requires startDate and endDate
-    const startDate = '2020-01-01'; // Get everything from 2020
-    const endDate = new Date().toISOString().split('T')[0]; // Today
+    // Eduzz API requires startDate and endDate. To avoid Vercel 10s timeout,
+    // we only sync the last 30 dias in this automatic route.
+    // Historical data is seeded manually.
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+    const startDate = thirtyDaysAgo.toISOString().split('T')[0]; 
+    const endDate = today.toISOString().split('T')[0];
 
-    console.log("Fetching sales from Eduzz...");
-    while (hasMore && page <= 5) { // Limit to 5 pages max per sync to avoid timeouts for now
+    console.log(`Fetching sales from Eduzz (${startDate} to ${endDate})...`);
+    while (hasMore && page <= 5) { // Limit to 5 pages max per sync
       const salesUrl = `https://api.eduzz.com/myeduzz/v1/sales?page=${page}&limit=50&startDate=${startDate}&endDate=${endDate}`;
       
       const salesRes = await fetch(salesUrl, {
@@ -71,8 +75,8 @@ export async function POST(req: Request) {
 
       const salesData = await salesRes.json();
       
-      if (salesData && salesData.data && salesData.data.length > 0) {
-        allSales = [...allSales, ...salesData.data];
+      if (salesData && salesData.items && salesData.items.length > 0) {
+        allSales = [...allSales, ...salesData.items];
         page++;
       } else {
         hasMore = false;
@@ -87,13 +91,13 @@ export async function POST(req: Request) {
     const mappedData = allSales.map(sale => {
       return {
         id: sale.id?.toString() || `eduzz_${Math.random().toString(36).substring(7)}`,
-        client_name: sale.client?.name || sale.customer?.name || 'Unknown',
-        client_email: sale.client?.email || sale.customer?.email || 'Unknown',
-        client_phone: sale.client?.phone || sale.customer?.phone || null,
-        product_name: sale.item?.name || sale.product?.name || 'Unknown',
-        value: sale.value || 0,
-        status: sale.status?.name || sale.status || 'Unknown',
-        created_at: sale.created_at || new Date().toISOString()
+        client_name: sale.buyer?.name || 'Unknown',
+        client_email: sale.buyer?.email || 'Unknown',
+        client_phone: sale.buyer?.phone || null,
+        product_name: sale.product?.name || 'Unknown',
+        value: sale.grossGain?.value || sale.total?.value || 0,
+        status: sale.status || 'Unknown',
+        created_at: sale.createdAt || new Date().toISOString()
       };
     });
 
