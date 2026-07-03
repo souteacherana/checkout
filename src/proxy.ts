@@ -2,16 +2,20 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Separação de domínios (mesmo app Vercel servindo os dois):
-// - CHECKOUT_DOMAIN (ex: checkout.riseeducacao.com.br) → só páginas de checkout;
+// - CHECKOUT_DOMAIN (checkout.riseeducacao.com.br) → só páginas de checkout;
 //   /admin redireciona pro domínio principal
-// - ADMIN_DOMAIN (ex: riseeducacao.com.br) → só o painel /admin;
-//   páginas de checkout redirecionam pro subdomínio
+// - ADMIN_DOMAIN (riseeducacao.com.br) → homepage da empresa + painel /admin;
+//   qualquer outra rota redireciona pro subdomínio de checkout
 //
 // A separação SÓ ativa quando as duas env vars estão definidas na Vercel —
 // assim o deploy é seguro antes do domínio principal ser configurado.
 // Em localhost/preview nada é bloqueado.
 const CHECKOUT_HOST = (process.env.CHECKOUT_DOMAIN || '').toLowerCase();
 const ADMIN_HOST = (process.env.ADMIN_DOMAIN || '').toLowerCase();
+
+// Rotas que pertencem ao domínio principal, além de /admin e /api.
+// Quando a homepage for construída, adicione as rotas dela aqui (ex: '/', '/sobre').
+const MAIN_DOMAIN_PATHS: string[] = [];
 
 export function proxy(request: NextRequest) {
   if (!CHECKOUT_HOST || !ADMIN_HOST) return NextResponse.next();
@@ -27,11 +31,8 @@ export function proxy(request: NextRequest) {
   }
 
   if (host === ADMIN_HOST || host === `www.${ADMIN_HOST}`) {
-    if (pathname === '/') {
-      return NextResponse.redirect(new URL('/admin', request.url));
-    }
     // APIs continuam servidas nos dois hosts (o painel usa fetch relativo)
-    if (!isAdminPath && !isApiPath) {
+    if (!isAdminPath && !isApiPath && !MAIN_DOMAIN_PATHS.includes(pathname)) {
       return NextResponse.redirect(`https://${CHECKOUT_HOST}${pathname}${search}`);
     }
   }
