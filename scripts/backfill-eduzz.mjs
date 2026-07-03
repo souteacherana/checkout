@@ -71,16 +71,23 @@ async function getToken() {
   return (await res.json()).access_token;
 }
 
-async function fetchRange(token, startDate, endDate) {
+let currentToken = null;
+
+async function fetchRange(startDate, endDate) {
   const sales = [];
   let page = 1, totalPages = 1;
   do {
     const url = `https://api.eduzz.com/myeduzz/v1/sales?page=${page}&startDate=${startDate}&endDate=${endDate}`;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } });
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${currentToken}`, Accept: 'application/json' } });
     if (res.status === 429) {
       console.log('  rate limit, aguardando 5s...');
       await new Promise(r => setTimeout(r, 5000));
       continue;
+    }
+    if (res.status === 401) {
+      console.log('\n  token expirou, renovando...');
+      currentToken = await getToken();
+      continue; // repete a mesma página com o token novo
     }
     if (!res.ok) throw new Error(`Eduzz sales falhou: ${res.status} ${await res.text()}`);
     const data = await res.json();
@@ -113,7 +120,7 @@ async function upsert(rows) {
 }
 
 const startYear = Number(process.argv[2]) || 2020;
-const token = await getToken();
+currentToken = await getToken();
 console.log('Autenticado na Eduzz.');
 
 let total = 0;
@@ -123,7 +130,7 @@ for (let year = startYear; year <= new Date().getFullYear(); year++) {
   for (const [s, e] of [[`${year}-01-01`, `${year}-06-30`], [`${year}-07-01`, `${year}-12-31`]]) {
     if (s > today) break;
     const end = e > today ? today : e;
-    const sales = await fetchRange(token, s, end);
+    const sales = await fetchRange(s, end);
     const rows = sales.filter(x => x.id != null).map(mapEduzzSale);
     if (rows.length) await upsert(rows);
     total += rows.length;
