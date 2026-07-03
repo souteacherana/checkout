@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { CreditCard, QrCode, User, Mail, CreditCard as IdCard, Loader2, CheckCircle, XCircle, Timer } from "lucide-react";
 import axios from "axios";
 import { countries } from "@/lib/countries";
@@ -66,8 +66,6 @@ export default function CheckoutForm({ price, productName, productKey }: { price
   const [isExpired, setIsExpired] = useState(false);
   const [timeLeft, setTimeLeft] = useState(900); // 15 minutos
 
-  const router = useRouter();
-
   // Rastreio do Facebook: Iniciar Checkout (Dispara assim que a tela abre)
   useEffect(() => {
     try {
@@ -105,7 +103,7 @@ export default function CheckoutForm({ price, productName, productKey }: { price
             clearInterval(poller);
             clearInterval(timer);
           }
-        } catch (e) {}
+        } catch {}
       }, 3000);
 
       return () => {
@@ -124,7 +122,7 @@ export default function CheckoutForm({ price, productName, productKey }: { price
       } else {
         alert("Pagamento ainda não identificado. Aguarde alguns segundos e tente novamente.");
       }
-    } catch (e) {
+    } catch {
       alert("Erro ao checar pagamento.");
     }
   };
@@ -250,7 +248,7 @@ export default function CheckoutForm({ price, productName, productKey }: { price
                 sessionStorage.setItem(trackKey, "true");
               }
             }
-          } catch (e) {}
+          } catch {}
           setIsSuccess(true);
         }
       }

@@ -3,7 +3,7 @@ import crypto from 'crypto';
 export async function sendCapiEvent(
   pixelId: string, 
   token: string, 
-  customerData: { email?: string; phone?: string; [key: string]: any }, 
+  customerData: { email?: string; phone?: string; fbp?: string | null; fbc?: string | null },
   value: number, 
   productName: string, 
   eventId: string, 

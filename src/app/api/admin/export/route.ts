@@ -64,10 +64,11 @@ export async function GET(req: Request) {
 
       let docType = '';
       if (c.customer_cpf) {
-        docType = c.customer_cpf.length > 14 ? 'CNPJ' : 'CPF';
+        // Conta apenas dígitos: CPF tem 11, CNPJ tem 14 (com ou sem máscara)
+        docType = c.customer_cpf.replace(/\D/g, '').length > 11 ? 'CNPJ' : 'CPF';
       }
 
-      const statusMap: any = {
+      const statusMap: Record<string, string> = {
         'PAID': 'Paga',
         'PENDING': 'Aguardando Pagamento',
         'PIX_PENDING': 'Aguardando Pix',
@@ -143,7 +144,7 @@ export async function GET(req: Request) {
         'Content-Disposition': `attachment; filename="Relatorio_Vendas_Tier_S_${new Date().getTime()}.csv"`,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Export CSV Error:", error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

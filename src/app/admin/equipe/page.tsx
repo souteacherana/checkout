@@ -38,7 +38,9 @@ export default function EquipePage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchUsers();
+     
   }, []);
 
   const handleAddUser = async (e: React.FormEvent) => {
@@ -65,7 +67,7 @@ export default function EquipePage() {
         setNewRole("VIEWER");
         fetchUsers();
       }
-    } catch (err) {
+    } catch {
       alert("Erro de conexão");
     } finally {
       setAdding(false);
@@ -93,7 +95,7 @@ export default function EquipePage() {
       } else {
         fetchUsers();
       }
-    } catch (err) {
+    } catch {
       alert("Erro de conexão");
     } finally {
       setDeleting(null);

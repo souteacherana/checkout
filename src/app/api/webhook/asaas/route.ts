@@ -67,12 +67,14 @@ export async function POST(req: Request) {
 
       console.log(`[Webhook Asaas] Checkout ${checkout.id} atualizado para PAID.`);
 
-      // Adicionar o aluno no Astron Members APENAS se for o produto LOW
-      if (checkout.product_name === 'Preço Certo = Aula Lucrativa') {
+      // Adicionar o aluno no Astron Members APENAS se for o produto LOW.
+      // Decisão pelo product_key (definido no servidor a partir do slug),
+      // nunca pelo product_name, que já foi controlável pelo cliente.
+      if (checkout.product_key?.toUpperCase() === 'LOW') {
         console.log("Produto LOW detectado. Iniciando integração com Astron Members...");
         await astronService.forwardAsaasWebhook(body);
       } else {
-        console.log(`Produto (${checkout.product_name}) não requer integração com Astron.`);
+        console.log(`Produto (${checkout.product_key}) não requer integração com Astron.`);
       }
 
       // Se foi pago via PIX, envia o evento de Purchase pro CAPI (já que não foi enviado no checkout)
@@ -102,8 +104,8 @@ export async function POST(req: Request) {
     // Se for outro evento (ex: PAYMENT_CREATED, PAYMENT_OVERDUE), só ignoramos com sucesso
     return NextResponse.json({ success: true, message: 'Event ignored' });
 
-  } catch (error: any) {
-    console.error("Erro no Webhook do Asaas:", error.message);
+  } catch (error: unknown) {
+    console.error("Erro no Webhook do Asaas:", error instanceof Error ? error.message : error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

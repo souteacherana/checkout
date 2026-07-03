@@ -1,18 +1,13 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getRoleFromRequest } from '@/lib/api-auth';
 
 export async function POST(req: Request) {
   try {
-    // Basic auth check
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Apenas ADMIN e SUPERADMIN podem disparar o sync (VIEWER só visualiza)
+    const role = await getRoleFromRequest(req);
+    if (role !== 'ADMIN' && role !== 'SUPERADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const token = authHeader.split(' ')[1];
-
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const clientId = process.env.EDUZZ_CLIENT_ID;
@@ -45,7 +40,16 @@ export async function POST(req: Request) {
     const accessToken = tokenData.access_token;
 
     // 2. Fetch Sales from Eduzz
-    let allSales: any[] = [];
+    type EduzzSale = {
+      id?: number | string;
+      buyer?: { name?: string; email?: string; phone?: string };
+      product?: { name?: string };
+      grossGain?: { value?: number };
+      total?: { value?: number };
+      status?: string;
+      createdAt?: string;
+    };
+    let allSales: EduzzSale[] = [];
     let page = 1;
     let hasMore = true;
     
@@ -111,8 +115,8 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true, count: mappedData.length });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in sync-eduzz:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Unexpected error' }, { status: 500 });
   }
 }

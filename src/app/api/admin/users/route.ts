@@ -1,23 +1,10 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getRoleFromRequest } from '@/lib/api-auth';
 
 // Requerer autenticação e checar se é SUPERADMIN para todas as rotas
 async function verifySuperAdmin(request: Request) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader) return false;
-  
-  const token = authHeader.replace('Bearer ', '');
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-  
-  if (error || !user?.email) return false;
-
-  const { data } = await supabaseAdmin
-    .from('user_roles')
-    .select('role')
-    .eq('email', user.email)
-    .single();
-
-  return data?.role === 'SUPERADMIN';
+  return (await getRoleFromRequest(request)) === 'SUPERADMIN';
 }
 
 export async function GET(request: Request) {
@@ -68,8 +55,8 @@ export async function POST(request: Request) {
     if (dbError) throw dbError;
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Unexpected error' }, { status: 500 });
   }
 }
 
@@ -98,7 +85,7 @@ export async function DELETE(request: Request) {
     if (error) throw error;
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Unexpected error' }, { status: 500 });
   }
 }

@@ -34,7 +34,9 @@ export async function POST(req: Request) {
       if (error) throw error;
       return NextResponse.json({ success: true, sessionId: session.id });
     } else {
-      // Atualizar sessão existente com mais dados
+      // Atualizar sessão existente com mais dados.
+      // Só permite atualizar sessões ainda PENDING — impede que um sessionId
+      // adivinhado/vazado sobrescreva dados de checkouts já processados.
       const { error } = await supabaseAdmin
         .from('checkouts')
         .update({
@@ -43,7 +45,8 @@ export async function POST(req: Request) {
           customer_phone: data.phone,
           customer_cpf: data.cpfCnpj,
         })
-        .eq('id', data.sessionId);
+        .eq('id', data.sessionId)
+        .eq('status', 'PENDING');
 
       if (error) throw error;
       return NextResponse.json({ success: true, sessionId: data.sessionId });

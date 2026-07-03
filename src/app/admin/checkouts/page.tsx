@@ -5,14 +5,38 @@ import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { Plus, Edit2, Trash2, Link as LinkIcon, Image as ImageIcon } from "lucide-react";
 
+type Product = {
+  id?: string;
+  slug: string;
+  title: string;
+  price: string | number;
+  accent_color: string;
+  accent_color_hover: string;
+  image_src: string;
+  fb_pixel_id: string;
+  fb_capi_token: string;
+};
+
+const emptyProduct: Product = {
+  slug: '', title: '', price: '', accent_color: '', accent_color_hover: '', image_src: '', fb_pixel_id: '', fb_capi_token: ''
+};
+
 export default function CheckoutsManager() {
   const router = useRouter();
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<any>({
-    slug: '', title: '', price: '', accent_color: '', accent_color_hover: '', image_src: '', fb_pixel_id: '', fb_capi_token: ''
-  });
+  const [formData, setFormData] = useState<Product>(emptyProduct);
+
+  const fetchProducts = async () => {
+     
+    setLoading(true);
+    const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+    if (!error && data) {
+      setProducts(data);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
     // Verificar permissão de super admin
@@ -25,15 +49,6 @@ export default function CheckoutsManager() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const fetchProducts = async () => {
-    setLoading(true);
-    const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-    if (!error && data) {
-      setProducts(data);
-    }
-    setLoading(false);
-  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +88,8 @@ export default function CheckoutsManager() {
     fetchProducts();
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id?: string) => {
+    if (!id) return;
     if (!confirm("Tem certeza? Esta página de checkout será deletada permanentemente.")) return;
     await supabase.from('products').delete().eq('id', id);
     fetchProducts();

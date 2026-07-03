@@ -6,7 +6,6 @@ import { getProductPrice, calculateTotalValue, THEMES } from '@/lib/products';
 import { sendCapiEvent } from '@/lib/capi';
 
 export async function POST(request: Request) {
-  console.log("Iniciando checkout. Chave do Asaas atual:", process.env.ASAAS_API_KEY ? "EXISTS" : "MISSING", "Lenght:", process.env.ASAAS_API_KEY?.length);
   try {
     const body = await request.json();
     const { sessionId, paymentMethod, customerData, paymentData } = body;
@@ -18,6 +17,21 @@ export async function POST(request: Request) {
     if (!customerData.name || !customerData.email || !customerData.cpfCnpj) {
       return NextResponse.json({ error: 'Dados do cliente incompletos' }, { status: 400 });
     }
+    if (!paymentData.productKey) {
+      return NextResponse.json({ error: 'Produto não informado' }, { status: 400 });
+    }
+
+    // Busca o produto no DB — fonte da verdade para preço, título e config de CAPI.
+    // Nunca confiamos em preço ou nome de produto vindos do navegador.
+    const { data: productDB } = await supabaseAdmin
+      .from('products')
+      .select('price, title, fb_pixel_id, fb_capi_token')
+      .eq('slug', paymentData.productKey.toLowerCase())
+      .single();
+
+    if (!productDB && !THEMES[paymentData.productKey]) {
+      return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
+    }
 
     // 1. Criar Cliente no Asaas
     const customer = await asaasService.createCustomer({
@@ -27,19 +41,13 @@ export async function POST(request: Request) {
     });
 
     const customerId = customer.id;
-    const basePrice = getProductPrice(paymentData.productKey);
-    const value = paymentMethod === 'CREDIT_CARD' 
+    const basePrice = Number(productDB?.price) || getProductPrice(paymentData.productKey);
+    const value = paymentMethod === 'CREDIT_CARD'
       ? calculateTotalValue(basePrice, paymentData.installments || 1)
       : basePrice;
 
-    // Busca configurações extras do produto (como CAPI) no DB
-    const { data: productDB } = await supabaseAdmin
-      .from('products')
-      .select('fb_pixel_id, fb_capi_token, title')
-      .eq('slug', paymentData.productKey.toLowerCase())
-      .single();
-
-    const description = paymentData.productName || productDB?.title || THEMES[paymentData.productKey]?.title || "Pedido via Checkout";
+    const productName = productDB?.title || THEMES[paymentData.productKey]?.title || "Pedido via Checkout";
+    const description = productName;
 
     // Preparar dados do CAPI
     const forwardedFor = request.headers.get('x-forwarded-for');
@@ -67,7 +75,7 @@ export async function POST(request: Request) {
           amount: value,
           payment_method: 'PIX',
           payment_id: payment.id,
-          product_name: paymentData.productName || THEMES[paymentData.productKey]?.title,
+          product_name: productName,
           product_key: paymentData.productKey,
           installments: 1,
           utm_source: paymentData.utms?.source,
@@ -88,7 +96,7 @@ export async function POST(request: Request) {
           amount: value,
           payment_method: 'PIX',
           payment_id: payment.id,
-          product_name: THEMES[paymentData.productKey]?.title,
+          product_name: productName,
           product_key: paymentData.productKey,
           installments: 1,
           utm_source: paymentData.utms?.source,
@@ -135,7 +143,7 @@ export async function POST(request: Request) {
           amount: value,
           payment_method: 'CREDIT_CARD',
           payment_id: payment.id,
-          product_name: paymentData.productName || THEMES[paymentData.productKey]?.title,
+          product_name: productName,
           product_key: paymentData.productKey,
           installments: paymentData.installments || 1,
           utm_source: paymentData.utms?.source,
@@ -156,7 +164,7 @@ export async function POST(request: Request) {
           amount: value,
           payment_method: 'CREDIT_CARD',
           payment_id: payment.id,
-          product_name: THEMES[paymentData.productKey]?.title,
+          product_name: productName,
           product_key: paymentData.productKey,
           installments: paymentData.installments || 1,
           utm_source: paymentData.utms?.source,
