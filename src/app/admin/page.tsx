@@ -44,18 +44,31 @@ export default function AdminDashboard() {
     }
     
     if (!eduzzError && eduzzData) {
+      // Status reais da API MyEduzz (minúsculos) + legado de seeds antigos
+      const eduzzStatusMap: Record<string, string> = {
+        'paid': 'PAID', 'pago': 'PAID', 'aprovado': 'PAID',
+        'waiting_payment': 'PIX_PENDING', 'aguardando pagamento': 'PIX_PENDING', 'pix': 'PIX_PENDING',
+        'open': 'PENDING',
+        'refunded': 'REFUNDED', 'chargeback': 'REFUNDED', 'contested': 'REFUNDED',
+        'canceled': 'CANCELED', 'cancelled': 'CANCELED', 'expired': 'CANCELED', 'duplicated': 'CANCELED',
+      };
       const mappedEduzz = eduzzData.map(e => ({
         id: e.id,
         created_at: e.created_at,
-        status: (e.status === 'Pago' || e.status === 'Paid' || e.status === 'Aprovado') ? 'PAID' : ((e.status === 'Aguardando Pagamento' || e.status === 'Pix') ? 'PIX_PENDING' : 'PENDING'),
+        status: eduzzStatusMap[(e.status || '').toLowerCase()] || 'PENDING',
         customer_name: e.client_name,
         customer_email: e.client_email,
         customer_phone: e.client_phone,
         product_name: e.product_name,
         amount: e.value,
-        net_value: Number(e.value) * 0.95, // estimativa
-        utm_source: 'Eduzz',
-        utm_campaign: 'Histórico',
+        net_value: e.net_value ?? Number(e.value) * 0.95, // líquido real; estimativa só p/ registros antigos
+        payment_method: e.payment_method,
+        installments: e.installments,
+        utm_source: e.utm_source || 'Eduzz',
+        utm_medium: e.utm_medium,
+        utm_campaign: e.utm_campaign || 'Histórico',
+        utm_content: e.utm_content,
+        utm_term: e.utm_term,
         source: 'Eduzz'
       }));
       combined = [...combined, ...mappedEduzz];
@@ -331,6 +344,8 @@ export default function AdminDashboard() {
                 <option value="PAID">Pagas</option>
                 <option value="PIX_PENDING">Aguardando Pix</option>
                 <option value="PENDING">Abandonos</option>
+                <option value="REFUNDED">Reembolsadas</option>
+                <option value="CANCELED">Canceladas</option>
               </select>
             </div>
 
@@ -393,6 +408,9 @@ export default function AdminDashboard() {
                       {c.status === 'PAID' && <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-md text-xs font-semibold"><CheckCircle size={14}/> Paga</span>}
                       {c.status === 'PENDING' && <span className="inline-flex items-center gap-1.5 bg-orange-100 text-orange-700 px-2.5 py-1 rounded-md text-xs font-semibold"><AlertCircle size={14}/> Abandono</span>}
                       {c.status === 'PIX_PENDING' && <span className="inline-flex items-center gap-1.5 bg-blue-100 text-blue-700 px-2.5 py-1 rounded-md text-xs font-semibold"><RefreshCw size={14} className={c.status === 'PIX_PENDING' ? 'animate-spin-slow' : ''}/> Pix Aguard.</span>}
+                      {c.status === 'REFUNDED' && <span className="inline-flex items-center gap-1.5 bg-red-100 text-red-700 px-2.5 py-1 rounded-md text-xs font-semibold"><X size={14}/> Reembolso</span>}
+                      {c.status === 'CANCELED' && <span className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-600 px-2.5 py-1 rounded-md text-xs font-semibold"><X size={14}/> Cancelada</span>}
+                      {c.status === 'PAYMENT_MISMATCH_REVIEW' && <span className="inline-flex items-center gap-1.5 bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-md text-xs font-semibold"><AlertCircle size={14}/> Em Revisão</span>}
                     </td>
                     <td className="px-6 py-4">
                       <p className="font-semibold text-gray-900">{c.customer_name || "Sem Nome"}</p>

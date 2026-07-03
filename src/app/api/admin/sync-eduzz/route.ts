@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getRoleFromRequest } from '@/lib/api-auth';
+import { mapEduzzSale, type EduzzSale } from '@/lib/eduzz';
 
 export async function POST(req: Request) {
   try {
@@ -23,7 +24,6 @@ export async function POST(req: Request) {
     tokenParams.append('client_id', clientId);
     tokenParams.append('client_secret', clientSecret);
 
-    console.log("Fetching Eduzz Token...");
     const tokenRes = await fetch('https://accounts-api.eduzz.com/oauth/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -40,31 +40,24 @@ export async function POST(req: Request) {
     const accessToken = tokenData.access_token;
 
     // 2. Fetch Sales from Eduzz
-    type EduzzSale = {
-      id?: number | string;
-      buyer?: { name?: string; email?: string; phone?: string };
-      product?: { name?: string };
-      grossGain?: { value?: number };
-      total?: { value?: number };
-      status?: string;
-      createdAt?: string;
-    };
-    let allSales: EduzzSale[] = [];
-    let page = 1;
-    let hasMore = true;
-    
-    // Eduzz API requires startDate and endDate. To avoid Vercel 10s timeout,
-    // we only sync the last 30 dias in this automatic route.
-    // Historical data is seeded manually.
+    // A API exige startDate/endDate e retorna FIXO 10 itens por página
+    // (ignora o parâmetro limit). Para não estourar o timeout da Vercel,
+    // esta rota sincroniza só os últimos 30 dias; o histórico completo
+    // é importado pelo script local scripts/backfill-eduzz.mjs.
     const today = new Date();
     const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
-    const startDate = thirtyDaysAgo.toISOString().split('T')[0]; 
+    const startDate = thirtyDaysAgo.toISOString().split('T')[0];
     const endDate = today.toISOString().split('T')[0];
 
+    const allSales: EduzzSale[] = [];
+    let page = 1;
+    let totalPages = 1;
+    const MAX_PAGES = 60; // 600 vendas por sync — proteção contra timeout
+
     console.log(`Fetching sales from Eduzz (${startDate} to ${endDate})...`);
-    while (hasMore && page <= 5) { // Limit to 5 pages max per sync
-      const salesUrl = `https://api.eduzz.com/myeduzz/v1/sales?page=${page}&limit=50&startDate=${startDate}&endDate=${endDate}`;
-      
+    do {
+      const salesUrl = `https://api.eduzz.com/myeduzz/v1/sales?page=${page}&startDate=${startDate}&endDate=${endDate}`;
+
       const salesRes = await fetch(salesUrl, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -78,33 +71,22 @@ export async function POST(req: Request) {
       }
 
       const salesData = await salesRes.json();
-      
-      if (salesData && salesData.items && salesData.items.length > 0) {
-        allSales = [...allSales, ...salesData.items];
-        page++;
-      } else {
-        hasMore = false;
-      }
-    }
+      totalPages = salesData.pages || 1;
 
-    if (allSales.length === 0) {
+      if (salesData.items?.length) {
+        allSales.push(...salesData.items);
+      }
+      page++;
+    } while (page <= totalPages && page <= MAX_PAGES);
+
+    // Ignora vendas sem id (não dá pra fazer upsert idempotente sem chave)
+    const mappedData = allSales.filter(s => s.id != null).map(mapEduzzSale);
+
+    if (mappedData.length === 0) {
       return NextResponse.json({ success: true, message: 'No sales found to sync', count: 0 });
     }
 
     // 3. Upsert to Supabase
-    const mappedData = allSales.map(sale => {
-      return {
-        id: sale.id?.toString() || `eduzz_${Math.random().toString(36).substring(7)}`,
-        client_name: sale.buyer?.name || 'Unknown',
-        client_email: sale.buyer?.email || 'Unknown',
-        client_phone: sale.buyer?.phone || null,
-        product_name: sale.product?.name || 'Unknown',
-        value: sale.grossGain?.value || sale.total?.value || 0,
-        status: sale.status || 'Unknown',
-        created_at: sale.createdAt || new Date().toISOString()
-      };
-    });
-
     const { error } = await supabaseAdmin
       .from('eduzz_sales')
       .upsert(mappedData, { onConflict: 'id' });
