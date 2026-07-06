@@ -9,14 +9,6 @@ import { Link2, Copy, CheckCircle, Package, ExternalLink, AlertCircle } from "lu
 
 const CHECKOUT_BASE_URL = "https://checkout.riseeducacao.com.br";
 
-// Canal de divulgação → utm_medium
-const CHANNELS = [
-  { key: "whatsapp", label: "WhatsApp" },
-  { key: "instagram", label: "Instagram" },
-  { key: "bio", label: "Link da Bio" },
-  { key: "direto", label: "Direto" },
-] as const;
-
 type Product = {
   slug: string;
   title: string;
@@ -33,7 +25,6 @@ export default function MeusLinksPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [utmCode, setUtmCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [channel, setChannel] = useState<string>("whatsapp");
   const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => {
@@ -56,14 +47,15 @@ export default function MeusLinksPage() {
   const buildLink = useMemo(() => {
     return (slug: string) => {
       if (!utmCode) return `${CHECKOUT_BASE_URL}/${slug}`;
+      // Código da pessoa nos três parâmetros — simples de identificar em qualquer relatório
       const params = new URLSearchParams({
-        utm_source: "vendedor",
-        utm_medium: channel,
+        utm_source: utmCode,
+        utm_medium: utmCode,
         utm_content: utmCode,
       });
       return `${CHECKOUT_BASE_URL}/${slug}?${params.toString()}`;
     };
-  }, [utmCode, channel]);
+  }, [utmCode]);
 
   const copyLink = (slug: string) => {
     navigator.clipboard.writeText(buildLink(slug));
@@ -96,20 +88,6 @@ export default function MeusLinksPage() {
             </div>
           </div>
 
-          {/* Canal */}
-          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-            {CHANNELS.map(c => (
-              <button
-                key={c.key}
-                onClick={() => setChannel(c.key)}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
-                  channel === c.key ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-800"
-                }`}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
         </div>
       </header>
 
@@ -181,8 +159,7 @@ export default function MeusLinksPage() {
 
         {utmCode && (
           <p className="text-xs text-gray-400 mt-6 text-center">
-            O canal selecionado ({CHANNELS.find(c => c.key === channel)?.label}) entra como <span className="font-mono">utm_medium</span> —
-            troque antes de copiar se for divulgar em outro lugar.
+            É só copiar e divulgar — toda venda que entrar por esse link fica registrada no seu código.
           </p>
         )}
       </main>
