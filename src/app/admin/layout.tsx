@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Store, LogOut, ShieldAlert, Users, Package } from "lucide-react";
+import { LayoutDashboard, Store, LogOut, Users, Package } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -38,7 +38,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const isSuperAdmin = userRole === "SUPERADMIN";
-  const isAdmin = userRole === "SUPERADMIN" || userRole === "ADMIN";
 
   return (
     <div className="flex h-screen bg-[#f8fafc] overflow-hidden">
@@ -86,25 +85,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           )}
 
-          {isAdmin ? (
-            <Link 
-              href="/admin/checkouts" 
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                pathname?.startsWith('/admin/checkouts')
-                  ? 'bg-emerald-50 text-emerald-700' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}
-            >
-              <Store size={18} />
-              Páginas de Checkout
-            </Link>
-          ) : (
-             <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 cursor-not-allowed" title="Apenas Administradores têm acesso">
-              <Store size={18} />
-              Páginas de Checkout
-              <ShieldAlert size={14} className="ml-auto text-gray-300" />
-            </div>
-          )}
+          <Link
+            href="/admin/produtos"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              pathname?.startsWith('/admin/produtos')
+                ? 'bg-emerald-50 text-emerald-700'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            }`}
+          >
+            <Store size={18} />
+            Produtos
+          </Link>
 
           {isSuperAdmin && (
             <Link 
