@@ -9,7 +9,7 @@ import {
   CreditCard, Users, TrendingUp, Percent, Search, X
 } from "lucide-react";
 import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid
+  ResponsiveContainer, AreaChart, Area, LineChart, Line, Legend, XAxis, YAxis, Tooltip, CartesianGrid
 } from "recharts";
 import { EDUZZ_STATUS_TO_CANONICAL } from "@/lib/eduzz";
 
@@ -51,6 +51,9 @@ const PERIODS = [
 const brl = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
+// Paleta pras linhas de criativo (cores distintas e legíveis sobre branco)
+const CREATIVE_COLORS = ["#10b981", "#6366f1", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
+
 export default function ProductDashboard({ params }: { params: Promise<{ produto: string }> }) {
   const { produto } = use(params);
   const router = useRouter();
@@ -63,6 +66,7 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
   const [search, setSearch] = useState("");
   // Congela o "agora" no mount: useMemo precisa ser puro (react-hooks/purity)
   const [now] = useState(() => Date.now());
+  const [hiddenCreatives, setHiddenCreatives] = useState<string[]>([]);
 
   useEffect(() => {
     const load = async () => {
@@ -192,6 +196,46 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
     }));
   }, [filtered, periodDays, now]);
 
+  // Vendas pagas por dia, uma série por criativo (top 6 utm_content)
+  const creativeChart = useMemo(() => {
+    const paid = filtered.filter(r => r.status === "PAID");
+
+    const totals = new Map<string, number>();
+    for (const r of paid) {
+      const key = r.utm_content || "(sem content)";
+      totals.set(key, (totals.get(key) || 0) + 1);
+    }
+    const top = Array.from(totals.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([k]) => k);
+
+    if (top.length === 0) return { data: [], top };
+
+    const byDay = new Map<string, Record<string, number>>();
+    const end = new Date(now);
+    const start = periodDays > 0
+      ? new Date(now - periodDays * 24 * 60 * 60 * 1000)
+      : (filtered.length ? new Date(Math.min(...filtered.map(r => new Date(r.created_at).getTime()))) : end);
+
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      byDay.set(d.toISOString().split("T")[0], Object.fromEntries(top.map(t => [t, 0])));
+    }
+    for (const r of paid) {
+      const key = r.utm_content || "(sem content)";
+      if (!top.includes(key)) continue;
+      const day = new Date(r.created_at).toISOString().split("T")[0];
+      const cur = byDay.get(day);
+      if (cur) cur[key] += 1;
+    }
+
+    const data = Array.from(byDay.entries()).map(([day, v]) => ({
+      dia: new Date(day + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+      ...v,
+    }));
+    return { data, top };
+  }, [filtered, periodDays, now]);
+
   // Breakdown por UTM Content (só vendas pagas) — o content é o que
   // diferencia o anúncio/criativo; source e campaign viram contexto
   const utmBreakdown = useMemo(() => {
@@ -316,6 +360,55 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
             </ResponsiveContainer>
           </div>
         </div>
+
+        {/* Gráfico de Vendas por Criativo */}
+        {creativeChart.top.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Vendas por criativo (UTM Content)</h2>
+              <p className="text-xs text-gray-400">clique na legenda pra ligar/desligar um criativo</p>
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={creativeChart.data} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="dia" tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                  <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <Tooltip
+                    formatter={(value, name) => [`${value} venda${Number(value) === 1 ? "" : "s"}`, String(name)]}
+                    contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12 }}
+                  />
+                  <Legend
+                    wrapperStyle={{ fontSize: 12, cursor: "pointer", paddingTop: 8 }}
+                    formatter={(value: string) => {
+                      const label = value.length > 22 ? value.slice(0, 22) + "…" : value;
+                      return <span style={{ opacity: hiddenCreatives.includes(value) ? 0.35 : 1 }}>{label}</span>;
+                    }}
+                    onClick={(e) => {
+                      const key = String((e as { dataKey?: unknown }).dataKey ?? "");
+                      if (!key) return;
+                      setHiddenCreatives(prev =>
+                        prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+                      );
+                    }}
+                  />
+                  {creativeChart.top.map((c, i) => (
+                    <Line
+                      key={c}
+                      type="monotone"
+                      dataKey={c}
+                      stroke={CREATIVE_COLORS[i % CREATIVE_COLORS.length]}
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 4 }}
+                      hide={hiddenCreatives.includes(c)}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Breakdown por UTM */}
