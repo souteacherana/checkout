@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import { EDUZZ_STATUS_TO_CANONICAL } from "@/lib/eduzz";
 import { Download, LogOut, CheckCircle, AlertCircle, RefreshCw, Search, Filter, ArrowUpDown, Trash2, TrendingUp, DollarSign, Users, CreditCard, X } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -44,18 +45,10 @@ export default function AdminDashboard() {
     }
     
     if (!eduzzError && eduzzData) {
-      // Status reais da API MyEduzz (minúsculos) + legado de seeds antigos
-      const eduzzStatusMap: Record<string, string> = {
-        'paid': 'PAID', 'pago': 'PAID', 'aprovado': 'PAID',
-        'waiting_payment': 'PIX_PENDING', 'aguardando pagamento': 'PIX_PENDING', 'pix': 'PIX_PENDING',
-        'open': 'PENDING',
-        'refunded': 'REFUNDED', 'chargeback': 'REFUNDED', 'contested': 'REFUNDED',
-        'canceled': 'CANCELED', 'cancelled': 'CANCELED', 'expired': 'CANCELED', 'duplicated': 'CANCELED',
-      };
       const mappedEduzz = eduzzData.map(e => ({
         id: e.id,
         created_at: e.created_at,
-        status: eduzzStatusMap[(e.status || '').toLowerCase()] || 'PENDING',
+        status: EDUZZ_STATUS_TO_CANONICAL[(e.status || '').toLowerCase()] || 'PENDING',
         customer_name: e.client_name,
         customer_email: e.client_email,
         customer_phone: e.client_phone,

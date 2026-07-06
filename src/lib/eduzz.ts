@@ -1,3 +1,15 @@
+/**
+ * Traduz os status da API MyEduzz (e de seeds legados) para o
+ * vocabulário canônico usado no painel admin.
+ */
+export const EDUZZ_STATUS_TO_CANONICAL: Record<string, string> = {
+  'paid': 'PAID', 'pago': 'PAID', 'aprovado': 'PAID',
+  'waiting_payment': 'PIX_PENDING', 'aguardando pagamento': 'PIX_PENDING', 'pix': 'PIX_PENDING',
+  'open': 'PENDING',
+  'refunded': 'REFUNDED', 'chargeback': 'REFUNDED', 'contested': 'REFUNDED',
+  'canceled': 'CANCELED', 'cancelled': 'CANCELED', 'expired': 'CANCELED', 'duplicated': 'CANCELED',
+};
+
 export type EduzzSale = {
   id?: number | string;
   status?: string;

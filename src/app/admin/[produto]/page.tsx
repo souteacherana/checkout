@@ -11,6 +11,7 @@ import {
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid
 } from "recharts";
+import { EDUZZ_STATUS_TO_CANONICAL } from "@/lib/eduzz";
 
 type Checkout = {
   id: string;
@@ -30,6 +31,7 @@ type Checkout = {
   utm_campaign: string | null;
   utm_content: string | null;
   utm_term: string | null;
+  source?: string;
 };
 
 type Product = {
@@ -84,8 +86,10 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
       }
       setProduct(prod);
 
-      // Vendas pelo product_key + legado sem key mas com o nome do produto
-      const [{ data: byKey }, { data: byName }] = await Promise.all([
+      // Três origens do mesmo produto:
+      // 1. checkouts pelo product_key  2. checkouts legados só com o nome
+      // 3. vendas na Eduzz (convenção: o nome lá sempre começa com o título interno)
+      const [{ data: byKey }, { data: byName }, { data: eduzz }] = await Promise.all([
         supabase.from("checkouts").select("*")
           .eq("product_key", slug.toUpperCase())
           .order("created_at", { ascending: false }),
@@ -93,9 +97,33 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
           .is("product_key", null)
           .eq("product_name", prod.title)
           .order("created_at", { ascending: false }),
+        supabase.from("eduzz_sales").select("*")
+          .ilike("product_name", `${prod.title}%`)
+          .order("created_at", { ascending: false }),
       ]);
 
-      setRows([...(byKey || []), ...(byName || [])]);
+      const eduzzRows: Checkout[] = (eduzz || []).map(e => ({
+        id: e.id,
+        created_at: e.created_at,
+        status: EDUZZ_STATUS_TO_CANONICAL[(e.status || "").toLowerCase()] || "PENDING",
+        customer_name: e.client_name,
+        customer_email: e.client_email,
+        customer_phone: e.client_phone,
+        product_key: slug.toUpperCase(),
+        product_name: e.product_name,
+        amount: e.value,
+        net_value: e.net_value ?? Number(e.value) * 0.95,
+        payment_method: e.payment_method,
+        installments: e.installments,
+        utm_source: e.utm_source || "Eduzz",
+        utm_medium: e.utm_medium,
+        utm_campaign: e.utm_campaign,
+        utm_content: e.utm_content,
+        utm_term: e.utm_term,
+        source: "Eduzz",
+      }));
+
+      setRows([...(byKey || []), ...(byName || []), ...eduzzRows]);
       setLoading(false);
     };
     load();
@@ -359,6 +387,8 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
                         {c.status === "PENDING" && <span className="inline-flex items-center gap-1 bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-xs font-semibold"><AlertCircle size={12} /> Abandono</span>}
                         {c.status === "PIX_PENDING" && <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold"><RefreshCw size={12} /> Pix</span>}
                         {c.status === "PAYMENT_MISMATCH_REVIEW" && <span className="inline-flex items-center gap-1 bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-semibold"><AlertCircle size={12} /> Revisão</span>}
+                        {c.status === "REFUNDED" && <span className="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-semibold"><X size={12} /> Reembolso</span>}
+                        {c.status === "CANCELED" && <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-semibold"><X size={12} /> Cancelada</span>}
                       </td>
                       <td className="px-5 py-3">
                         <p className="font-semibold text-gray-900">{c.customer_name || "Sem Nome"}</p>
@@ -372,6 +402,9 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
                             {c.utm_campaign && <p className="text-[10px] text-gray-400 mt-0.5 uppercase">{c.utm_campaign}</p>}
                           </div>
                         ) : <span className="text-gray-300">-</span>}
+                        {c.source === "Eduzz" && (
+                          <span className="inline-block mt-1 px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[9px] font-bold uppercase tracking-wider">Via Eduzz</span>
+                        )}
                       </td>
                       <td className="px-5 py-3 text-right font-bold text-gray-900 whitespace-nowrap">
                         {c.amount != null ? brl(Number(c.amount)) : <span className="text-gray-300 font-normal">-</span>}
