@@ -21,6 +21,7 @@ export async function POST(req: Request) {
           customer_phone: data.phone,
           customer_cpf: data.cpfCnpj,
           product_name: data.productName,
+          product_key: data.productKey || null,
           status: 'PENDING', // Intenção de compra
           utm_source: data.utms?.source,
           utm_medium: data.utms?.medium,

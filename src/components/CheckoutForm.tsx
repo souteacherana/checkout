@@ -161,6 +161,7 @@ export default function CheckoutForm({ price, productName, productKey }: { price
         ...customer,
         sessionId,
         productName,
+        productKey,
         utms
       });
       if (res.data.sessionId && !sessionId) {

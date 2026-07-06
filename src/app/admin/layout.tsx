@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Store, LogOut, ShieldAlert, Users } from "lucide-react";
+import { LayoutDashboard, Store, LogOut, ShieldAlert, Users, Package } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -13,12 +13,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string>("VIEWER");
+  const [products, setProducts] = useState<{ slug: string; title: string }[]>([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user?.email) {
         setUserEmail(session.user.email);
         getUserRole(session.user.email).then(role => setUserRole(role));
+        supabase.from('products').select('slug, title').order('title').then(({ data }) => {
+          if (data) setProducts(data);
+        });
       }
     });
   }, []);
@@ -61,6 +65,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <LayoutDashboard size={18} />
             Dashboard
           </Link>
+
+          {products.length > 0 && (
+            <div className="pt-3">
+              <p className="px-3 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Produtos</p>
+              {products.map(p => (
+                <Link
+                  key={p.slug}
+                  href={`/admin/${p.slug}`}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    pathname === `/admin/${p.slug}`
+                      ? 'bg-emerald-50 text-emerald-700'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <Package size={16} />
+                  <span className="truncate">{p.title}</span>
+                </Link>
+              ))}
+            </div>
+          )}
 
           {isAdmin ? (
             <Link 
