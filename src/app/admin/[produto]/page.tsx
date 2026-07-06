@@ -192,22 +192,21 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
     }));
   }, [filtered, periodDays, now]);
 
-  // Breakdown por UTM (só vendas pagas)
+  // Breakdown por UTM Content (só vendas pagas) — o content é o que
+  // diferencia o anúncio/criativo; source e campaign viram contexto
   const utmBreakdown = useMemo(() => {
     const paid = filtered.filter(r => r.status === "PAID");
-    const groups = new Map<string, { count: number; revenue: number }>();
+    const groups = new Map<string, { count: number; revenue: number; context: string }>();
     for (const r of paid) {
-      const key = `${r.utm_source || "(direto)"}|${r.utm_campaign || "-"}`;
-      const cur = groups.get(key) || { count: 0, revenue: 0 };
+      const key = r.utm_content || "(sem content)";
+      const cur = groups.get(key) || { count: 0, revenue: 0, context: "" };
       cur.count += 1;
       cur.revenue += Number(r.amount || 0);
+      cur.context = [r.utm_source, r.utm_campaign].filter(Boolean).join(" · ") || "-";
       groups.set(key, cur);
     }
     return Array.from(groups.entries())
-      .map(([key, v]) => {
-        const [source, campaign] = key.split("|");
-        return { source, campaign, ...v };
-      })
+      .map(([content, v]) => ({ content, ...v }))
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 8);
   }, [filtered]);
@@ -322,7 +321,7 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
           {/* Breakdown por UTM */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-fit">
             <div className="px-5 py-4 border-b border-gray-100">
-              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Origem das Vendas (UTM)</h2>
+              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Origem das Vendas (UTM Content)</h2>
             </div>
             {utmBreakdown.length === 0 ? (
               <p className="p-5 text-sm text-gray-400">Nenhuma venda paga no período.</p>
@@ -331,8 +330,8 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
                 {utmBreakdown.map((u, i) => (
                   <div key={i} className="px-5 py-3 flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-gray-800 truncate">{u.source}</p>
-                      <p className="text-xs text-gray-400 truncate">{u.campaign}</p>
+                      <p className="text-sm font-semibold text-gray-800 truncate" title={u.content}>{u.content}</p>
+                      <p className="text-xs text-gray-400 truncate">{u.context}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p className="text-sm font-bold text-gray-900">{brl(u.revenue)}</p>
@@ -396,10 +395,12 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
                         <p className="text-xs text-gray-400">{c.customer_phone}</p>
                       </td>
                       <td className="px-5 py-3 text-xs">
-                        {c.utm_source ? (
+                        {c.utm_content || c.utm_source ? (
                           <div>
-                            <span className="inline-block px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded font-mono">{c.utm_source}</span>
-                            {c.utm_campaign && <p className="text-[10px] text-gray-400 mt-0.5 uppercase">{c.utm_campaign}</p>}
+                            {c.utm_content && <span className="inline-block px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded font-mono max-w-[180px] truncate align-bottom" title={c.utm_content}>{c.utm_content}</span>}
+                            <p className="text-[10px] text-gray-400 mt-0.5 uppercase truncate max-w-[180px]">
+                              {[c.utm_source, c.utm_campaign].filter(Boolean).join(" · ")}
+                            </p>
                           </div>
                         ) : <span className="text-gray-300">-</span>}
                         {c.source === "Eduzz" && (
