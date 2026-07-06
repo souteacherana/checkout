@@ -77,6 +77,7 @@ export type UserRoleRow = {
   email: string;
   role: string;
   created_at: string | null;
+  utm_code: string | null;
 };
 
 /** Linha da view unificada `vendas` (fonte única de verdade de vendas) */

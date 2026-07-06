@@ -8,6 +8,7 @@ interface UserRole {
   email: string;
   role: string;
   created_at: string;
+  utm_code?: string | null;
 }
 
 export default function EquipePage() {
@@ -19,6 +20,7 @@ export default function EquipePage() {
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState("VIEWER");
+  const [newUtmCode, setNewUtmCode] = useState("");
 
   const fetchUsers = async () => {
     try {
@@ -55,9 +57,9 @@ export default function EquipePage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session?.access_token}` 
         },
-        body: JSON.stringify({ email: newEmail, password: newPassword, role: newRole })
+        body: JSON.stringify({ email: newEmail, password: newPassword, role: newRole, utm_code: newUtmCode || null })
       });
-      
+
       if (!res.ok) {
         const err = await res.json();
         alert("Erro ao adicionar: " + (err.error || "Desconhecido"));
@@ -65,12 +67,42 @@ export default function EquipePage() {
         setNewEmail("");
         setNewPassword("");
         setNewRole("VIEWER");
+        setNewUtmCode("");
         fetchUsers();
       }
     } catch {
       alert("Erro de conexão");
     } finally {
       setAdding(false);
+    }
+  };
+
+  const handleEditUtmCode = async (u: UserRole) => {
+    const input = window.prompt(
+      `Código UTM de ${u.email}\n(só letras minúsculas, números, hífen; vazio remove o código)`,
+      u.utm_code || ""
+    );
+    if (input === null) return; // cancelou
+    const code = input.trim().toLowerCase().replace(/[^a-z0-9-_]/g, "");
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ email: u.email, role: u.role, utm_code: code || null })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert("Erro ao salvar código: " + (err.error || "Desconhecido"));
+      } else {
+        fetchUsers();
+      }
+    } catch {
+      alert("Erro de conexão");
     }
   };
 
@@ -147,6 +179,16 @@ export default function EquipePage() {
             </div>
 
             <div>
+              <label className="text-xs font-semibold text-gray-600 block mb-1">Código UTM <span className="font-normal text-gray-400">(pra página Meus Links)</span></label>
+              <input
+                type="text"
+                value={newUtmCode} onChange={e => setNewUtmCode(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ""))}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="ex: crla"
+              />
+            </div>
+
+            <div>
               <label className="text-xs font-semibold text-gray-600 block mb-1">Nível de Permissão</label>
               <select 
                 value={newRole} onChange={e => setNewRole(e.target.value)}
@@ -182,17 +224,18 @@ export default function EquipePage() {
                 <tr className="bg-gray-50/50 text-gray-500 text-xs uppercase tracking-wider">
                   <th className="p-4 font-medium">Usuário</th>
                   <th className="p-4 font-medium">Permissão</th>
+                  <th className="p-4 font-medium">Código UTM</th>
                   <th className="p-4 font-medium text-right">Ação</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {loading ? (
                   <tr>
-                    <td colSpan={3} className="p-8 text-center text-gray-400 text-sm">Carregando equipe...</td>
+                    <td colSpan={4} className="p-8 text-center text-gray-400 text-sm">Carregando equipe...</td>
                   </tr>
                 ) : users.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="p-8 text-center text-gray-400 text-sm">Nenhum usuário encontrado.</td>
+                    <td colSpan={4} className="p-8 text-center text-gray-400 text-sm">Nenhum usuário encontrado.</td>
                   </tr>
                 ) : (
                   users.map(u => (
@@ -209,6 +252,19 @@ export default function EquipePage() {
                         }`}>
                           {u.role}
                         </span>
+                      </td>
+                      <td className="p-4">
+                        <button
+                          onClick={() => handleEditUtmCode(u)}
+                          className="group inline-flex items-center gap-1.5"
+                          title="Editar código UTM"
+                        >
+                          {u.utm_code ? (
+                            <span className="font-mono text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1 rounded-md group-hover:bg-emerald-100 transition-colors">{u.utm_code}</span>
+                          ) : (
+                            <span className="text-xs text-gray-300 group-hover:text-gray-500 transition-colors">definir código</span>
+                          )}
+                        </button>
                       </td>
                       <td className="p-4 text-right">
                         {u.email !== 'henryccost@gmail.com' && (

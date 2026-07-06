@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { email, password, role } = await request.json();
+    const { email, password, role, utm_code } = await request.json();
 
     if (!email || !role) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
@@ -47,10 +47,19 @@ export async function POST(request: Request) {
       }
     }
 
-    // Insere ou atualiza a role na tabela
+    // Insere ou atualiza a role na tabela.
+    // utm_code só entra no payload quando enviado — em upsert por conflito,
+    // colunas omitidas são preservadas (não zera o código ao trocar a role).
+    const payload: { email: string; role: string; created_at: string; utm_code?: string | null } = {
+      email, role, created_at: new Date().toISOString()
+    };
+    if (utm_code !== undefined) {
+      payload.utm_code = utm_code ? String(utm_code).trim().toLowerCase() : null;
+    }
+
     const { error: dbError } = await supabaseAdmin
       .from('user_roles')
-      .upsert({ email, role, created_at: new Date().toISOString() });
+      .upsert(payload);
 
     if (dbError) throw dbError;
 

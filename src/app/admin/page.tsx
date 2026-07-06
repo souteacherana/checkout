@@ -145,10 +145,11 @@ export default function AdminDashboard() {
       (c.customer_email?.toLowerCase() || '').includes(filterSearch.toLowerCase()) ||
       (c.customer_phone?.toLowerCase() || '').includes(filterSearch.toLowerCase())
     )
-    .filter(c => filterUtm === '' || 
-      (c.utm_source?.toLowerCase() || '').includes(filterUtm.toLowerCase()) || 
+    .filter(c => filterUtm === '' ||
+      (c.utm_source?.toLowerCase() || '').includes(filterUtm.toLowerCase()) ||
       (c.utm_campaign?.toLowerCase() || '').includes(filterUtm.toLowerCase()) ||
-      (c.utm_medium?.toLowerCase() || '').includes(filterUtm.toLowerCase())
+      (c.utm_medium?.toLowerCase() || '').includes(filterUtm.toLowerCase()) ||
+      (c.utm_content?.toLowerCase() || '').includes(filterUtm.toLowerCase())
     )
     .sort((a, b) => {
       if (sortBy === 'date_desc') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
