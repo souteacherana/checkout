@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { syncEduzz } from '@/lib/eduzz-sync';
 
 /**
@@ -19,6 +20,7 @@ export async function GET(req: Request) {
     console.log(`[Cron Eduzz] Sync concluído: ${count} vendas atualizadas.`);
     return NextResponse.json({ success: true, count });
   } catch (error: unknown) {
+    Sentry.captureException(error, { tags: { area: 'cron-eduzz' } });
     console.error('[Cron Eduzz] Erro:', error);
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Unexpected error' }, { status: 500 });
   }

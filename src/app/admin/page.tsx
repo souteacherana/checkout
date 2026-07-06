@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
@@ -6,14 +6,15 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import { EDUZZ_STATUS_TO_CANONICAL } from "@/lib/eduzz";
+import { vendaToUI, type VendaUI } from "@/lib/vendas";
 import { Download, LogOut, CheckCircle, AlertCircle, RefreshCw, Search, Filter, ArrowUpDown, Trash2, TrendingUp, DollarSign, Users, CreditCard, X } from "lucide-react";
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [checkouts, setCheckouts] = useState<any[]>([]);
+  const [checkouts, setCheckouts] = useState<VendaUI[]>([]);
+  const [visibleCount, setVisibleCount] = useState(100);
 
   // Filtros e Ordenação
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
@@ -25,50 +26,17 @@ export default function AdminDashboard() {
 
   const fetchCheckouts = async () => {
     setLoading(true);
-    
-    // Fetch Asaas checkouts
-    const { data: asaasData, error: asaasError } = await supabase
-      .from('checkouts')
-      .select('*')
-      .order('created_at', { ascending: false });
-      
-    // Fetch Eduzz sales
-    const { data: eduzzData, error: eduzzError } = await supabase
-      .from('eduzz_sales')
+
+    // Fonte única de verdade: a view `vendas` já unifica checkouts + Eduzz
+    // com status canônico, produto resolvido e soft-delete filtrado.
+    const { data, error } = await supabase
+      .from('vendas')
       .select('*')
       .order('created_at', { ascending: false });
 
-    let combined: any[] = [];
-
-    if (!asaasError && asaasData) {
-      combined = [...asaasData.map(c => ({ ...c, source: 'Asaas' }))];
+    if (!error && data) {
+      setCheckouts(data.map(vendaToUI));
     }
-    
-    if (!eduzzError && eduzzData) {
-      const mappedEduzz = eduzzData.map(e => ({
-        id: e.id,
-        created_at: e.created_at,
-        status: EDUZZ_STATUS_TO_CANONICAL[(e.status || '').toLowerCase()] || 'PENDING',
-        customer_name: e.client_name,
-        customer_email: e.client_email,
-        customer_phone: e.client_phone,
-        product_name: e.product_name,
-        amount: e.value,
-        net_value: e.net_value ?? Number(e.value) * 0.95, // líquido real; estimativa só p/ registros antigos
-        payment_method: e.payment_method,
-        installments: e.installments,
-        utm_source: e.utm_source || 'Eduzz',
-        utm_medium: e.utm_medium,
-        utm_campaign: e.utm_campaign || 'Histórico',
-        utm_content: e.utm_content,
-        utm_term: e.utm_term,
-        source: 'Eduzz'
-      }));
-      combined = [...combined, ...mappedEduzz];
-    }
-    
-    combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    setCheckouts(combined);
     setLoading(false);
   };
 
@@ -91,24 +59,22 @@ export default function AdminDashboard() {
     router.push("/admin/login");
   };
 
-  const handleDelete = async (id: string, source?: string) => {
-    if (!confirm("Tem certeza que deseja excluir esta venda permanentemente? Esta ação não pode ser desfeita.")) return;
-    
+  const handleDelete = async (venda: VendaUI) => {
+    if (!confirm("Excluir esta venda dos relatórios? (Exclusão reversível: o registro fica marcado no banco, não é apagado.)")) return;
+
     // Optimistic UI update
-    setCheckouts(prev => prev.filter(c => c.id !== id));
-    
-    if (source === 'Eduzz') {
-       const { error } = await supabase.from('eduzz_sales').delete().eq('id', id);
-       if (error) {
-         alert("Erro ao excluir venda da Eduzz.");
-         fetchCheckouts(); // revert
-       }
-    } else {
-       const { error } = await supabase.from('checkouts').delete().eq('id', id);
-       if (error) {
-         alert("Erro ao excluir venda.");
-         fetchCheckouts(); // revert
-       }
+    setCheckouts(prev => prev.filter(c => c.id !== venda.id));
+
+    // Soft delete: marca deleted_at em vez de apagar (requer role ADMIN+)
+    const table = venda.fonte === 'eduzz' ? 'eduzz_sales' : 'checkouts';
+    const { error, count } = await supabase
+      .from(table)
+      .update({ deleted_at: new Date().toISOString() }, { count: 'exact' })
+      .eq('id', venda.id_origem);
+
+    if (error || count === 0) {
+      alert(error ? "Erro ao excluir venda." : "Sem permissão para excluir (apenas ADMIN).");
+      fetchCheckouts(); // revert
     }
   };
 
@@ -391,7 +357,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {processedCheckouts.map((c) => (
+                {processedCheckouts.slice(0, visibleCount).map((c) => (
                   <tr key={c.id} className="hover:bg-gray-50 transition-colors group">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-gray-900 font-medium">{new Date(c.created_at).toLocaleDateString('pt-BR')}</span> <br/>
@@ -431,8 +397,8 @@ export default function AdminDashboard() {
                       {c.net_value && <div className="text-[10px] text-emerald-600 font-normal mt-1">Líquido: {new Intl.NumberFormat('pt-BR', {style: 'currency', currency: 'BRL'}).format(c.net_value)}</div>}
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <button 
-                        onClick={() => handleDelete(c.id, c.source)}
+                      <button
+                        onClick={() => handleDelete(c)}
                         className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                         title="Excluir Venda"
                       >
@@ -456,7 +422,15 @@ export default function AdminDashboard() {
             </table>
           </div>
           <div className="bg-gray-50 border-t border-gray-200 px-6 py-4 text-sm text-gray-500 flex justify-between items-center">
-            <span>Mostrando <b>{processedCheckouts.length}</b> resultados</span>
+            <span>Mostrando <b>{Math.min(visibleCount, processedCheckouts.length)}</b> de <b>{processedCheckouts.length}</b> resultados</span>
+            {processedCheckouts.length > visibleCount && (
+              <button
+                onClick={() => setVisibleCount(v => v + 200)}
+                className="px-4 py-1.5 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                Mostrar mais
+              </button>
+            )}
           </div>
         </div>
 

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { asaasService } from '@/lib/asaas';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getProductPrice, calculateTotalValue, THEMES } from '@/lib/products';
@@ -195,6 +196,7 @@ export async function POST(request: Request) {
 
   } catch (err: unknown) {
     const error = err as any;
+    Sentry.captureException(err, { tags: { area: 'checkout' } });
     console.error("Erro no checkout:", error);
     return NextResponse.json(
       { error: 'Erro ao processar checkout', details: error.response?.data || error.message },

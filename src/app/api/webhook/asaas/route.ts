@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { astronService } from '@/lib/astron';
 import { sendCapiEvent } from '@/lib/capi';
@@ -105,6 +106,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, message: 'Event ignored' });
 
   } catch (error: unknown) {
+    Sentry.captureException(error, { tags: { area: 'webhook-asaas' } });
     console.error("Erro no Webhook do Asaas:", error instanceof Error ? error.message : error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

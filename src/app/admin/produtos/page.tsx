@@ -6,7 +6,6 @@ import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getUserRole } from "../actions";
-import { EDUZZ_STATUS_TO_CANONICAL } from "@/lib/eduzz";
 import {
   Package, Plus, Edit2, Trash2, ExternalLink, LinkIcon,
   TrendingUp, CheckCircle, X
@@ -19,11 +18,11 @@ type Product = {
   slug: string;
   title: string;
   price: string | number;
-  accent_color: string;
-  accent_color_hover: string;
-  image_src: string;
-  fb_pixel_id: string;
-  fb_capi_token: string;
+  accent_color: string | null;
+  accent_color_hover: string | null;
+  image_src: string | null;
+  fb_pixel_id: string | null;
+  fb_capi_token: string | null;
 };
 
 const emptyProduct: Product = {
@@ -31,8 +30,7 @@ const emptyProduct: Product = {
   image_src: "", fb_pixel_id: "", fb_capi_token: ""
 };
 
-type SaleRow = { product_key: string | null; product_name: string | null; status: string; amount: number | null };
-type EduzzRow = { product_name: string | null; status: string | null; value: number | null };
+type ProductStats = { produto_slug: string | null; vendas: number; receita: number };
 
 const brl = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -40,8 +38,7 @@ const brl = (v: number) =>
 export default function ProdutosPage() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
-  const [checkouts, setCheckouts] = useState<SaleRow[]>([]);
-  const [eduzz, setEduzz] = useState<EduzzRow[]>([]);
+  const [statsRows, setStatsRows] = useState<ProductStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -49,14 +46,14 @@ export default function ProdutosPage() {
   const [copied, setCopied] = useState<string | null>(null);
 
   const fetchAll = async () => {
-    const [{ data: prods }, { data: cks }, { data: eds }] = await Promise.all([
+    // Stats agregadas no Postgres (RPC sobre a view vendas) — o navegador
+    // recebe números prontos, não a base inteira.
+    const [{ data: prods }, { data: st }] = await Promise.all([
       supabase.from("products").select("*").order("created_at", { ascending: false }),
-      supabase.from("checkouts").select("product_key, product_name, status, amount"),
-      supabase.from("eduzz_sales").select("product_name, status, value"),
+      supabase.rpc("vendas_stats_por_produto"),
     ]);
     setProducts(prods || []);
-    setCheckouts(cks || []);
-    setEduzz(eds || []);
+    setStatsRows(st || []);
     setLoading(false);
   };
 
@@ -76,31 +73,14 @@ export default function ProdutosPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Vendas pagas e receita por produto (checkout pelo key/nome + eduzz por prefixo do título)
+  // Vendas pagas e receita por produto — direto da RPC
   const stats = useMemo(() => {
     const map = new Map<string, { paid: number; revenue: number }>();
-    for (const p of products) {
-      const key = p.slug.toUpperCase();
-      let paid = 0, revenue = 0;
-      for (const c of checkouts) {
-        const belongs = c.product_key === key || (!c.product_key && c.product_name === p.title);
-        if (belongs && c.status === "PAID") {
-          paid += 1;
-          revenue += Number(c.amount || 0);
-        }
-      }
-      for (const e of eduzz) {
-        const belongs = (e.product_name || "").startsWith(p.title);
-        const canonical = EDUZZ_STATUS_TO_CANONICAL[(e.status || "").toLowerCase()];
-        if (belongs && canonical === "PAID") {
-          paid += 1;
-          revenue += Number(e.value || 0);
-        }
-      }
-      map.set(p.slug, { paid, revenue });
+    for (const s of statsRows) {
+      if (s.produto_slug) map.set(s.produto_slug, { paid: Number(s.vendas), revenue: Number(s.receita) });
     }
     return map;
-  }, [products, checkouts, eduzz]);
+  }, [statsRows]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

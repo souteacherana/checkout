@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Store, LogOut, Users, Package } from "lucide-react";
+import { LayoutDashboard, Store, LogOut, Users, Package, RotateCcw } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -95,6 +95,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             <Store size={18} />
             Produtos
+          </Link>
+
+          <Link
+            href="/admin/recuperacao"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              pathname?.startsWith('/admin/recuperacao')
+                ? 'bg-emerald-50 text-emerald-700'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            }`}
+          >
+            <RotateCcw size={18} />
+            Recuperação
           </Link>
 
           {isSuperAdmin && (

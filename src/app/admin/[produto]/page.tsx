@@ -11,28 +11,7 @@ import {
 import {
   ResponsiveContainer, AreaChart, Area, LineChart, Line, Legend, XAxis, YAxis, Tooltip, CartesianGrid
 } from "recharts";
-import { EDUZZ_STATUS_TO_CANONICAL } from "@/lib/eduzz";
-
-type Checkout = {
-  id: string;
-  created_at: string;
-  status: string;
-  customer_name: string | null;
-  customer_email: string | null;
-  customer_phone: string | null;
-  product_key: string | null;
-  product_name: string | null;
-  amount: number | null;
-  net_value: number | null;
-  payment_method: string | null;
-  installments: number | null;
-  utm_source: string | null;
-  utm_medium: string | null;
-  utm_campaign: string | null;
-  utm_content: string | null;
-  utm_term: string | null;
-  source?: string;
-};
+import { vendaToUI, type VendaUI } from "@/lib/vendas";
 
 type Product = {
   slug: string;
@@ -54,12 +33,40 @@ const brl = (v: number) =>
 // Paleta pras linhas de criativo (cores distintas e legíveis sobre branco)
 const CREATIVE_COLORS = ["#10b981", "#6366f1", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
 
+// Métricas de uma janela de tempo (pro comparativo período atual × anterior)
+function windowMetrics(list: VendaUI[], from: number, to: number) {
+  const inWin = list.filter(r => {
+    const t = new Date(r.created_at).getTime();
+    return t >= from && t < to;
+  });
+  const paid = inWin.filter(r => r.status === "PAID");
+  const funnel = inWin.filter(r => ["PAID", "PENDING", "PIX_PENDING"].includes(r.status)).length;
+  const gross = paid.reduce((acc, r) => acc + Number(r.amount || 0), 0);
+  return {
+    paidCount: paid.length,
+    gross,
+    conversion: funnel > 0 ? (paid.length / funnel) * 100 : 0,
+  };
+}
+
+// Badge de variação % vs período anterior
+function Delta({ value }: { value: number | null }) {
+  if (value === null) return <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded">novo</span>;
+  if (Math.abs(value) < 0.5) return <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">=</span>;
+  const up = value > 0;
+  return (
+    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${up ? "text-emerald-600 bg-emerald-50" : "text-red-600 bg-red-50"}`}>
+      {up ? "▲" : "▼"} {Math.abs(value).toFixed(0)}%
+    </span>
+  );
+}
+
 export default function ProductDashboard({ params }: { params: Promise<{ produto: string }> }) {
   const { produto } = use(params);
   const router = useRouter();
 
   const [product, setProduct] = useState<Product | null>(null);
-  const [rows, setRows] = useState<Checkout[]>([]);
+  const [rows, setRows] = useState<VendaUI[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [periodDays, setPeriodDays] = useState(30);
@@ -90,44 +97,15 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
       }
       setProduct(prod);
 
-      // Três origens do mesmo produto:
-      // 1. checkouts pelo product_key  2. checkouts legados só com o nome
-      // 3. vendas na Eduzz (convenção: o nome lá sempre começa com o título interno)
-      const [{ data: byKey }, { data: byName }, { data: eduzz }] = await Promise.all([
-        supabase.from("checkouts").select("*")
-          .eq("product_key", slug.toUpperCase())
-          .order("created_at", { ascending: false }),
-        supabase.from("checkouts").select("*")
-          .is("product_key", null)
-          .eq("product_name", prod.title)
-          .order("created_at", { ascending: false }),
-        supabase.from("eduzz_sales").select("*")
-          .ilike("product_name", `${prod.title}%`)
-          .order("created_at", { ascending: false }),
-      ]);
+      // A view `vendas` já resolve o produto (product_key, nome legado
+      // e prefixo de título na Eduzz) e traduz status — uma query só.
+      const { data } = await supabase
+        .from("vendas")
+        .select("*")
+        .eq("produto_slug", slug)
+        .order("created_at", { ascending: false });
 
-      const eduzzRows: Checkout[] = (eduzz || []).map(e => ({
-        id: e.id,
-        created_at: e.created_at,
-        status: EDUZZ_STATUS_TO_CANONICAL[(e.status || "").toLowerCase()] || "PENDING",
-        customer_name: e.client_name,
-        customer_email: e.client_email,
-        customer_phone: e.client_phone,
-        product_key: slug.toUpperCase(),
-        product_name: e.product_name,
-        amount: e.value,
-        net_value: e.net_value ?? Number(e.value) * 0.95,
-        payment_method: e.payment_method,
-        installments: e.installments,
-        utm_source: e.utm_source || "Eduzz",
-        utm_medium: e.utm_medium,
-        utm_campaign: e.utm_campaign,
-        utm_content: e.utm_content,
-        utm_term: e.utm_term,
-        source: "Eduzz",
-      }));
-
-      setRows([...(byKey || []), ...(byName || []), ...eduzzRows]);
+      setRows((data || []).map(vendaToUI));
       setLoading(false);
     };
     load();
@@ -195,6 +173,21 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
       ...v,
     }));
   }, [filtered, periodDays, now]);
+
+  // Comparativo: período selecionado × período anterior de mesmo tamanho
+  const comparison = useMemo(() => {
+    if (periodDays <= 0) return null;
+    const P = periodDays * 24 * 60 * 60 * 1000;
+    const cur = windowMetrics(rows, now - P, now + 1);
+    const prev = windowMetrics(rows, now - 2 * P, now - P);
+    const delta = (c: number, p: number): number | null =>
+      p > 0 ? ((c - p) / p) * 100 : (c > 0 ? null : 0);
+    return {
+      vendas: delta(cur.paidCount, prev.paidCount),
+      receita: delta(cur.gross, prev.gross),
+      conversao: delta(cur.conversion, prev.conversion),
+    };
+  }, [rows, periodDays, now]);
 
   // Vendas pagas por dia, uma série por criativo (top 6 utm_content)
   const creativeChart = useMemo(() => {
@@ -312,7 +305,7 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
             <div className="flex items-center gap-2 text-blue-600 mb-2"><DollarSign size={16} /><span className="text-xs font-semibold text-gray-500 uppercase">Receita Bruta</span></div>
-            <p className="text-xl font-bold text-gray-900">{brl(metrics.gross)}</p>
+            <p className="text-xl font-bold text-gray-900 flex items-center gap-2">{brl(metrics.gross)} {comparison && <Delta value={comparison.receita} />}</p>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
             <div className="flex items-center gap-2 text-emerald-600 mb-2"><CreditCard size={16} /><span className="text-xs font-semibold text-gray-500 uppercase">Líquido</span></div>
@@ -320,7 +313,7 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
             <div className="flex items-center gap-2 text-indigo-600 mb-2"><CheckCircle size={16} /><span className="text-xs font-semibold text-gray-500 uppercase">Vendas</span></div>
-            <p className="text-xl font-bold text-gray-900">{metrics.paidCount}</p>
+            <p className="text-xl font-bold text-gray-900 flex items-center gap-2">{metrics.paidCount} {comparison && <Delta value={comparison.vendas} />}</p>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
             <div className="flex items-center gap-2 text-orange-600 mb-2"><Users size={16} /><span className="text-xs font-semibold text-gray-500 uppercase">Abandonos</span></div>
@@ -328,7 +321,7 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
             <div className="flex items-center gap-2 text-purple-600 mb-2"><Percent size={16} /><span className="text-xs font-semibold text-gray-500 uppercase">Conversão</span></div>
-            <p className="text-xl font-bold text-gray-900">{metrics.conversion.toFixed(1)}%</p>
+            <p className="text-xl font-bold text-gray-900 flex items-center gap-2">{metrics.conversion.toFixed(1)}% {comparison && <Delta value={comparison.conversao} />}</p>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
             <div className="flex items-center gap-2 text-teal-600 mb-2"><TrendingUp size={16} /><span className="text-xs font-semibold text-gray-500 uppercase">Ticket Médio</span></div>

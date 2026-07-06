@@ -1,17 +1,18 @@
 import crypto from 'crypto';
+import * as Sentry from '@sentry/nextjs';
 
 export async function sendCapiEvent(
-  pixelId: string, 
-  token: string, 
-  customerData: { email?: string; phone?: string; fbp?: string | null; fbc?: string | null },
-  value: number, 
-  productName: string, 
-  eventId: string, 
-  clientIp?: string | null, 
+  pixelId: string,
+  token: string,
+  customerData: { email?: string | null; phone?: string | null; fbp?: string | null; fbc?: string | null },
+  value: number,
+  productName: string,
+  eventId: string,
+  clientIp?: string | null,
   userAgent?: string | null
 ) {
   try {
-    const hash = (data?: string) => data ? crypto.createHash('sha256').update(data.trim().toLowerCase()).digest('hex') : undefined;
+    const hash = (data?: string | null) => data ? crypto.createHash('sha256').update(data.trim().toLowerCase()).digest('hex') : undefined;
     
     const payload = {
       data: [
@@ -44,7 +45,11 @@ export async function sendCapiEvent(
     });
     const result = await res.json();
     console.log("CAPI Result:", result);
+    if (result?.error) {
+      Sentry.captureMessage(`CAPI rejeitou evento: ${JSON.stringify(result.error).slice(0, 300)}`, 'warning');
+    }
   } catch (error) {
+    Sentry.captureException(error, { tags: { area: 'capi' } });
     console.error("Erro ao enviar evento CAPI:", error);
   }
 }
