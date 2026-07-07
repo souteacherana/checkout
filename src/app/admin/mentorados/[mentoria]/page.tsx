@@ -8,7 +8,7 @@ import { getUserRole } from "../../actions";
 import type { MentoradoRow } from "@/lib/database.types";
 import {
   GraduationCap, Search, X, AlertCircle,
-  CalendarClock, Pencil, Save, Loader2, Plus, Trash2
+  CalendarClock, Save, Loader2, Plus, Trash2
 } from "lucide-react";
 
 const LABELS: Record<string, { titulo: string; campoExtra: "caneca" | "materia"; campoExtraLabel: string; cor: string }> = {
@@ -316,7 +316,6 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                   <th className="px-5 py-3">{cfg.campoExtraLabel}</th>
                   <th className="px-5 py-3">Imersão</th>
                   <th className="px-5 py-3">Origem</th>
-                  <th className="px-5 py-3 text-center">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -367,32 +366,12 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                       <td className="px-5 py-3 text-xs text-gray-600 max-w-[110px] truncate">{m[cfg.campoExtra] || "—"}</td>
                       <td className="px-5 py-3 text-xs text-gray-600 max-w-[110px] truncate">{m.imersao_rise || "—"}</td>
                       <td className="px-5 py-3 text-xs text-gray-500 max-w-[140px] truncate">{m.origem || "—"}</td>
-                      <td className="px-5 py-3 text-center whitespace-nowrap">
-                        {canEditInicio && (
-                          <button
-                            onClick={() => setEditing({ ...m })}
-                            className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                            title={canEditAll ? "Editar mentorado" : "Definir data de início"}
-                          >
-                            <Pencil size={15} />
-                          </button>
-                        )}
-                        {canEditAll && (
-                          <button
-                            onClick={e => { e.stopPropagation(); handleDelete(m); }}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Excluir mentorado (reversível no banco)"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        )}
-                      </td>
                     </tr>
                   );
                 })}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-5 py-12 text-center text-gray-400 text-sm">
+                    <td colSpan={7} className="px-5 py-12 text-center text-gray-400 text-sm">
                       Nenhum mentorado nesse filtro. Novos pagamentos no Asaas entram aqui automaticamente.
                     </td>
                   </tr>
@@ -506,6 +485,16 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
               {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
               {saving ? "Salvando..." : "Salvar"}
             </button>
+
+            {canEditAll && editing.id && (
+              <button
+                onClick={() => { const m = editing; setEditing(null); handleDelete(m); }}
+                disabled={saving}
+                className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 text-red-600 rounded-lg font-medium text-sm hover:bg-red-50 disabled:opacity-50 transition-colors"
+              >
+                <Trash2 size={15} /> Excluir mentorado
+              </button>
+            )}
           </div>
         </div>
       )}
