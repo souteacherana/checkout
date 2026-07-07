@@ -7,7 +7,7 @@ import Link from "next/link";
 import { getUserRole } from "../../actions";
 import type { MentoradoRow } from "@/lib/database.types";
 import {
-  GraduationCap, Search, X, AlertCircle, CheckCircle,
+  GraduationCap, Search, X, AlertCircle,
   CalendarClock, Pencil, Save, Loader2, Plus
 } from "lucide-react";
 
