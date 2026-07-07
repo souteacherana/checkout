@@ -175,6 +175,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                 imersao_rise: editing.imersao_rise, origem: editing.origem,
                 brinde_enviado: editing.brinde_enviado, status: editing.status,
                 data_inicio: editing.data_inicio, data_termino: editing.data_termino,
+                valor_contrato: editing.valor_contrato, a_pagar: editing.a_pagar,
                 notas: editing.notas,
               }
             : { id: editing.id, data_inicio: editing.data_inicio }
