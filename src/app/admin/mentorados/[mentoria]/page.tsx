@@ -8,7 +8,7 @@ import { getUserRole } from "../../actions";
 import type { MentoradoRow } from "@/lib/database.types";
 import {
   GraduationCap, Search, X, AlertCircle, CheckCircle, Gift,
-  CalendarClock, Pencil, Save, Loader2
+  CalendarClock, Pencil, Save, Loader2, Plus
 } from "lucide-react";
 
 const LABELS: Record<string, { titulo: string; brinde: string; cor: string }> = {
@@ -25,6 +25,24 @@ const dateBR = (iso: string | null) =>
 function diasParaTermino(m: MentoradoRow, now: number): number | null {
   if (!m.data_termino) return null;
   return Math.ceil((new Date(m.data_termino + "T12:00:00").getTime() - now) / 86400000);
+}
+
+// Rascunho de mentorado novo (inclusão manual — ex: pagamento 100% via Pix)
+function novoMentorado(mentoria: string): MentoradoRow {
+  return {
+    id: "", mentoria: mentoria as "elite" | "partiu10k", status: "ativo",
+    asaas_customer_id: null, nome: "", email: null, telefone: null, cpf: null,
+    rg: null, endereco: null, cep: null, imersao_rise: false, origem: null,
+    valor_contrato: null, a_pagar: null, parcelas_vencidas: 0, brinde_enviado: false,
+    data_inicio: null, data_termino: null, notas: null,
+    created_at: "", updated_at: "", deleted_at: null,
+  };
+}
+
+function terminoAutomatico(inicio: string): string {
+  const d = new Date(inicio + "T12:00:00");
+  d.setMonth(d.getMonth() + 6);
+  return d.toISOString().split("T")[0];
 }
 
 export default function MentoradosPage({ params }: { params: Promise<{ mentoria: string }> }) {
@@ -102,6 +120,43 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
 
   const saveEditing = async () => {
     if (!editing) return;
+
+    // Criação manual (sem id): insert direto — RLS garante ANA/ADMIN/SUPERADMIN
+    if (!editing.id) {
+      if (!editing.nome.trim()) {
+        alert("Nome é obrigatório.");
+        return;
+      }
+      setSaving(true);
+      const { error } = await supabase.from("mentorados").insert([{
+        mentoria: editing.mentoria,
+        status: editing.status,
+        nome: editing.nome.trim(),
+        email: editing.email || null,
+        telefone: editing.telefone || null,
+        cpf: editing.cpf || null,
+        rg: editing.rg || null,
+        endereco: editing.endereco || null,
+        cep: editing.cep || null,
+        imersao_rise: editing.imersao_rise,
+        origem: editing.origem || null,
+        valor_contrato: editing.valor_contrato,
+        a_pagar: editing.a_pagar,
+        brinde_enviado: editing.brinde_enviado,
+        data_inicio: editing.data_inicio,
+        data_termino: editing.data_termino || (editing.data_inicio ? terminoAutomatico(editing.data_inicio) : null),
+        notas: editing.notas || null,
+      }]);
+      setSaving(false);
+      if (error) {
+        alert("Erro ao criar: " + error.message);
+      } else {
+        setEditing(null);
+        fetchRows();
+      }
+      return;
+    }
+
     setSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -177,6 +232,16 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
             </div>
           </div>
 
+          <div className="flex items-center gap-2">
+          {canEditAll && (
+            <button
+              onClick={() => setEditing(novoMentorado(mentoria))}
+              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 shadow-sm transition-all"
+              title="Inclusão manual (ex: pagamento via Pix por fora)"
+            >
+              <Plus size={14} /> Adicionar
+            </button>
+          )}
           <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
             {([
               ["ativos", `Ativos`],
@@ -194,6 +259,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                 {label}
               </button>
             ))}
+          </div>
           </div>
         </div>
       </header>
@@ -307,7 +373,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
         <div className="fixed inset-0 bg-black/30 z-40 flex items-start justify-end" onClick={() => !saving && setEditing(null)}>
           <div className="bg-white h-full w-full max-w-md shadow-2xl overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold text-gray-900">{canEditAll ? "Editar Mentorado" : "Data de Início"}</h2>
+              <h2 className="text-lg font-bold text-gray-900">{!editing.id ? "Novo Mentorado" : canEditAll ? "Editar Mentorado" : "Data de Início"}</h2>
               <button onClick={() => setEditing(null)} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
             </div>
 
@@ -326,6 +392,13 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                     <Campo label="CEP"><input className="input-edit" value={editing.cep || ""} onChange={e => setEditing({ ...editing, cep: e.target.value })} /></Campo>
                     <Campo label="Origem"><input className="input-edit" placeholder="Ex: Workshop VST" value={editing.origem || ""} onChange={e => setEditing({ ...editing, origem: e.target.value })} /></Campo>
                   </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Campo label="Valor do Contrato (R$)"><input type="number" step="0.01" className="input-edit" value={editing.valor_contrato ?? ""} onChange={e => setEditing({ ...editing, valor_contrato: e.target.value === "" ? null : Number(e.target.value) })} /></Campo>
+                    <Campo label="A Pagar (R$)"><input type="number" step="0.01" className="input-edit" value={editing.a_pagar ?? ""} onChange={e => setEditing({ ...editing, a_pagar: e.target.value === "" ? null : Number(e.target.value) })} /></Campo>
+                  </div>
+                  {editing.asaas_customer_id && (
+                    <p className="text-xs text-gray-400 -mt-1">⚠️ Este mentorado veio do Asaas: valor e &quot;a pagar&quot; são recalculados automaticamente a cada parcela — edições nesses dois campos serão sobrescritas.</p>
+                  )}
                 </>
               ) : (
                 <div className="bg-gray-50 rounded-lg p-3 text-sm">
