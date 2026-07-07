@@ -110,7 +110,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
       );
     }
     return list;
-  }, [rows, filtro, search, now]);
+  }, [rows, filtro, search]);
 
   const totals = useMemo(() => {
     const porStatus: Record<string, number> = {};
