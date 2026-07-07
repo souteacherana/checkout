@@ -63,7 +63,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<string>("");
   const [search, setSearch] = useState("");
-  const [filtro, setFiltro] = useState<string>("ativo");
+  const [filtro, setFiltro] = useState<string>("todos");
   const [editing, setEditing] = useState<MentoradoRow | null>(null);
   const [saving, setSaving] = useState(false);
   const [now] = useState(() => Date.now());
@@ -268,10 +268,10 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
           )}
           <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
             {[
+              ["todos", `Todos (${rows.length})`] as [string, string],
               ...Object.entries(STATUS_CONFIG).map(([key, cfg2]) =>
                 [key, `${cfg2.label}${totals.porStatus[key] ? ` (${totals.porStatus[key]})` : ""}`] as [string, string]
               ),
-              ["todos", "Todos"] as [string, string],
             ].map(([key, label]) => (
               <button
                 key={key}
@@ -326,7 +326,12 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                   const emRenovacao = m.status === "ativo" && dias !== null && dias <= 30;
                   const st = STATUS_CONFIG[m.status] || { label: m.status, badge: "bg-gray-100 text-gray-600" };
                   return (
-                    <tr key={m.id} className={`hover:bg-gray-50 transition-colors ${m.status === "finalizado" ? "opacity-60" : ""}`}>
+                    <tr
+                      key={m.id}
+                      onClick={() => canEditInicio && setEditing({ ...m })}
+                      title={canEditInicio ? "Clique para editar" : undefined}
+                      className={`hover:bg-gray-50 transition-colors ${canEditInicio ? "cursor-pointer" : ""} ${m.status === "finalizado" ? "opacity-60" : ""}`}
+                    >
                       <td className="px-5 py-3">
                         <p className="font-semibold text-gray-900">{m.nome}</p>
                         <p className="text-xs text-gray-500">{m.email}</p>
@@ -371,7 +376,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                         )}
                         {canEditAll && (
                           <button
-                            onClick={() => handleDelete(m)}
+                            onClick={e => { e.stopPropagation(); handleDelete(m); }}
                             className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Excluir mentorado (reversível no banco)"
                           >
