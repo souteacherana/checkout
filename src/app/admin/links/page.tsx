@@ -9,6 +9,15 @@ import { Link2, Copy, CheckCircle, Package, ExternalLink, AlertCircle } from "lu
 
 const CHECKOUT_BASE_URL = "https://checkout.riseeducacao.com.br";
 
+// Variantes de canal pra ADMIN/SUPERADMIN — o prefixo cola no código
+// da pessoa (convenção da casa: "bio" + "h" = "bioh")
+const VARIANTS = [
+  { key: "padrao", label: "Padrão", prefix: "" },
+  { key: "dm", label: "DM", prefix: "dm" },
+  { key: "whts", label: "WhatsApp", prefix: "whts" },
+  { key: "stry", label: "Story", prefix: "stry" },
+] as const;
+
 type Product = {
   slug: string;
   title: string;
@@ -25,8 +34,12 @@ export default function MeusLinksPage() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [utmCode, setUtmCode] = useState<string | null>(null);
+  const [role, setRole] = useState<string>("VIEWER");
+  const [variant, setVariant] = useState<string>("padrao");
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState<string | null>(null);
+
+  const isAdmin = role === "ADMIN" || role === "SUPERADMIN";
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -39,6 +52,7 @@ export default function MeusLinksPage() {
         supabase.from("products").select("slug, title, price, accent_color, image_src, landing_url").is("archived_at", null).order("title"),
       ]);
       setUtmCode(profile.utm_code);
+      setRole(profile.role);
       setProducts(prods || []);
       setLoading(false);
     });
@@ -50,18 +64,21 @@ export default function MeusLinksPage() {
       // Landing page do workshop quando cadastrada; senão, checkout direto
       const base = p.landing_url || `${CHECKOUT_BASE_URL}/${p.slug}`;
       if (!utmCode) return base;
+      // Admin pode prefixar o canal (dm/whts/stry); vendedor usa o código puro
+      const prefix = isAdmin ? (VARIANTS.find(v => v.key === variant)?.prefix || "") : "";
+      const code = `${prefix}${utmCode}`;
       try {
-        // Código da pessoa nos três parâmetros — simples de identificar em qualquer relatório
+        // Código nos três parâmetros — simples de identificar em qualquer relatório
         const url = new URL(base);
-        url.searchParams.set("utm_source", utmCode);
-        url.searchParams.set("utm_medium", utmCode);
-        url.searchParams.set("utm_content", utmCode);
+        url.searchParams.set("utm_source", code);
+        url.searchParams.set("utm_medium", code);
+        url.searchParams.set("utm_content", code);
         return url.toString();
       } catch {
         return base; // landing_url inválida: entrega sem UTM em vez de quebrar
       }
     };
-  }, [utmCode]);
+  }, [utmCode, isAdmin, variant]);
 
   const copyLink = (p: Product) => {
     navigator.clipboard.writeText(buildLink(p));
@@ -88,12 +105,28 @@ export default function MeusLinksPage() {
               <h1 className="text-xl font-bold text-gray-900 tracking-tight">Meus Links</h1>
               <p className="text-xs text-gray-400 -mt-0.5">
                 {utmCode
-                  ? <>Suas vendas serão atribuídas ao código <span className="font-mono font-bold text-indigo-600">{utmCode}</span></>
+                  ? <>Suas vendas serão atribuídas ao código <span className="font-mono font-bold text-indigo-600">{isAdmin ? `${VARIANTS.find(v => v.key === variant)?.prefix || ""}${utmCode}` : utmCode}</span></>
                   : "Links de divulgação dos produtos"}
               </p>
             </div>
           </div>
 
+          {/* Canal (só ADMIN/SUPERADMIN) */}
+          {isAdmin && utmCode && (
+            <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+              {VARIANTS.map(v => (
+                <button
+                  key={v.key}
+                  onClick={() => setVariant(v.key)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                    variant === v.key ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-800"
+                  }`}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </header>
 
