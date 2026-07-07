@@ -8,12 +8,20 @@ import { getUserRole } from "../../actions";
 import type { MentoradoRow } from "@/lib/database.types";
 import {
   GraduationCap, Search, X, AlertCircle,
-  CalendarClock, Pencil, Save, Loader2, Plus
+  CalendarClock, Pencil, Save, Loader2, Plus, Trash2
 } from "lucide-react";
 
 const LABELS: Record<string, { titulo: string; campoExtra: "caneca" | "materia"; campoExtraLabel: string; cor: string }> = {
   elite: { titulo: "Professores de Elite", campoExtra: "caneca", campoExtraLabel: "Caneca", cor: "#8b5cf6" },
   partiu10k: { titulo: "Partiu 10k", campoExtra: "materia", campoExtraLabel: "Matéria", cor: "#0ea5e9" },
+};
+
+const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
+  ativo:      { label: "Ativo",      badge: "bg-emerald-100 text-emerald-700" },
+  devendo:    { label: "Devendo",    badge: "bg-red-100 text-red-700" },
+  suspenso:   { label: "Suspenso",   badge: "bg-amber-100 text-amber-700" },
+  finalizado: { label: "Finalizado", badge: "bg-gray-100 text-gray-600" },
+  renovacao:  { label: "Renovação",  badge: "bg-blue-100 text-blue-700" },
 };
 
 const brl = (v: number) =>
@@ -55,7 +63,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<string>("");
   const [search, setSearch] = useState("");
-  const [filtro, setFiltro] = useState<"ativos" | "renovacao" | "inadimplentes" | "todos">("ativos");
+  const [filtro, setFiltro] = useState<string>("ativo");
   const [editing, setEditing] = useState<MentoradoRow | null>(null);
   const [saving, setSaving] = useState(false);
   const [now] = useState(() => Date.now());
@@ -91,12 +99,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
 
   const filtered = useMemo(() => {
     let list = rows;
-    if (filtro === "ativos") list = list.filter(m => m.status === "ativo");
-    if (filtro === "renovacao") list = list.filter(m => {
-      const d = diasParaTermino(m, now);
-      return m.status === "ativo" && d !== null && d <= 30;
-    });
-    if (filtro === "inadimplentes") list = list.filter(m => m.parcelas_vencidas > 0);
+    if (filtro !== "todos") list = list.filter(m => m.status === filtro);
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(m =>
@@ -109,15 +112,29 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
     return list;
   }, [rows, filtro, search, now]);
 
-  const totals = useMemo(() => ({
-    ativos: rows.filter(m => m.status === "ativo").length,
-    renovacao: rows.filter(m => {
-      const d = diasParaTermino(m, now);
-      return m.status === "ativo" && d !== null && d <= 30;
-    }).length,
-    inadimplentes: rows.filter(m => m.parcelas_vencidas > 0).length,
-    aReceber: rows.filter(m => m.status === "ativo").reduce((acc, m) => acc + Number(m.a_pagar || 0), 0),
-  }), [rows, now]);
+  const totals = useMemo(() => {
+    const porStatus: Record<string, number> = {};
+    for (const m of rows) porStatus[m.status] = (porStatus[m.status] || 0) + 1;
+    return {
+      porStatus,
+      ativos: porStatus["ativo"] || 0,
+      aReceber: rows.filter(m => m.status === "ativo" || m.status === "devendo")
+        .reduce((acc, m) => acc + Number(m.a_pagar || 0), 0),
+    };
+  }, [rows]);
+
+  const handleDelete = async (m: MentoradoRow) => {
+    if (!confirm(`Excluir "${m.nome}" da lista?\n\n(Exclusão reversível: o registro fica marcado no banco, não é apagado.)`)) return;
+    setRows(prev => prev.filter(r => r.id !== m.id));
+    const { error, count } = await supabase
+      .from("mentorados")
+      .update({ deleted_at: new Date().toISOString() }, { count: "exact" })
+      .eq("id", m.id);
+    if (error || count === 0) {
+      alert("Sem permissão para excluir.");
+      fetchRows();
+    }
+  };
 
   const saveEditing = async () => {
     if (!editing) return;
@@ -250,12 +267,12 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
             </button>
           )}
           <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-            {([
-              ["ativos", `Ativos`],
-              ["renovacao", `Renovação${totals.renovacao ? ` (${totals.renovacao})` : ""}`],
-              ["inadimplentes", `Vencidos${totals.inadimplentes ? ` (${totals.inadimplentes})` : ""}`],
-              ["todos", "Todos"],
-            ] as const).map(([key, label]) => (
+            {[
+              ...Object.entries(STATUS_CONFIG).map(([key, cfg2]) =>
+                [key, `${cfg2.label}${totals.porStatus[key] ? ` (${totals.porStatus[key]})` : ""}`] as [string, string]
+              ),
+              ["todos", "Todos"] as [string, string],
+            ].map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setFiltro(key)}
@@ -294,6 +311,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
               <thead className="bg-[#f8fafc] border-b border-gray-200 text-xs uppercase font-semibold text-gray-500">
                 <tr>
                   <th className="px-5 py-3">Mentorado</th>
+                  <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3">Contrato</th>
                   <th className="px-5 py-3">Início → Término</th>
                   <th className="px-5 py-3">{cfg.campoExtraLabel}</th>
@@ -306,12 +324,16 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                 {filtered.map(m => {
                   const dias = diasParaTermino(m, now);
                   const emRenovacao = m.status === "ativo" && dias !== null && dias <= 30;
+                  const st = STATUS_CONFIG[m.status] || { label: m.status, badge: "bg-gray-100 text-gray-600" };
                   return (
-                    <tr key={m.id} className={`hover:bg-gray-50 transition-colors ${m.status !== "ativo" ? "opacity-60" : ""}`}>
+                    <tr key={m.id} className={`hover:bg-gray-50 transition-colors ${m.status === "finalizado" ? "opacity-60" : ""}`}>
                       <td className="px-5 py-3">
                         <p className="font-semibold text-gray-900">{m.nome}</p>
                         <p className="text-xs text-gray-500">{m.email}</p>
                         <p className="text-xs text-gray-400">{m.telefone} {m.cpf && <>· {m.cpf}</>}</p>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${st.badge}`}>{st.label}</span>
                       </td>
                       <td className="px-5 py-3 whitespace-nowrap">
                         <p className="font-bold text-gray-900">{m.valor_contrato != null ? brl(Number(m.valor_contrato)) : "—"}</p>
@@ -337,7 +359,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                       <td className="px-5 py-3 text-xs text-gray-600 max-w-[110px] truncate">{m[cfg.campoExtra] || "—"}</td>
                       <td className="px-5 py-3 text-xs text-gray-600 max-w-[110px] truncate">{m.imersao_rise || "—"}</td>
                       <td className="px-5 py-3 text-xs text-gray-500 max-w-[140px] truncate">{m.origem || "—"}</td>
-                      <td className="px-5 py-3 text-center">
+                      <td className="px-5 py-3 text-center whitespace-nowrap">
                         {canEditInicio && (
                           <button
                             onClick={() => setEditing({ ...m })}
@@ -347,13 +369,22 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                             <Pencil size={15} />
                           </button>
                         )}
+                        {canEditAll && (
+                          <button
+                            onClick={() => handleDelete(m)}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Excluir mentorado (reversível no banco)"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
                 })}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-5 py-12 text-center text-gray-400 text-sm">
+                    <td colSpan={8} className="px-5 py-12 text-center text-gray-400 text-sm">
                       Nenhum mentorado nesse filtro. Novos pagamentos no Asaas entram aqui automaticamente.
                     </td>
                   </tr>
@@ -443,9 +474,9 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                   </div>
                   <Campo label="Status">
                     <select className="input-edit" value={editing.status} onChange={e => setEditing({ ...editing, status: e.target.value })}>
-                      <option value="ativo">Ativo</option>
-                      <option value="concluido">Concluído</option>
-                      <option value="cancelado">Cancelado</option>
+                      {Object.entries(STATUS_CONFIG).map(([value, s]) => (
+                        <option key={value} value={value}>{s.label}</option>
+                      ))}
                     </select>
                   </Campo>
                   <Campo label="Notas">

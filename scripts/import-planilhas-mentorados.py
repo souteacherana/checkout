@@ -51,9 +51,13 @@ def supa(method, path, body=None):
         },
         data=json.dumps(body).encode() if body is not None else None,
     )
-    with urllib.request.urlopen(req) as r:
-        raw = r.read().decode()
-        return json.loads(raw) if raw else None
+    try:
+        with urllib.request.urlopen(req) as r:
+            raw = r.read().decode()
+            return json.loads(raw) if raw else None
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode()[:300]
+        raise RuntimeError(f"{method} {path} -> {e.code}: {detail}\npayload: {json.dumps(body, default=str)[:400]}")
 
 
 def norm_texto(s):
@@ -78,7 +82,7 @@ def norm_nome(s):
 
 def parse_data(v):
     """datetime/date -> ISO; texto sem ano -> None (vai pras notas)."""
-    if v is None or (isinstance(v, float) and pd.isna(v)):
+    if v is None or pd.isna(v):
         return None, None
     if isinstance(v, datetime):
         return v.strftime("%Y-%m-%d"), None
