@@ -15,6 +15,7 @@ type Product = {
   price: number;
   accent_color: string | null;
   image_src: string | null;
+  landing_url: string | null;
 };
 
 const brl = (v: number) =>
@@ -35,7 +36,7 @@ export default function MeusLinksPage() {
       }
       const [profile, { data: prods }] = await Promise.all([
         getUserProfile(session.user?.email || ""),
-        supabase.from("products").select("slug, title, price, accent_color, image_src").order("title"),
+        supabase.from("products").select("slug, title, price, accent_color, image_src, landing_url").order("title"),
       ]);
       setUtmCode(profile.utm_code);
       setProducts(prods || []);
@@ -45,21 +46,26 @@ export default function MeusLinksPage() {
   }, []);
 
   const buildLink = useMemo(() => {
-    return (slug: string) => {
-      if (!utmCode) return `${CHECKOUT_BASE_URL}/${slug}`;
-      // Código da pessoa nos três parâmetros — simples de identificar em qualquer relatório
-      const params = new URLSearchParams({
-        utm_source: utmCode,
-        utm_medium: utmCode,
-        utm_content: utmCode,
-      });
-      return `${CHECKOUT_BASE_URL}/${slug}?${params.toString()}`;
+    return (p: Product) => {
+      // Landing page do workshop quando cadastrada; senão, checkout direto
+      const base = p.landing_url || `${CHECKOUT_BASE_URL}/${p.slug}`;
+      if (!utmCode) return base;
+      try {
+        // Código da pessoa nos três parâmetros — simples de identificar em qualquer relatório
+        const url = new URL(base);
+        url.searchParams.set("utm_source", utmCode);
+        url.searchParams.set("utm_medium", utmCode);
+        url.searchParams.set("utm_content", utmCode);
+        return url.toString();
+      } catch {
+        return base; // landing_url inválida: entrega sem UTM em vez de quebrar
+      }
     };
   }, [utmCode]);
 
-  const copyLink = (slug: string) => {
-    navigator.clipboard.writeText(buildLink(slug));
-    setCopied(slug);
+  const copyLink = (p: Product) => {
+    navigator.clipboard.writeText(buildLink(p));
+    setCopied(p.slug);
     setTimeout(() => setCopied(null), 1500);
   };
 
@@ -105,7 +111,7 @@ export default function MeusLinksPage() {
 
         <div className="space-y-4">
           {products.map(p => {
-            const link = buildLink(p.slug);
+            const link = buildLink(p);
             const accent = p.accent_color || "#10b981";
             return (
               <div key={p.slug} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col sm:flex-row sm:items-center gap-4">
@@ -115,7 +121,10 @@ export default function MeusLinksPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="font-bold text-gray-900 text-sm leading-tight truncate">{p.title}</p>
-                    <p className="text-xs font-semibold" style={{ color: accent }}>{brl(Number(p.price || 0))}</p>
+                    <p className="text-xs font-semibold" style={{ color: accent }}>
+                      {brl(Number(p.price || 0))}
+                      <span className="ml-1.5 text-[9px] font-bold uppercase tracking-wider text-gray-400">{p.landing_url ? "landing" : "checkout"}</span>
+                    </p>
                   </div>
                 </div>
 
@@ -127,7 +136,7 @@ export default function MeusLinksPage() {
                     className="flex-1 min-w-0 border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-xs font-mono text-gray-600 truncate focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                   />
                   <button
-                    onClick={() => copyLink(p.slug)}
+                    onClick={() => copyLink(p)}
                     className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex-shrink-0 ${
                       copied === p.slug
                         ? "bg-emerald-100 text-emerald-700"

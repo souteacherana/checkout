@@ -71,6 +71,7 @@ export type ProductRow = {
   image_src: string | null;
   fb_pixel_id: string | null;
   fb_capi_token: string | null;
+  landing_url: string | null;
 };
 
 export type UserRoleRow = {

@@ -23,11 +23,12 @@ type Product = {
   image_src: string | null;
   fb_pixel_id: string | null;
   fb_capi_token: string | null;
+  landing_url: string | null;
 };
 
 const emptyProduct: Product = {
   slug: "", title: "", price: "", accent_color: "#10b981", accent_color_hover: "#059669",
-  image_src: "", fb_pixel_id: "", fb_capi_token: ""
+  image_src: "", fb_pixel_id: "", fb_capi_token: "", landing_url: ""
 };
 
 type ProductStats = { produto_slug: string | null; vendas: number; receita: number };
@@ -87,6 +88,10 @@ export default function ProdutosPage() {
     if (!editing) return;
     setSaving(true);
 
+    // Normaliza a landing (aceita colar sem https://)
+    let landing = (editing.landing_url || "").trim();
+    if (landing && !/^https?:\/\//i.test(landing)) landing = `https://${landing}`;
+
     const payload = {
       slug: editing.slug.toLowerCase(),
       title: editing.title,
@@ -96,6 +101,7 @@ export default function ProdutosPage() {
       image_src: editing.image_src,
       fb_pixel_id: editing.fb_pixel_id || null,
       fb_capi_token: editing.fb_capi_token || null,
+      landing_url: landing || null,
     };
 
     const { error } = editing.id
@@ -192,6 +198,10 @@ export default function ProdutosPage() {
                   <input type="color" value={editing.accent_color_hover || "#059669"} onChange={e => setEditing({ ...editing, accent_color_hover: e.target.value })} className="w-10 h-10 rounded cursor-pointer border border-gray-200" />
                   <input type="text" value={editing.accent_color_hover || ""} onChange={e => setEditing({ ...editing, accent_color_hover: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 uppercase focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="#059669" />
                 </div>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-1">URL da Landing Page <span className="font-normal text-gray-400">(opcional — os links da equipe apontam pra ela; sem ela, vão direto pro checkout)</span></label>
+                <input type="text" value={editing.landing_url || ""} onChange={e => setEditing({ ...editing, landing_url: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="https://riseeducacao.com.br/tft" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Facebook Pixel ID <span className="font-normal text-gray-400">(opcional)</span></label>
