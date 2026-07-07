@@ -1,6 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
-export type UserRole = 'VIEWER' | 'ADMIN' | 'SUPERADMIN';
+export type UserRole = 'VIEWER' | 'VENDEDOR' | 'ADMIN' | 'SUPERADMIN';
 
 /**
  * Valida o Bearer token da requisição e retorna a role do usuário

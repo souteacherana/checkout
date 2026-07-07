@@ -47,6 +47,13 @@ export default function EquipePage() {
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Vendedor sem código UTM não teria como ter vendas atribuídas — obrigatório
+    if (newRole === "VENDEDOR" && !newUtmCode.trim()) {
+      alert("Pra role Vendedor o Código UTM é obrigatório (é ele que define quais vendas a pessoa enxerga).");
+      return;
+    }
+
     setAdding(true);
     
     try {
@@ -194,7 +201,8 @@ export default function EquipePage() {
                 value={newRole} onChange={e => setNewRole(e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                <option value="VIEWER">Apenas Visualizador (Ex: Suporte)</option>
+                <option value="VENDEDOR">Vendedor (vê só as próprias vendas, 30 dias)</option>
+                <option value="VIEWER">Visualizador (vê tudo dos últimos 30 dias)</option>
                 <option value="ADMIN">Administrador (Pode editar checkouts)</option>
                 <option value="SUPERADMIN">Super Admin (Acesso total)</option>
               </select>
@@ -248,6 +256,7 @@ export default function EquipePage() {
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${
                           u.role === 'SUPERADMIN' ? 'bg-purple-50 text-purple-700 border-purple-200' :
                           u.role === 'ADMIN' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                          u.role === 'VENDEDOR' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                           'bg-gray-50 text-gray-700 border-gray-200'
                         }`}>
                           {u.role}

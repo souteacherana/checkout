@@ -12,6 +12,7 @@ import {
   ResponsiveContainer, AreaChart, Area, LineChart, Line, Legend, XAxis, YAxis, Tooltip, CartesianGrid
 } from "recharts";
 import { vendaToUI, type VendaUI } from "@/lib/vendas";
+import { getUserRole } from "../actions";
 
 type Product = {
   slug: string;
@@ -74,6 +75,7 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
   // Congela o "agora" no mount: useMemo precisa ser puro (react-hooks/purity)
   const [now] = useState(() => Date.now());
   const [hiddenCreatives, setHiddenCreatives] = useState<string[]>([]);
+  const [role, setRole] = useState<string>("VIEWER");
 
   useEffect(() => {
     const load = async () => {
@@ -81,6 +83,9 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
       if (!session) {
         router.push("/admin/login");
         return;
+      }
+      if (session.user?.email) {
+        getUserRole(session.user.email).then(r => setRole(r));
       }
 
       const slug = produto.toLowerCase();
@@ -135,7 +140,7 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
     const abandoned = filtered.filter(r => r.status === "PENDING");
     const pixPending = filtered.filter(r => r.status === "PIX_PENDING");
     const gross = paid.reduce((acc, r) => acc + Number(r.amount || 0), 0);
-    const net = paid.reduce((acc, r) => acc + Number(r.net_value ?? Number(r.amount || 0) * 0.95), 0);
+    const net = paid.reduce((acc, r) => acc + Number(r.net_value || 0), 0);
     const funnel = paid.length + abandoned.length + pixPending.length;
     return {
       gross,
@@ -263,6 +268,7 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
   );
 
   const accent = product?.accent_color || "#10b981";
+  const isFinanceVisible = role === "ADMIN" || role === "SUPERADMIN";
 
   return (
     <div className="min-h-screen bg-[#f8fafc] pb-10">
@@ -278,7 +284,10 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
             </div>
             <div className="min-w-0">
               <h1 className="text-lg font-bold text-gray-900 tracking-tight truncate">{product?.title}</h1>
-              <p className="text-xs text-gray-400 -mt-0.5">/{product?.slug} · {brl(Number(product?.price || 0))}</p>
+              <p className="text-xs text-gray-400 -mt-0.5">
+                /{product?.slug} · {brl(Number(product?.price || 0))}
+                {!isFinanceVisible && <span className="ml-2 text-[9px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded">30 dias{role === "VENDEDOR" ? " · suas vendas" : ""}</span>}
+              </p>
             </div>
           </div>
 
@@ -307,10 +316,12 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
             <div className="flex items-center gap-2 text-blue-600 mb-2"><DollarSign size={16} /><span className="text-xs font-semibold text-gray-500 uppercase">Receita Bruta</span></div>
             <p className="text-xl font-bold text-gray-900 flex items-center gap-2">{brl(metrics.gross)} {comparison && <Delta value={comparison.receita} />}</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center gap-2 text-emerald-600 mb-2"><CreditCard size={16} /><span className="text-xs font-semibold text-gray-500 uppercase">Líquido</span></div>
-            <p className="text-xl font-bold text-emerald-600">{brl(metrics.net)}</p>
-          </div>
+          {isFinanceVisible && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <div className="flex items-center gap-2 text-emerald-600 mb-2"><CreditCard size={16} /><span className="text-xs font-semibold text-gray-500 uppercase">Líquido</span></div>
+              <p className="text-xl font-bold text-emerald-600">{brl(metrics.net)}</p>
+            </div>
+          )}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
             <div className="flex items-center gap-2 text-indigo-600 mb-2"><CheckCircle size={16} /><span className="text-xs font-semibold text-gray-500 uppercase">Vendas</span></div>
             <p className="text-xl font-bold text-gray-900 flex items-center gap-2">{metrics.paidCount} {comparison && <Delta value={comparison.vendas} />}</p>

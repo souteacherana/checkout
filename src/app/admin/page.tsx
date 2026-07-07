@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { vendaToUI, type VendaUI } from "@/lib/vendas";
+import { getUserRole } from "./actions";
 import { Download, LogOut, CheckCircle, AlertCircle, RefreshCw, Search, Filter, ArrowUpDown, Trash2, TrendingUp, DollarSign, Users, CreditCard, X } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -15,6 +16,7 @@ export default function AdminDashboard() {
   const [syncing, setSyncing] = useState(false);
   const [checkouts, setCheckouts] = useState<VendaUI[]>([]);
   const [visibleCount, setVisibleCount] = useState(100);
+  const [role, setRole] = useState<string>("VIEWER");
 
   // Filtros e Ordenação
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
@@ -45,6 +47,9 @@ export default function AdminDashboard() {
     if (!session) {
       router.push("/admin/login");
     } else {
+      if (session.user?.email) {
+        getUserRole(session.user.email).then(r => setRole(r));
+      }
       fetchCheckouts();
     }
   };
@@ -160,9 +165,11 @@ export default function AdminDashboard() {
       return 0;
     });
 
+  const isFinanceVisible = role === 'ADMIN' || role === 'SUPERADMIN';
+
   // Métricas Globais (Baseadas nos Filtros)
   const totalPaid = processedCheckouts.filter(c => c.status === 'PAID').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
-  const liquidPaid = processedCheckouts.filter(c => c.status === 'PAID').reduce((acc, curr) => acc + Number(curr.net_value || (Number(curr.amount || 0) * 0.95)), 0);
+  const liquidPaid = processedCheckouts.filter(c => c.status === 'PAID').reduce((acc, curr) => acc + Number(curr.net_value || 0), 0);
   const totalPending = processedCheckouts.filter(c => c.status === 'PENDING').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
   const countPaid = processedCheckouts.filter(c => c.status === 'PAID').length;
   const countPending = processedCheckouts.filter(c => c.status === 'PENDING').length;
@@ -185,11 +192,18 @@ export default function AdminDashboard() {
               <TrendingUp size={18} />
             </div>
             <h1 className="text-xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
+            {!isFinanceVisible && (
+              <span className="ml-2 text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200 px-2 py-1 rounded-md">
+                Visão: últimos 30 dias{role === 'VENDEDOR' ? ' · só suas vendas' : ''}
+              </span>
+            )}
           </div>
           <div className="flex gap-3">
-            <button onClick={handleSyncEduzz} disabled={syncing} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 shadow-sm transition-all disabled:opacity-50">
-              <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Sincronizando...' : 'Sincronizar Eduzz'}
-            </button>
+            {isFinanceVisible && (
+              <button onClick={handleSyncEduzz} disabled={syncing} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 shadow-sm transition-all disabled:opacity-50">
+                <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Sincronizando...' : 'Sincronizar Eduzz'}
+              </button>
+            )}
             <button onClick={exportToCSV} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-sm transition-all hover:shadow-emerald-600/20 hover:-translate-y-0.5">
               <Download size={16} /> Exportar CSV
             </button>
@@ -212,16 +226,18 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-emerald-500/20 p-5 flex items-center gap-4 relative overflow-hidden">
-            <div className="absolute inset-0 bg-emerald-500/5 opacity-50"></div>
-            <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center relative z-10">
-              <CreditCard size={24} />
+          {isFinanceVisible && (
+            <div className="bg-white rounded-xl shadow-sm border border-emerald-500/20 p-5 flex items-center gap-4 relative overflow-hidden">
+              <div className="absolute inset-0 bg-emerald-500/5 opacity-50"></div>
+              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center relative z-10">
+                <CreditCard size={24} />
+              </div>
+              <div className="relative z-10">
+                <p className="text-sm text-emerald-700/80 font-medium mb-0.5">Ganho Líquido Real</p>
+                <p className="text-2xl font-bold text-emerald-600">{new Intl.NumberFormat('pt-BR', {style: 'currency', currency: 'BRL'}).format(liquidPaid)}</p>
+              </div>
             </div>
-            <div className="relative z-10">
-              <p className="text-sm text-emerald-700/80 font-medium mb-0.5">Ganho Líquido Real</p>
-              <p className="text-2xl font-bold text-emerald-600">{new Intl.NumberFormat('pt-BR', {style: 'currency', currency: 'BRL'}).format(liquidPaid)}</p>
-            </div>
-          </div>
+          )}
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-center gap-4 hover:border-orange-200 transition-colors">
             <div className="w-12 h-12 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center">
