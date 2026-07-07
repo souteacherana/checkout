@@ -90,7 +90,7 @@ export type MentoradoRow = {
   imersao_rise: string | null;   // edição: "VIP - 2025", "Rise 2026"...
   origem: string | null;
   valor_contrato: number | null;
-  a_pagar: number | null;
+  valor_pago: number | null;     // calculado do Asaas — somente leitura
   parcelas_vencidas: number;
   materia: string | null;        // P10k: matéria que o professor ensina
   caneca: string | null;         // Elite: Não | Em produção | Sim

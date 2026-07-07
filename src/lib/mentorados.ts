@@ -76,8 +76,8 @@ export async function syncMentoradoFromAsaas(customerId: string, mentoria: Mento
   if (daMentoria.length === 0) return null;
 
   const valorContrato = daMentoria.reduce((acc, p) => acc + Number(p.value || 0), 0);
-  const pendentes = daMentoria.filter(p => ['PENDING', 'OVERDUE', 'AWAITING_RISK_ANALYSIS'].includes(p.status));
-  const aPagar = pendentes.reduce((acc, p) => acc + Number(p.value || 0), 0);
+  const pagas = daMentoria.filter(p => ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH', 'DUNNING_RECEIVED'].includes(p.status));
+  const valorPago = pagas.reduce((acc, p) => acc + Number(p.value || 0), 0);
   const vencidas = daMentoria.filter(p => p.status === 'OVERDUE').length;
 
   const enderecoPartes = [cust.address, cust.addressNumber, cust.complement, cust.province, cust.cityName, cust.state]
@@ -98,7 +98,7 @@ export async function syncMentoradoFromAsaas(customerId: string, mentoria: Mento
     telefone: cust.mobilePhone || cust.phone || null,
     cpf: cust.cpfCnpj || null,
     valor_contrato: valorContrato,
-    a_pagar: aPagar,
+    valor_pago: valorPago,
     parcelas_vencidas: vencidas,
     updated_at: new Date().toISOString(),
   };

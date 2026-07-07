@@ -77,8 +77,8 @@ for (const [key, pagamentos] of grupos) {
   const cust = await custRes.json();
 
   const valorContrato = pagamentos.reduce((acc, p) => acc + Number(p.value || 0), 0);
-  const pendentes = pagamentos.filter(p => ['PENDING', 'OVERDUE', 'AWAITING_RISK_ANALYSIS'].includes(p.status));
-  const aPagar = pendentes.reduce((acc, p) => acc + Number(p.value || 0), 0);
+  const pagas = pagamentos.filter(p => ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH', 'DUNNING_RECEIVED'].includes(p.status));
+  const valorPago = pagas.reduce((acc, p) => acc + Number(p.value || 0), 0);
   const vencidas = pagamentos.filter(p => p.status === 'OVERDUE').length;
   const endereco = [cust.address, cust.addressNumber, cust.complement, cust.province, cust.cityName, cust.state].filter(Boolean).join(', ');
 
@@ -95,7 +95,7 @@ for (const [key, pagamentos] of grupos) {
     telefone: cust.mobilePhone || cust.phone || null,
     cpf: cust.cpfCnpj || null,
     valor_contrato: valorContrato,
-    a_pagar: aPagar,
+    valor_pago: valorPago,
     parcelas_vencidas: vencidas,
     updated_at: new Date().toISOString(),
   };

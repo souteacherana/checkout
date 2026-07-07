@@ -41,7 +41,7 @@ function novoMentorado(mentoria: string): MentoradoRow {
     id: "", mentoria: mentoria as "elite" | "partiu10k", status: "ativo",
     asaas_customer_id: null, nome: "", email: null, telefone: null, cpf: null,
     rg: null, endereco: null, cep: null, imersao_rise: null, origem: null,
-    valor_contrato: null, a_pagar: null, parcelas_vencidas: 0,
+    valor_contrato: null, valor_pago: null, parcelas_vencidas: 0,
     materia: null, caneca: null, renovacao: null, forma_pagamento: null,
     data_inicio: null, data_termino: null, notas: null,
     created_at: "", updated_at: "", deleted_at: null,
@@ -119,7 +119,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
       porStatus,
       ativos: porStatus["ativo"] || 0,
       aReceber: rows.filter(m => m.status === "ativo" || m.status === "devendo")
-        .reduce((acc, m) => acc + Number(m.a_pagar || 0), 0),
+        .reduce((acc, m) => acc + Math.max(0, Number(m.valor_contrato || 0) - Number(m.valor_pago || 0)), 0),
     };
   }, [rows]);
 
@@ -163,7 +163,6 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
         renovacao: editing.renovacao || null,
         forma_pagamento: editing.forma_pagamento || null,
         valor_contrato: editing.valor_contrato,
-        a_pagar: editing.a_pagar,
         data_inicio: editing.data_inicio,
         data_termino: editing.data_termino || (editing.data_inicio ? terminoAutomatico(editing.data_inicio) : null),
         notas: editing.notas || null,
@@ -198,7 +197,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                 renovacao: editing.renovacao, forma_pagamento: editing.forma_pagamento,
                 status: editing.status,
                 data_inicio: editing.data_inicio, data_termino: editing.data_termino,
-                valor_contrato: editing.valor_contrato, a_pagar: editing.a_pagar,
+                valor_contrato: editing.valor_contrato,
                 notas: editing.notas,
               }
             : { id: editing.id, data_inicio: editing.data_inicio }
@@ -342,11 +341,15 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                       </td>
                       <td className="px-5 py-3 whitespace-nowrap">
                         <p className="font-bold text-gray-900">{m.valor_contrato != null ? brl(Number(m.valor_contrato)) : "—"}</p>
-                        {Number(m.a_pagar || 0) > 0 && (
-                          <p className={`text-xs ${m.parcelas_vencidas > 0 ? "text-red-600 font-semibold" : "text-gray-400"}`}>
-                            {m.parcelas_vencidas > 0 && <AlertCircle size={11} className="inline mr-0.5 -mt-0.5" />}
-                            a pagar: {brl(Number(m.a_pagar))}
-                            {m.parcelas_vencidas > 0 && <> · {m.parcelas_vencidas} vencida{m.parcelas_vencidas > 1 ? "s" : ""}</>}
+                        {m.valor_pago != null && (
+                          <p className={`text-xs ${Number(m.valor_pago) >= Number(m.valor_contrato || 0) ? "text-emerald-600" : "text-gray-400"}`}>
+                            pago: {brl(Number(m.valor_pago))}
+                          </p>
+                        )}
+                        {m.parcelas_vencidas > 0 && (
+                          <p className="text-xs text-red-600 font-semibold">
+                            <AlertCircle size={11} className="inline mr-0.5 -mt-0.5" />
+                            {m.parcelas_vencidas} vencida{m.parcelas_vencidas > 1 ? "s" : ""}
                           </p>
                         )}
                       </td>
@@ -429,10 +432,14 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <Campo label="Valor do Contrato (R$)"><input type="number" step="0.01" className="input-edit" value={editing.valor_contrato ?? ""} onChange={e => setEditing({ ...editing, valor_contrato: e.target.value === "" ? null : Number(e.target.value) })} /></Campo>
-                    <Campo label="A Pagar (R$)"><input type="number" step="0.01" className="input-edit" value={editing.a_pagar ?? ""} onChange={e => setEditing({ ...editing, a_pagar: e.target.value === "" ? null : Number(e.target.value) })} /></Campo>
+                    <Campo label="Valor Pago (Asaas)">
+                      <div className="input-edit bg-gray-50 text-gray-600 cursor-not-allowed select-none">
+                        {editing.valor_pago != null ? brl(Number(editing.valor_pago)) : "— sem registro no Asaas"}
+                      </div>
+                    </Campo>
                   </div>
                   {editing.asaas_customer_id && (
-                    <p className="text-xs text-gray-400 -mt-1">⚠️ Este mentorado veio do Asaas: valor e &quot;a pagar&quot; são recalculados automaticamente a cada parcela — edições nesses dois campos serão sobrescritas.</p>
+                    <p className="text-xs text-gray-400 -mt-1">⚠️ Mentorado ligado ao Asaas: Valor do Contrato e Valor Pago são recalculados automaticamente a cada parcela paga.</p>
                   )}
                 </>
               ) : (
