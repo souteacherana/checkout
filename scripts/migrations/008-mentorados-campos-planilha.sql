@@ -14,6 +14,8 @@ alter table public.mentorados
 alter table public.mentorados
   alter column imersao_rise drop default;
 alter table public.mentorados
+  alter column imersao_rise drop not null;
+alter table public.mentorados
   alter column imersao_rise type text
   using case when imersao_rise then 'sim' else null end;
 
