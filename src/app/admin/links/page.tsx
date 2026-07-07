@@ -36,7 +36,7 @@ export default function MeusLinksPage() {
       }
       const [profile, { data: prods }] = await Promise.all([
         getUserProfile(session.user?.email || ""),
-        supabase.from("products").select("slug, title, price, accent_color, image_src, landing_url").order("title"),
+        supabase.from("products").select("slug, title, price, accent_color, image_src, landing_url").is("archived_at", null).order("title"),
       ]);
       setUtmCode(profile.utm_code);
       setProducts(prods || []);

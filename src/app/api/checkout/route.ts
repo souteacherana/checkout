@@ -26,12 +26,15 @@ export async function POST(request: Request) {
     // Nunca confiamos em preço ou nome de produto vindos do navegador.
     const { data: productDB } = await supabaseAdmin
       .from('products')
-      .select('price, title, fb_pixel_id, fb_capi_token')
+      .select('price, title, fb_pixel_id, fb_capi_token, archived_at')
       .eq('slug', paymentData.productKey.toLowerCase())
       .single();
 
     if (!productDB && !THEMES[paymentData.productKey]) {
       return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
+    }
+    if (productDB?.archived_at) {
+      return NextResponse.json({ error: 'Produto não está mais disponível' }, { status: 410 });
     }
 
     // 1. Criar Cliente no Asaas

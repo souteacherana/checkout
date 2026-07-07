@@ -20,7 +20,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       if (session?.user?.email) {
         setUserEmail(session.user.email);
         getUserRole(session.user.email).then(role => setUserRole(role));
-        supabase.from('products').select('slug, title').order('title').then(({ data }) => {
+        supabase.from('products').select('slug, title').is('archived_at', null).order('title').then(({ data }) => {
           if (data) setProducts(data);
         });
       }

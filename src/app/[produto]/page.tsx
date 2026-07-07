@@ -28,8 +28,8 @@ export default async function ProdutoCheckout({ params }: PageProps) {
     .eq('slug', slug)
     .single();
 
-  // Se não existir o produto configurado no Banco, mostra página 404
-  if (!workshopConfig) {
+  // Se não existir o produto configurado no Banco (ou estiver arquivado), mostra 404
+  if (!workshopConfig || workshopConfig.archived_at) {
     notFound();
   }
 

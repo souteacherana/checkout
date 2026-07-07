@@ -8,7 +8,7 @@ import Link from "next/link";
 import { getUserRole } from "../actions";
 import {
   Package, Plus, Edit2, Trash2, ExternalLink, LinkIcon,
-  TrendingUp, CheckCircle, X
+  TrendingUp, CheckCircle, X, Archive, ArchiveRestore
 } from "lucide-react";
 
 const CHECKOUT_BASE_URL = "https://checkout.riseeducacao.com.br";
@@ -24,11 +24,12 @@ type Product = {
   fb_pixel_id: string | null;
   fb_capi_token: string | null;
   landing_url: string | null;
+  archived_at?: string | null;
 };
 
 const emptyProduct: Product = {
   slug: "", title: "", price: "", accent_color: "#10b981", accent_color_hover: "#059669",
-  image_src: "", fb_pixel_id: "", fb_capi_token: "", landing_url: ""
+  image_src: "", fb_pixel_id: "", fb_capi_token: "", landing_url: "", archived_at: null
 };
 
 type ProductStats = { produto_slug: string | null; vendas: number; receita: number };
@@ -41,10 +42,14 @@ export default function ProdutosPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [statsRows, setStatsRows] = useState<ProductStats[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState<string>("VIEWER");
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+
+  const isAdmin = role === "ADMIN" || role === "SUPERADMIN";
+  const isSuperAdmin = role === "SUPERADMIN";
 
   const fetchAll = async () => {
     // Stats agregadas no Postgres (RPC sobre a view vendas) — o navegador
@@ -65,9 +70,7 @@ export default function ProdutosPage() {
         return;
       }
       if (session.user?.email) {
-        getUserRole(session.user.email).then(role =>
-          setIsAdmin(role === "ADMIN" || role === "SUPERADMIN")
-        );
+        getUserRole(session.user.email).then(r => setRole(r));
       }
       fetchAll();
     });
@@ -125,6 +128,20 @@ export default function ProdutosPage() {
     fetchAll();
   };
 
+  const toggleArchive = async (p: Product) => {
+    if (!p.id) return;
+    const archiving = !p.archived_at;
+    if (archiving && !confirm(`Ocultar "${p.title}"?\n\nA página de checkout sai do ar e ele some dos links da equipe e da sidebar. O histórico de vendas e o painel continuam acessíveis, e dá pra reativar quando quiser.`)) return;
+
+    const { error } = await supabase
+      .from("products")
+      .update({ archived_at: archiving ? new Date().toISOString() : null })
+      .eq("id", p.id);
+
+    if (error) alert("Erro ao " + (archiving ? "ocultar" : "reativar") + ": " + error.message);
+    fetchAll();
+  };
+
   const copyLink = (slug: string) => {
     navigator.clipboard.writeText(`${CHECKOUT_BASE_URL}/${slug}`);
     setCopied(slug);
@@ -151,14 +168,28 @@ export default function ProdutosPage() {
               <p className="text-xs text-gray-400 -mt-0.5">Painéis, páginas de checkout e desempenho</p>
             </div>
           </div>
-          {isAdmin && !editing && (
-            <button
-              onClick={() => setEditing(emptyProduct)}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-sm transition-all"
-            >
-              <Plus size={16} /> Novo Produto
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {products.some(p => p.archived_at) && (
+              <button
+                onClick={() => setShowArchived(v => !v)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                  showArchived
+                    ? "bg-gray-800 text-white border-gray-800"
+                    : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
+                }`}
+              >
+                <Archive size={15} /> {showArchived ? "Ocultar arquivados" : `Arquivados (${products.filter(p => p.archived_at).length})`}
+              </button>
+            )}
+            {isAdmin && !editing && (
+              <button
+                onClick={() => setEditing(emptyProduct)}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-sm transition-all"
+              >
+                <Plus size={16} /> Novo Produto
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -231,12 +262,18 @@ export default function ProdutosPage() {
 
         {/* Grid de Produtos */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {products.map(p => {
+          {products.filter(p => showArchived || !p.archived_at).map(p => {
             const s = stats.get(p.slug) || { paid: 0, revenue: 0 };
+            const archived = !!p.archived_at;
             return (
-              <div key={p.slug} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+              <div key={p.slug} className={`bg-white rounded-xl shadow-sm border overflow-hidden flex flex-col transition-shadow ${archived ? "border-gray-200 opacity-75" : "border-gray-200 hover:shadow-md"}`}>
                 {/* Banner */}
                 <div className="h-28 relative" style={{ backgroundColor: (p.accent_color || "#10b981") + "18" }}>
+                  {archived && (
+                    <span className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-gray-800/90 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">
+                      <Archive size={11} /> Arquivado
+                    </span>
+                  )}
                   {p.image_src ? (
                     <img src={p.image_src} alt={p.title} className="w-full h-full object-cover" />
                   ) : (
@@ -275,17 +312,30 @@ export default function ProdutosPage() {
                     >
                       Ver Painel
                     </Link>
-                    {isAdmin && (
+                    {isAdmin && !archived && (
                       <button onClick={() => setEditing(p)} title="Editar página de checkout" className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                         <Edit2 size={16} />
                       </button>
                     )}
-                    <button onClick={() => copyLink(p.slug)} title="Copiar link do checkout" className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors relative">
-                      {copied === p.slug ? <CheckCircle size={16} className="text-emerald-500" /> : <LinkIcon size={16} />}
-                    </button>
-                    <a href={`${CHECKOUT_BASE_URL}/${p.slug}`} target="_blank" rel="noopener noreferrer" title="Abrir checkout" className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                      <ExternalLink size={16} />
-                    </a>
+                    {!archived && (
+                      <>
+                        <button onClick={() => copyLink(p.slug)} title="Copiar link do checkout" className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors relative">
+                          {copied === p.slug ? <CheckCircle size={16} className="text-emerald-500" /> : <LinkIcon size={16} />}
+                        </button>
+                        <a href={`${CHECKOUT_BASE_URL}/${p.slug}`} target="_blank" rel="noopener noreferrer" title="Abrir checkout" className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                          <ExternalLink size={16} />
+                        </a>
+                      </>
+                    )}
+                    {isSuperAdmin && (
+                      <button
+                        onClick={() => toggleArchive(p)}
+                        title={archived ? "Reativar produto" : "Ocultar produto (arquivar)"}
+                        className={`p-2 rounded-lg transition-colors ${archived ? "text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50" : "text-gray-400 hover:text-gray-700 hover:bg-gray-100"}`}
+                      >
+                        {archived ? <ArchiveRestore size={16} /> : <Archive size={16} />}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
