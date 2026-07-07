@@ -165,7 +165,7 @@ export default function AdminDashboard() {
       return 0;
     });
 
-  const isFinanceVisible = role === 'ADMIN' || role === 'SUPERADMIN';
+  const isFinanceVisible = ['ANA', 'ADMIN', 'SUPERADMIN'].includes(role);
 
   // Métricas Globais (Baseadas nos Filtros)
   const totalPaid = processedCheckouts.filter(c => c.status === 'PAID').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);

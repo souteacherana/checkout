@@ -268,7 +268,7 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
   );
 
   const accent = product?.accent_color || "#10b981";
-  const isFinanceVisible = role === "ADMIN" || role === "SUPERADMIN";
+  const isFinanceVisible = ["ANA", "ADMIN", "SUPERADMIN"].includes(role);
 
   return (
     <div className="min-h-screen bg-[#f8fafc] pb-10">

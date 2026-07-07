@@ -39,7 +39,7 @@ export default function MeusLinksPage() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState<string | null>(null);
 
-  const isAdmin = role === "ADMIN" || role === "SUPERADMIN";
+  const isAdmin = ["ANA", "ADMIN", "SUPERADMIN"].includes(role);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {

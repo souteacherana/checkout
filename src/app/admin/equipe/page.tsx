@@ -203,6 +203,8 @@ export default function EquipePage() {
               >
                 <option value="VENDEDOR">Vendedor (vê só as próprias vendas, 30 dias)</option>
                 <option value="VIEWER">Visualizador (vê tudo dos últimos 30 dias)</option>
+                <option value="EMMY">Emmy (visualiza + define início do Partiu 10k)</option>
+                <option value="ANA">Ana (vê e opera tudo, exceto Equipe)</option>
                 <option value="ADMIN">Administrador (Pode editar checkouts)</option>
                 <option value="SUPERADMIN">Super Admin (Acesso total)</option>
               </select>

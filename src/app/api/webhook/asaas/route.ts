@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/nextjs';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { astronService } from '@/lib/astron';
 import { sendCapiEvent } from '@/lib/capi';
+import { detectMentoria, syncMentoradoFromAsaas } from '@/lib/mentorados';
 
 export async function POST(req: Request) {
   try {
@@ -34,6 +35,21 @@ export async function POST(req: Request) {
         .single();
 
       if (fetchError || !checkout) {
+        // Pagamento externo ao checkout: pode ser mentoria cobrada direto
+        // no Asaas (Elite / Partiu 10k) → cria/atualiza o mentorado da Ana.
+        const mentoria = detectMentoria(payment.description);
+        if (mentoria && payment.customer) {
+          try {
+            const id = await syncMentoradoFromAsaas(payment.customer, mentoria);
+            console.log(`[Webhook Asaas] Mentorado ${mentoria} sincronizado (${id}) a partir do pagamento ${paymentId}.`);
+            return NextResponse.json({ success: true, message: 'Mentorado synced' }, { status: 200 });
+          } catch (err) {
+            Sentry.captureException(err, { tags: { area: 'mentorados-webhook' } });
+            console.error('Erro ao sincronizar mentorado:', err);
+            // 200 mesmo assim: o backfill/próxima parcela corrige
+            return NextResponse.json({ success: true, message: 'Mentorado sync failed, ignored' }, { status: 200 });
+          }
+        }
         console.warn(`Checkout não encontrado no banco para o pagamento ${paymentId}. Ignorando evento (provavelmente gerado externo ao nosso checkout).`);
         // Retornamos 200 OK para o Asaas não achar que o webhook falhou e não nos penalizar.
         return NextResponse.json({ success: true, message: 'Checkout not found locally, ignored.' }, { status: 200 });

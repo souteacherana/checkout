@@ -48,7 +48,7 @@ export default function ProdutosPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
 
-  const isAdmin = role === "ADMIN" || role === "SUPERADMIN";
+  const isAdmin = ["ANA", "ADMIN", "SUPERADMIN"].includes(role);
   const isSuperAdmin = role === "SUPERADMIN";
 
   const fetchAll = async () => {

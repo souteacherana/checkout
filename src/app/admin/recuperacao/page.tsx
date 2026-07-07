@@ -59,7 +59,7 @@ export default function RecuperacaoPage() {
       }
       if (session.user?.email) {
         getUserRole(session.user.email).then(role =>
-          setIsAdmin(role === "ADMIN" || role === "SUPERADMIN")
+          setIsAdmin(["ANA", "ADMIN", "SUPERADMIN"].includes(role))
         );
       }
       fetchRows();

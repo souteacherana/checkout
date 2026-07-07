@@ -6,7 +6,7 @@ export async function POST(req: Request) {
   try {
     // Apenas ADMIN e SUPERADMIN podem disparar o sync (VIEWER só visualiza)
     const role = await getRoleFromRequest(req);
-    if (role !== 'ADMIN' && role !== 'SUPERADMIN') {
+    if (!role || !['ANA', 'ADMIN', 'SUPERADMIN'].includes(role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

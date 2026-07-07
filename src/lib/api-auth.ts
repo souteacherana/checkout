@@ -1,6 +1,9 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
-export type UserRole = 'VIEWER' | 'VENDEDOR' | 'ADMIN' | 'SUPERADMIN';
+export type UserRole = 'VIEWER' | 'VENDEDOR' | 'EMMY' | 'ANA' | 'ADMIN' | 'SUPERADMIN';
+
+/** Papéis com visão financeira completa (sem janela de 30 dias, líquido visível) */
+export const FINANCE_ROLES = ['ANA', 'ADMIN', 'SUPERADMIN'];
 
 /**
  * Valida o Bearer token da requisição e retorna a role do usuário

@@ -75,6 +75,32 @@ export type ProductRow = {
   archived_at: string | null;
 };
 
+export type MentoradoRow = {
+  id: string;
+  mentoria: 'elite' | 'partiu10k';
+  status: string; // ativo | concluido | cancelado
+  asaas_customer_id: string | null;
+  nome: string;
+  email: string | null;
+  telefone: string | null;
+  cpf: string | null;
+  rg: string | null;
+  endereco: string | null;
+  cep: string | null;
+  imersao_rise: boolean;
+  origem: string | null;
+  valor_contrato: number | null;
+  a_pagar: number | null;
+  parcelas_vencidas: number;
+  brinde_enviado: boolean;
+  data_inicio: string | null;
+  data_termino: string | null;
+  notas: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+};
+
 export type UserRoleRow = {
   email: string;
   role: string;
@@ -120,6 +146,7 @@ export interface Database {
       eduzz_sales: TableDef<EduzzSaleRow>;
       products: TableDef<ProductRow>;
       user_roles: TableDef<UserRoleRow>;
+      mentorados: TableDef<MentoradoRow>;
     };
     Views: {
       vendas: { Row: VendaRow; Relationships: [] };
