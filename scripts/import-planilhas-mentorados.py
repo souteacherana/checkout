@@ -96,11 +96,14 @@ def parse_data(v):
 
 
 def parse_valor(v):
+    # célula numérica do Excel vem como int/float — usa direto
+    # (NUNCA tratar o ponto de "12000.0" como separador de milhar!)
+    if isinstance(v, (int, float)) and not pd.isna(v):
+        return float(v) if v > 0 else None
     s = norm_texto(v)
     if not s:
         return None
     s = re.sub(r"[R$\s]", "", s).replace(".", "").replace(",", ".")
-    # cuidado com "3997" (sem decimais) vs "2247.5"
     try:
         f = float(s)
         return f if f > 0 else None
@@ -118,6 +121,11 @@ def linha_para_registro(mentoria, status, aba, row, cols):
 
     nome = norm_texto(get("nome"))
     if not nome or re.match(r"^\d+\.?$", nome):
+        return None
+
+    # Títulos de seção da planilha ("Suspenso", "ENTRADA FACILITADA"...)
+    # não têm NENHUM contato — pessoa de verdade tem e-mail, fone ou CPF
+    if not any(norm_texto(get(c)) for c in ("email", "telefone", "cpf")):
         return None
 
     inicio, inicio_txt = parse_data(get("inicio"))
@@ -274,8 +282,10 @@ for r in registros:
     if alvo:
         nao_casados_asaas.discard(alvo["id"])
         # registro do Asaas: mantém nome/valores financeiros de lá;
-        # planilha manda nos campos manuais
-        update = {k: v for k, v in r.items() if k not in ("mentoria", "nome", "valor_contrato") and v is not None}
+        # planilha manda nos campos manuais. Se o registro NÃO tem Asaas
+        # (foi criado da planilha), o valor da planilha também entra.
+        excluir = ("mentoria", "nome", "valor_contrato") if alvo.get("asaas_customer_id") else ("mentoria", "nome")
+        update = {k: v for k, v in r.items() if k not in excluir and v is not None}
         update["updated_at"] = datetime.utcnow().isoformat()
         supa("PATCH", f"mentorados?id=eq.{alvo['id']}", update)
         atualizados += 1

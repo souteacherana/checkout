@@ -241,7 +241,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
   return (
     <div className="min-h-screen bg-[#f8fafc] pb-10">
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: cfg.cor }}>
               <GraduationCap size={18} />
@@ -255,7 +255,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
           {canEditAll && (
             <button
               onClick={() => setEditing(novoMentorado(mentoria))}
@@ -265,7 +265,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
               <Plus size={14} /> Adicionar
             </button>
           )}
-          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+          <div className="flex flex-wrap gap-1 bg-gray-100 rounded-lg p-1">
             {[
               ["todos", `Todos (${rows.length})`] as [string, string],
               ...Object.entries(STATUS_CONFIG).map(([key, cfg2]) =>
