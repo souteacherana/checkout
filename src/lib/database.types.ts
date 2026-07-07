@@ -87,12 +87,15 @@ export type MentoradoRow = {
   rg: string | null;
   endereco: string | null;
   cep: string | null;
-  imersao_rise: boolean;
+  imersao_rise: string | null;   // edição: "VIP - 2025", "Rise 2026"...
   origem: string | null;
   valor_contrato: number | null;
   a_pagar: number | null;
   parcelas_vencidas: number;
-  brinde_enviado: boolean;
+  materia: string | null;        // P10k: matéria que o professor ensina
+  caneca: string | null;         // Elite: Não | Em produção | Sim
+  renovacao: string | null;
+  forma_pagamento: string | null;
   data_inicio: string | null;
   data_termino: string | null;
   notas: string | null;

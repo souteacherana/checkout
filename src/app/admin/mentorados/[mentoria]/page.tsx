@@ -7,13 +7,13 @@ import Link from "next/link";
 import { getUserRole } from "../../actions";
 import type { MentoradoRow } from "@/lib/database.types";
 import {
-  GraduationCap, Search, X, AlertCircle, CheckCircle, Gift,
+  GraduationCap, Search, X, AlertCircle, CheckCircle,
   CalendarClock, Pencil, Save, Loader2, Plus
 } from "lucide-react";
 
-const LABELS: Record<string, { titulo: string; brinde: string; cor: string }> = {
-  elite: { titulo: "Professores de Elite", brinde: "Caneca", cor: "#8b5cf6" },
-  partiu10k: { titulo: "Partiu 10k", brinde: "Matéria", cor: "#0ea5e9" },
+const LABELS: Record<string, { titulo: string; campoExtra: "caneca" | "materia"; campoExtraLabel: string; cor: string }> = {
+  elite: { titulo: "Professores de Elite", campoExtra: "caneca", campoExtraLabel: "Caneca", cor: "#8b5cf6" },
+  partiu10k: { titulo: "Partiu 10k", campoExtra: "materia", campoExtraLabel: "Matéria", cor: "#0ea5e9" },
 };
 
 const brl = (v: number) =>
@@ -32,8 +32,9 @@ function novoMentorado(mentoria: string): MentoradoRow {
   return {
     id: "", mentoria: mentoria as "elite" | "partiu10k", status: "ativo",
     asaas_customer_id: null, nome: "", email: null, telefone: null, cpf: null,
-    rg: null, endereco: null, cep: null, imersao_rise: false, origem: null,
-    valor_contrato: null, a_pagar: null, parcelas_vencidas: 0, brinde_enviado: false,
+    rg: null, endereco: null, cep: null, imersao_rise: null, origem: null,
+    valor_contrato: null, a_pagar: null, parcelas_vencidas: 0,
+    materia: null, caneca: null, renovacao: null, forma_pagamento: null,
     data_inicio: null, data_termino: null, notas: null,
     created_at: "", updated_at: "", deleted_at: null,
   };
@@ -138,11 +139,14 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
         rg: editing.rg || null,
         endereco: editing.endereco || null,
         cep: editing.cep || null,
-        imersao_rise: editing.imersao_rise,
+        imersao_rise: editing.imersao_rise || null,
         origem: editing.origem || null,
+        materia: editing.materia || null,
+        caneca: editing.caneca || null,
+        renovacao: editing.renovacao || null,
+        forma_pagamento: editing.forma_pagamento || null,
         valor_contrato: editing.valor_contrato,
         a_pagar: editing.a_pagar,
-        brinde_enviado: editing.brinde_enviado,
         data_inicio: editing.data_inicio,
         data_termino: editing.data_termino || (editing.data_inicio ? terminoAutomatico(editing.data_inicio) : null),
         notas: editing.notas || null,
@@ -173,7 +177,9 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                 nome: editing.nome, email: editing.email, telefone: editing.telefone,
                 cpf: editing.cpf, rg: editing.rg, endereco: editing.endereco, cep: editing.cep,
                 imersao_rise: editing.imersao_rise, origem: editing.origem,
-                brinde_enviado: editing.brinde_enviado, status: editing.status,
+                materia: editing.materia, caneca: editing.caneca,
+                renovacao: editing.renovacao, forma_pagamento: editing.forma_pagamento,
+                status: editing.status,
                 data_inicio: editing.data_inicio, data_termino: editing.data_termino,
                 valor_contrato: editing.valor_contrato, a_pagar: editing.a_pagar,
                 notas: editing.notas,
@@ -290,8 +296,8 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                   <th className="px-5 py-3">Mentorado</th>
                   <th className="px-5 py-3">Contrato</th>
                   <th className="px-5 py-3">Início → Término</th>
-                  <th className="px-5 py-3 text-center">{cfg.brinde}</th>
-                  <th className="px-5 py-3 text-center">Imersão</th>
+                  <th className="px-5 py-3">{cfg.campoExtraLabel}</th>
+                  <th className="px-5 py-3">Imersão</th>
                   <th className="px-5 py-3">Origem</th>
                   <th className="px-5 py-3 text-center">Ações</th>
                 </tr>
@@ -328,16 +334,8 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-3 text-center">
-                        {m.brinde_enviado
-                          ? <CheckCircle size={16} className="inline text-emerald-500" />
-                          : <Gift size={16} className="inline text-gray-300" />}
-                      </td>
-                      <td className="px-5 py-3 text-center">
-                        {m.imersao_rise
-                          ? <CheckCircle size={16} className="inline text-emerald-500" />
-                          : <span className="text-gray-300">—</span>}
-                      </td>
+                      <td className="px-5 py-3 text-xs text-gray-600 max-w-[110px] truncate">{m[cfg.campoExtra] || "—"}</td>
+                      <td className="px-5 py-3 text-xs text-gray-600 max-w-[110px] truncate">{m.imersao_rise || "—"}</td>
                       <td className="px-5 py-3 text-xs text-gray-500 max-w-[140px] truncate">{m.origem || "—"}</td>
                       <td className="px-5 py-3 text-center">
                         {canEditInicio && (
@@ -427,15 +425,21 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
 
               {canEditAll && (
                 <>
-                  <div className="flex items-center gap-6 pt-1">
-                    <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                      <input type="checkbox" checked={editing.brinde_enviado} onChange={e => setEditing({ ...editing, brinde_enviado: e.target.checked })} className="w-4 h-4 accent-emerald-600" />
-                      {cfg.brinde} enviada
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                      <input type="checkbox" checked={editing.imersao_rise} onChange={e => setEditing({ ...editing, imersao_rise: e.target.checked })} className="w-4 h-4 accent-emerald-600" />
-                      Imersão Rise
-                    </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Campo label={cfg.campoExtraLabel}>
+                      <input className="input-edit" placeholder={cfg.campoExtra === "caneca" ? "Não / Em produção / Sim" : "Ex: Inglês"} value={editing[cfg.campoExtra] || ""} onChange={e => setEditing({ ...editing, [cfg.campoExtra]: e.target.value })} />
+                    </Campo>
+                    <Campo label="Imersão Rise">
+                      <input className="input-edit" placeholder="Ex: VIP 2026 / Rise 2026" value={editing.imersao_rise || ""} onChange={e => setEditing({ ...editing, imersao_rise: e.target.value })} />
+                    </Campo>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Campo label="Renovação">
+                      <input className="input-edit" placeholder='Ex: SIM - 8 MESES' value={editing.renovacao || ""} onChange={e => setEditing({ ...editing, renovacao: e.target.value })} />
+                    </Campo>
+                    <Campo label="Forma de Pagamento">
+                      <input className="input-edit" placeholder="Ex: Asaas 12x - Cartão" value={editing.forma_pagamento || ""} onChange={e => setEditing({ ...editing, forma_pagamento: e.target.value })} />
+                    </Campo>
                   </div>
                   <Campo label="Status">
                     <select className="input-edit" value={editing.status} onChange={e => setEditing({ ...editing, status: e.target.value })}>

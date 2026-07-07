@@ -39,7 +39,8 @@ export async function PATCH(req: Request) {
     // Campos que cada papel pode tocar
     const EDITAVEIS_ANA = [
       'nome', 'email', 'telefone', 'cpf', 'rg', 'endereco', 'cep',
-      'imersao_rise', 'origem', 'brinde_enviado', 'data_inicio', 'data_termino',
+      'imersao_rise', 'origem', 'materia', 'caneca', 'renovacao',
+      'forma_pagamento', 'data_inicio', 'data_termino',
       'status', 'notas', 'valor_contrato', 'a_pagar',
     ];
     const permitidos = role === 'EMMY' ? ['data_inicio'] : EDITAVEIS_ANA;
