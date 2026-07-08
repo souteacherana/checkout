@@ -96,6 +96,9 @@ export type MentoradoRow = {
   caneca: string | null;         // Elite: Não | Em produção | Sim
   renovacao: string | null;
   forma_pagamento: string | null;
+  ciclo: number;                 // 1º, 2º ciclo da mentoria...
+  duracao_meses: number;         // término = início + duração
+  financeiro_manual: boolean;    // true = automação não sobrescreve valores
   data_inicio: string | null;
   data_termino: string | null;
   notas: string | null;

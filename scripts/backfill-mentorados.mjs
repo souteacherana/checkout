@@ -84,28 +84,33 @@ for (const [key, pagamentos] of grupos) {
 
   // Existe?
   const existRes = await fetch(
-    `${SUPA_URL}/rest/v1/mentorados?select=id&mentoria=eq.${mentoria}&asaas_customer_id=eq.${customerId}`,
+    `${SUPA_URL}/rest/v1/mentorados?select=id,financeiro_manual&mentoria=eq.${mentoria}&asaas_customer_id=eq.${customerId}`,
     { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
   );
   const existentes = await existRes.json();
 
-  const autoFields = {
+  const contato = {
     nome: cust.name || 'Sem nome',
     email: cust.email || null,
     telefone: cust.mobilePhone || cust.phone || null,
     cpf: cust.cpfCnpj || null,
+    updated_at: new Date().toISOString(),
+  };
+  const financeiro = {
     valor_contrato: valorContrato,
     valor_pago: valorPago,
     parcelas_vencidas: vencidas,
-    updated_at: new Date().toISOString(),
   };
+  const autoFields = { ...contato, ...financeiro };
 
   let res;
   if (existentes.length > 0) {
+    // Trava financeira: valores editados à mão não são sobrescritos
+    const update = existentes[0].financeiro_manual ? contato : autoFields;
     res = await fetch(`${SUPA_URL}/rest/v1/mentorados?id=eq.${existentes[0].id}`, {
       method: 'PATCH',
       headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-      body: JSON.stringify(autoFields),
+      body: JSON.stringify(update),
     });
   } else {
     res = await fetch(`${SUPA_URL}/rest/v1/mentorados`, {

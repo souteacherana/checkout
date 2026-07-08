@@ -87,26 +87,31 @@ export async function syncMentoradoFromAsaas(customerId: string, mentoria: Mento
   //    (RG, datas, imersão, brinde, origem, notas) nunca são sobrescritos.
   const { data: existing } = await supabaseAdmin
     .from('mentorados')
-    .select('id')
+    .select('id, financeiro_manual')
     .eq('mentoria', mentoria)
     .eq('asaas_customer_id', customerId)
     .maybeSingle();
 
-  const autoFields = {
+  const contato = {
     nome: cust.name || 'Sem nome',
     email: cust.email || null,
     telefone: cust.mobilePhone || cust.phone || null,
     cpf: cust.cpfCnpj || null,
+    updated_at: new Date().toISOString(),
+  };
+  const financeiro = {
     valor_contrato: valorContrato,
     valor_pago: valorPago,
     parcelas_vencidas: vencidas,
-    updated_at: new Date().toISOString(),
   };
 
   if (existing) {
-    await supabaseAdmin.from('mentorados').update(autoFields).eq('id', existing.id);
+    // Trava financeira: valores editados à mão (multi-ciclo) não são sobrescritos
+    const update = existing.financeiro_manual ? contato : { ...contato, ...financeiro };
+    await supabaseAdmin.from('mentorados').update(update).eq('id', existing.id);
     return existing.id;
   }
+  const autoFields = { ...contato, ...financeiro };
 
   const { data: created, error } = await supabaseAdmin
     .from('mentorados')

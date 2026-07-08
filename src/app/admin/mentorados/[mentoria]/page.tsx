@@ -16,13 +16,22 @@ const LABELS: Record<string, { titulo: string; campoExtra: "caneca" | "materia";
   partiu10k: { titulo: "Partiu 10k", campoExtra: "materia", campoExtraLabel: "Matéria", cor: "#0ea5e9" },
 };
 
+// Etiquetas oficiais da equipe (uma por mentorado)
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
-  ativo:      { label: "Ativo",      badge: "bg-emerald-100 text-emerald-700" },
-  devendo:    { label: "Devendo",    badge: "bg-red-100 text-red-700" },
-  suspenso:   { label: "Suspenso",   badge: "bg-amber-100 text-amber-700" },
-  finalizado: { label: "Finalizado", badge: "bg-gray-100 text-gray-600" },
-  renovacao:  { label: "Renovação",  badge: "bg-blue-100 text-blue-700" },
+  ativo:              { label: "Ativo",              badge: "bg-emerald-100 text-emerald-700" },
+  devedor:            { label: "Devedor",            badge: "bg-red-100 text-red-700" },
+  entrada_facilitada: { label: "Entrada Facilitada", badge: "bg-amber-100 text-amber-700" },
+  cliente_problema:   { label: "Cliente problema",   badge: "bg-purple-100 text-purple-700" },
+  finalizado:         { label: "Finalizado",         badge: "bg-gray-100 text-gray-600" },
+  cancelado:          { label: "Contrato cancelado", badge: "bg-rose-100 text-rose-700" },
 };
+
+const RISE_ANOS = ["2025", "2026", "2027"];
+
+// imersao_rise guarda os anos separados por vírgula ("2026, 2027")
+function riseAnosDe(valor: string | null): Set<string> {
+  return new Set((valor || "").split(/[^\d]+/).filter(a => /^\d{4}$/.test(a)));
+}
 
 const brl = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -43,14 +52,15 @@ function novoMentorado(mentoria: string): MentoradoRow {
     rg: null, endereco: null, cep: null, imersao_rise: null, origem: null,
     valor_contrato: null, valor_pago: null, parcelas_vencidas: 0,
     materia: null, caneca: null, renovacao: null, forma_pagamento: null,
+    ciclo: 1, duracao_meses: 6, financeiro_manual: false,
     data_inicio: null, data_termino: null, notas: null,
     created_at: "", updated_at: "", deleted_at: null,
   };
 }
 
-function terminoAutomatico(inicio: string): string {
+function terminoAutomatico(inicio: string, meses: number): string {
   const d = new Date(inicio + "T12:00:00");
-  d.setMonth(d.getMonth() + 6);
+  d.setMonth(d.getMonth() + (meses || 6));
   return d.toISOString().split("T")[0];
 }
 
@@ -164,7 +174,9 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
         forma_pagamento: editing.forma_pagamento || null,
         valor_contrato: editing.valor_contrato,
         data_inicio: editing.data_inicio,
-        data_termino: editing.data_termino || (editing.data_inicio ? terminoAutomatico(editing.data_inicio) : null),
+        ciclo: editing.ciclo || 1,
+        duracao_meses: editing.duracao_meses || 6,
+        data_termino: editing.data_termino || (editing.data_inicio ? terminoAutomatico(editing.data_inicio, editing.duracao_meses) : null),
         notas: editing.notas || null,
       }]);
       setSaving(false);
@@ -195,6 +207,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                 imersao_rise: editing.imersao_rise, origem: editing.origem,
                 materia: editing.materia, caneca: editing.caneca,
                 renovacao: editing.renovacao, forma_pagamento: editing.forma_pagamento,
+                ciclo: editing.ciclo || 1, duracao_meses: editing.duracao_meses || 6,
                 status: editing.status,
                 data_inicio: editing.data_inicio, data_termino: editing.data_termino,
                 valor_contrato: editing.valor_contrato,
@@ -339,7 +352,10 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                         <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${st.badge}`}>{st.label}</span>
                       </td>
                       <td className="px-5 py-3 whitespace-nowrap">
-                        <p className="font-bold text-gray-900">{m.valor_contrato != null ? brl(Number(m.valor_contrato)) : "—"}</p>
+                        <p className="font-bold text-gray-900">
+                          {m.valor_contrato != null ? brl(Number(m.valor_contrato)) : "—"}
+                          {(m.ciclo || 1) > 1 && <span className="ml-1.5 text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded align-middle">{m.ciclo}º ciclo</span>}
+                        </p>
                         {m.valor_pago != null && (
                           <p className={`text-xs ${Number(m.valor_pago) >= Number(m.valor_contrato || 0) ? "text-emerald-600" : "text-gray-400"}`}>
                             pago: {brl(Number(m.valor_pago))}
@@ -417,8 +433,11 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                       </div>
                     </Campo>
                   </div>
-                  {editing.asaas_customer_id && (
-                    <p className="text-xs text-gray-400 -mt-1">⚠️ Mentorado ligado ao Asaas: Valor do Contrato e Valor Pago são recalculados automaticamente a cada parcela paga.</p>
+                  {editing.asaas_customer_id && !editing.financeiro_manual && (
+                    <p className="text-xs text-gray-400 -mt-1">⚠️ Ligado ao Asaas: valores recalculados a cada parcela. Se você editar o Valor do Contrato (ex: caso multi-ciclo), a automação financeira desliga pra este mentorado.</p>
+                  )}
+                  {editing.financeiro_manual && (
+                    <p className="text-xs text-amber-600 -mt-1">🔒 Valores travados em modo manual — a automação do Asaas não sobrescreve mais este mentorado.</p>
                   )}
                 </>
               ) : (
@@ -448,11 +467,46 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
               {canEditAll && (
                 <>
                   <div className="grid grid-cols-2 gap-3">
+                    <Campo label="Ciclo da Mentoria">
+                      <select className="input-edit" value={editing.ciclo || 1} onChange={e => setEditing({ ...editing, ciclo: Number(e.target.value) })}>
+                        {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}º ciclo</option>)}
+                      </select>
+                    </Campo>
+                    <Campo label="Duração (meses)">
+                      <select className="input-edit" value={editing.duracao_meses || 6} onChange={e => setEditing({ ...editing, duracao_meses: Number(e.target.value) })}>
+                        {[3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => <option key={n} value={n}>{n} meses</option>)}
+                      </select>
+                    </Campo>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
                     <Campo label={cfg.campoExtraLabel}>
                       <input className="input-edit" placeholder={cfg.campoExtra === "caneca" ? "Não / Em produção / Sim" : "Ex: Inglês"} value={editing[cfg.campoExtra] || ""} onChange={e => setEditing({ ...editing, [cfg.campoExtra]: e.target.value })} />
                     </Campo>
-                    <Campo label="Imersão Rise">
-                      <input className="input-edit" placeholder="Ex: VIP 2026 / Rise 2026" value={editing.imersao_rise || ""} onChange={e => setEditing({ ...editing, imersao_rise: e.target.value })} />
+                    <Campo label="Ingresso Rise (ano)">
+                      <div className="flex gap-1.5 pt-1.5">
+                        {RISE_ANOS.map(ano => {
+                          const anos = riseAnosDe(editing.imersao_rise);
+                          const marcado = anos.has(ano);
+                          return (
+                            <button
+                              key={ano}
+                              type="button"
+                              onClick={() => {
+                                const novo = new Set(anos);
+                                if (marcado) novo.delete(ano); else novo.add(ano);
+                                setEditing({ ...editing, imersao_rise: [...novo].sort().join(", ") || null });
+                              }}
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                                marcado
+                                  ? "bg-indigo-600 text-white border-indigo-600"
+                                  : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
+                              }`}
+                            >
+                              {ano}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </Campo>
                   </div>
                   <div className="grid grid-cols-2 gap-3">

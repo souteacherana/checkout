@@ -5,10 +5,10 @@ import { getRoleFromRequest } from '@/lib/api-auth';
 import { MENTORIA_DURACAO_MESES } from '@/lib/mentorados';
 import type { MentoradoRow } from '@/lib/database.types';
 
-/** Início + 6 meses (regra das duas mentorias) */
-function calcularTermino(dataInicio: string): string {
+/** Início + duração da mentoria (meses) */
+function calcularTermino(dataInicio: string, meses: number): string {
   const d = new Date(dataInicio + 'T12:00:00');
-  d.setMonth(d.getMonth() + MENTORIA_DURACAO_MESES);
+  d.setMonth(d.getMonth() + (meses || MENTORIA_DURACAO_MESES));
   return d.toISOString().split('T')[0];
 }
 
@@ -30,7 +30,7 @@ export async function PATCH(req: Request) {
 
     const { data: mentorado } = await supabaseAdmin
       .from('mentorados')
-      .select('id, mentoria, data_termino')
+      .select('id, mentoria, data_termino, duracao_meses, asaas_customer_id')
       .eq('id', id)
       .single();
 
@@ -41,7 +41,7 @@ export async function PATCH(req: Request) {
       'nome', 'email', 'telefone', 'cpf', 'rg', 'endereco', 'cep',
       'imersao_rise', 'origem', 'materia', 'caneca', 'renovacao',
       'forma_pagamento', 'data_inicio', 'data_termino',
-      'status', 'notas', 'valor_contrato',
+      'status', 'notas', 'valor_contrato', 'ciclo', 'duracao_meses',
     ];
     const permitidos = role === 'EMMY' ? ['data_inicio'] : EDITAVEIS_ANA;
 
@@ -57,9 +57,15 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: 'Nenhum campo permitido no payload' }, { status: 400 });
     }
 
-    // Definiu a data de início e não mandou término junto → calcula início + 6 meses
+    // Definiu a data de início e não mandou término junto → início + duração
     if (typeof update.data_inicio === 'string' && update.data_inicio && !('data_termino' in update)) {
-      update.data_termino = calcularTermino(update.data_inicio);
+      const meses = Number(update.duracao_meses ?? mentorado.duracao_meses) || MENTORIA_DURACAO_MESES;
+      update.data_termino = calcularTermino(update.data_inicio, meses);
+    }
+    // Editou o valor de um mentorado ligado ao Asaas → trava a automação
+    // financeira (senão a próxima parcela desfaria o ajuste do multi-ciclo)
+    if ('valor_contrato' in update && mentorado.asaas_customer_id) {
+      update.financeiro_manual = true;
     }
     update.updated_at = new Date().toISOString();
 
