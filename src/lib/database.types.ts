@@ -118,8 +118,22 @@ export type MentoradoCicloRow = {
   updated_at: string;
 };
 
-// Pessoa + seus ciclos (embedded do Supabase)
-export type MentoradoComCiclos = MentoradoRow & { mentorado_ciclos: MentoradoCicloRow[] };
+// Reunião/consultoria de um mentorado
+export type MentoradoReuniaoRow = {
+  id: string;
+  mentorado_id: string;
+  tipo: string;          // consultoria (elite) | cs (p10k) | extra_ana (p10k)
+  consultor: string | null;
+  data: string;
+  notas: string | null;
+  created_at: string;
+};
+
+// Pessoa + seus ciclos + reuniões (embedded do Supabase)
+export type MentoradoComCiclos = MentoradoRow & {
+  mentorado_ciclos: MentoradoCicloRow[];
+  mentorado_reunioes: MentoradoReuniaoRow[];
+};
 
 export type UserRoleRow = {
   email: string;
@@ -168,6 +182,7 @@ export interface Database {
       user_roles: TableDef<UserRoleRow>;
       mentorados: TableDef<MentoradoRow>;
       mentorado_ciclos: TableDef<MentoradoCicloRow>;
+      mentorado_reunioes: TableDef<MentoradoReuniaoRow>;
     };
     Views: {
       vendas: { Row: VendaRow; Relationships: [] };
