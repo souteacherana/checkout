@@ -22,6 +22,7 @@ const TAGS_CONFIG: Record<string, { label: string; badge: string }> = {
   entrada_facilitada: { label: "Entrada Facilitada", badge: "bg-amber-100 text-amber-700" },
   devedor:            { label: "Devedor",            badge: "bg-red-100 text-red-700" },
   cliente_problema:   { label: "Cliente problema",   badge: "bg-purple-100 text-purple-700" },
+  suspenso:           { label: "Suspenso",           badge: "bg-slate-200 text-slate-600" },
   finalizado:         { label: "Finalizado",         badge: "bg-gray-100 text-gray-600" },
   cancelado:          { label: "Contrato cancelado", badge: "bg-rose-100 text-rose-700" },
 };
