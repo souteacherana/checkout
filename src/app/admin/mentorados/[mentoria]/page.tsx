@@ -16,15 +16,18 @@ const LABELS: Record<string, { titulo: string; campoExtra: "caneca" | "materia";
   partiu10k: { titulo: "Partiu 10k", campoExtra: "materia", campoExtraLabel: "Matéria", cor: "#0ea5e9" },
 };
 
-// Etiquetas oficiais da equipe (uma por mentorado)
-const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
+// Tags da equipe (um mentorado pode ter várias)
+const TAGS_CONFIG: Record<string, { label: string; badge: string }> = {
   ativo:              { label: "Ativo",              badge: "bg-emerald-100 text-emerald-700" },
-  devedor:            { label: "Devedor",            badge: "bg-red-100 text-red-700" },
   entrada_facilitada: { label: "Entrada Facilitada", badge: "bg-amber-100 text-amber-700" },
+  devedor:            { label: "Devedor",            badge: "bg-red-100 text-red-700" },
   cliente_problema:   { label: "Cliente problema",   badge: "bg-purple-100 text-purple-700" },
   finalizado:         { label: "Finalizado",         badge: "bg-gray-100 text-gray-600" },
   cancelado:          { label: "Contrato cancelado", badge: "bg-rose-100 text-rose-700" },
 };
+
+// Só estas 3 aparecem como filtro na barra; o resto é só tag
+const FILTROS_BARRA = ["ativo", "entrada_facilitada"];
 
 const RISE_ANOS = ["2025", "2026", "2027"];
 
@@ -47,7 +50,7 @@ function diasParaTermino(m: MentoradoRow, now: number): number | null {
 // Rascunho de mentorado novo (inclusão manual — ex: pagamento 100% via Pix)
 function novoMentorado(mentoria: string): MentoradoRow {
   return {
-    id: "", mentoria: mentoria as "elite" | "partiu10k", status: "ativo",
+    id: "", mentoria: mentoria as "elite" | "partiu10k", status: "ativo", tags: ["ativo"],
     asaas_customer_id: null, nome: "", email: null, telefone: null, cpf: null,
     rg: null, endereco: null, cep: null, imersao_rise: null, origem: null,
     valor_contrato: null, valor_pago: null, parcelas_vencidas: 0,
@@ -109,7 +112,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
 
   const filtered = useMemo(() => {
     let list = rows;
-    if (filtro !== "todos") list = list.filter(m => m.status === filtro);
+    if (filtro !== "todos") list = list.filter(m => (m.tags || []).includes(filtro));
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(m =>
@@ -123,12 +126,12 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
   }, [rows, filtro, search]);
 
   const totals = useMemo(() => {
-    const porStatus: Record<string, number> = {};
-    for (const m of rows) porStatus[m.status] = (porStatus[m.status] || 0) + 1;
+    const porTag: Record<string, number> = {};
+    for (const m of rows) for (const t of (m.tags || [])) porTag[t] = (porTag[t] || 0) + 1;
     return {
-      porStatus,
-      ativos: porStatus["ativo"] || 0,
-      aReceber: rows.filter(m => m.status === "ativo" || m.status === "devendo")
+      porTag,
+      ativos: porTag["ativo"] || 0,
+      aReceber: rows.filter(m => (m.tags || []).includes("ativo") || (m.tags || []).includes("devedor"))
         .reduce((acc, m) => acc + Math.max(0, Number(m.valor_contrato || 0) - Number(m.valor_pago || 0)), 0),
     };
   }, [rows]);
@@ -176,6 +179,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
         data_inicio: editing.data_inicio,
         ciclo: editing.ciclo || 1,
         duracao_meses: editing.duracao_meses || 6,
+        tags: editing.tags?.length ? editing.tags : ["ativo"],
         data_termino: editing.data_termino || (editing.data_inicio ? terminoAutomatico(editing.data_inicio, editing.duracao_meses) : null),
         notas: editing.notas || null,
       }]);
@@ -208,7 +212,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                 materia: editing.materia, caneca: editing.caneca,
                 renovacao: editing.renovacao, forma_pagamento: editing.forma_pagamento,
                 ciclo: editing.ciclo || 1, duracao_meses: editing.duracao_meses || 6,
-                status: editing.status,
+                tags: editing.tags || [],
                 data_inicio: editing.data_inicio, data_termino: editing.data_termino,
                 valor_contrato: editing.valor_contrato,
                 notas: editing.notas,
@@ -281,8 +285,8 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
           <div className="flex flex-wrap gap-1 bg-gray-100 rounded-lg p-1">
             {[
               ["todos", `Todos (${rows.length})`] as [string, string],
-              ...Object.entries(STATUS_CONFIG).map(([key, cfg2]) =>
-                [key, `${cfg2.label}${totals.porStatus[key] ? ` (${totals.porStatus[key]})` : ""}`] as [string, string]
+              ...FILTROS_BARRA.map(key =>
+                [key, `${TAGS_CONFIG[key].label}${totals.porTag[key] ? ` (${totals.porTag[key]})` : ""}`] as [string, string]
               ),
             ].map(([key, label]) => (
               <button
@@ -323,7 +327,7 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
               <thead className="bg-[#f8fafc] border-b border-gray-200 text-xs uppercase font-semibold text-gray-500">
                 <tr>
                   <th className="px-5 py-3">Mentorado</th>
-                  <th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3">Tags</th>
                   <th className="px-5 py-3">Contrato</th>
                   <th className="px-5 py-3">Início → Término</th>
                   <th className="px-5 py-3">{cfg.campoExtraLabel}</th>
@@ -333,15 +337,21 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filtered.map(m => {
+                  const tags = m.tags || [];
                   const dias = diasParaTermino(m, now);
-                  const emRenovacao = m.status === "ativo" && dias !== null && dias <= 30;
-                  const st = STATUS_CONFIG[m.status] || { label: m.status, badge: "bg-gray-100 text-gray-600" };
+                  const encerrado = tags.includes("finalizado") || tags.includes("cancelado");
+                  // Perto de finalizar o período → linha inteira em vermelho
+                  const perto = !encerrado && dias !== null && dias <= 30;
                   return (
                     <tr
                       key={m.id}
                       onClick={() => canEditInicio && setEditing({ ...m })}
                       title={canEditInicio ? "Clique para editar" : undefined}
-                      className={`hover:bg-gray-50 transition-colors ${canEditInicio ? "cursor-pointer" : ""} ${m.status === "finalizado" ? "opacity-60" : ""}`}
+                      className={`transition-colors ${canEditInicio ? "cursor-pointer" : ""} ${
+                        perto
+                          ? "bg-red-50 hover:bg-red-100 border-l-4 border-red-500"
+                          : `hover:bg-gray-50 ${encerrado ? "opacity-60" : ""}`
+                      }`}
                     >
                       <td className="px-5 py-3">
                         <p className="font-semibold text-gray-900">{m.nome}</p>
@@ -349,7 +359,13 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                         <p className="text-xs text-gray-400">{m.telefone} {m.cpf && <>· {m.cpf}</>}</p>
                       </td>
                       <td className="px-5 py-3">
-                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${st.badge}`}>{st.label}</span>
+                        <div className="flex flex-wrap gap-1 max-w-[180px]">
+                          {tags.length === 0 && <span className="text-gray-300 text-xs">—</span>}
+                          {tags.map(t => {
+                            const c = TAGS_CONFIG[t] || { label: t, badge: "bg-gray-100 text-gray-600" };
+                            return <span key={t} className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${c.badge}`}>{c.label}</span>;
+                          })}
+                        </div>
                       </td>
                       <td className="px-5 py-3 whitespace-nowrap">
                         <p className="font-bold text-gray-900">
@@ -373,9 +389,9 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                         <span className="text-gray-300 mx-1">→</span>
                         <span className="text-gray-700 font-medium">{dateBR(m.data_termino)}</span>
                         {!m.data_inicio && <span className="ml-2 text-[10px] font-bold uppercase bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded">definir início</span>}
-                        {emRenovacao && (
-                          <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-bold uppercase bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
-                            <CalendarClock size={10} /> renova em {dias}d
+                        {perto && (
+                          <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-bold uppercase bg-red-600 text-white px-1.5 py-0.5 rounded">
+                            <CalendarClock size={10} /> {dias !== null && dias < 0 ? "vencido" : `finaliza em ${dias}d`}
                           </span>
                         )}
                       </td>
@@ -517,12 +533,28 @@ export default function MentoradosPage({ params }: { params: Promise<{ mentoria:
                       <input className="input-edit" placeholder="Ex: Asaas 12x - Cartão" value={editing.forma_pagamento || ""} onChange={e => setEditing({ ...editing, forma_pagamento: e.target.value })} />
                     </Campo>
                   </div>
-                  <Campo label="Status">
-                    <select className="input-edit" value={editing.status} onChange={e => setEditing({ ...editing, status: e.target.value })}>
-                      {Object.entries(STATUS_CONFIG).map(([value, s]) => (
-                        <option key={value} value={value}>{s.label}</option>
-                      ))}
-                    </select>
+                  <Campo label="Tags">
+                    <div className="flex flex-wrap gap-1.5">
+                      {Object.entries(TAGS_CONFIG).map(([value, s]) => {
+                        const ativa = (editing.tags || []).includes(value);
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => {
+                              const set = new Set(editing.tags || []);
+                              if (ativa) set.delete(value); else set.add(value);
+                              setEditing({ ...editing, tags: [...set] });
+                            }}
+                            className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors ${
+                              ativa ? s.badge + " border-transparent" : "bg-white text-gray-400 border-gray-200 hover:border-gray-400"
+                            }`}
+                          >
+                            {s.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </Campo>
                   <Campo label="Notas">
                     <textarea className="input-edit min-h-[70px]" value={editing.notas || ""} onChange={e => setEditing({ ...editing, notas: e.target.value })} />

@@ -41,7 +41,7 @@ export async function PATCH(req: Request) {
       'nome', 'email', 'telefone', 'cpf', 'rg', 'endereco', 'cep',
       'imersao_rise', 'origem', 'materia', 'caneca', 'renovacao',
       'forma_pagamento', 'data_inicio', 'data_termino',
-      'status', 'notas', 'valor_contrato', 'ciclo', 'duracao_meses',
+      'tags', 'notas', 'valor_contrato', 'ciclo', 'duracao_meses',
     ];
     const permitidos = role === 'EMMY' ? ['data_inicio'] : EDITAVEIS_ANA;
 

@@ -78,7 +78,8 @@ export type ProductRow = {
 export type MentoradoRow = {
   id: string;
   mentoria: 'elite' | 'partiu10k';
-  status: string; // ativo | concluido | cancelado
+  status: string;      // legado — substituído por tags[]
+  tags: string[];      // ativo | entrada_facilitada | devedor | cliente_problema | finalizado | cancelado
   asaas_customer_id: string | null;
   nome: string;
   email: string | null;
