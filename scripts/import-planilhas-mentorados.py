@@ -184,7 +184,7 @@ for _, row in df.iterrows():
 
 df = xls["Finalizados"]
 for _, row in df.iterrows():
-    r = linha_para_registro("partiu10k", "concluido", "Finalizados", row, {
+    r = linha_para_registro("partiu10k", "finalizado", "Finalizados", row, {
         "nome": "Inscrito", "forma_pagamento": "A pagar", "email": "E-mail",
         "telefone": "Telefone", "endereco": "Endereço", "cep": "CEP", "rg": "RG",
         "cpf": "CPF", "inicio": "Data da compra",
@@ -197,7 +197,7 @@ for _, row in df.iterrows():
 # Aba RENOVAÇÃO: cabeçalho quebrado (1ª linha virou header) — lê posicional
 df = pd.read_excel(ARQ_P10K, sheet_name="RENOVAÇÃO", header=None)
 for _, row in df.iterrows():
-    r = linha_para_registro("partiu10k", "concluido", "RENOVAÇÃO", row, {
+    r = linha_para_registro("partiu10k", "finalizado", "RENOVAÇÃO", row, {
         "nome": 1, "forma_pagamento": 2, "email": 3, "telefone": 4, "endereco": 5,
         "cep": 6, "rg": 7, "cpf": 8, "inicio": 9, "obs1": 10, "materia": 11, "valor": 12,
     })
@@ -222,7 +222,7 @@ for _, row in df.iterrows():
 
 df = xls["Professores de Elite Finalizado"]
 for _, row in df.iterrows():
-    r = linha_para_registro("elite", "concluido", "Elite Finalizado (1.0)", row, {
+    r = linha_para_registro("elite", "finalizado", "Elite Finalizado (1.0)", row, {
         "nome": "Inscrito", "forma_pagamento": "A pagar", "email": "Email",
         "telefone": "Telefone", "rg": "RG", "cpf": "CPF",
         "inicio": "Data de início", "termino": "Data de término",
@@ -231,7 +231,7 @@ for _, row in df.iterrows():
     if r:
         registros.append(r)
 
-for aba, status in [("Professores de Elite 2.0", "ativo"), ("Elite 2.0 Finalizado", "concluido")]:
+for aba, status in [("Professores de Elite 2.0", "ativo"), ("Elite 2.0 Finalizado", "finalizado")]:
     df = xls[aba]
     for _, row in df.iterrows():
         r = linha_para_registro("elite", status, aba, row, {
