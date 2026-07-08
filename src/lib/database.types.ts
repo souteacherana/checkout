@@ -75,11 +75,11 @@ export type ProductRow = {
   archived_at: string | null;
 };
 
+// A PESSOA. Dados de contato + resumo financeiro bruto do Asaas.
+// (As colunas *_legado seguem no banco como backup pós-migração 012.)
 export type MentoradoRow = {
   id: string;
   mentoria: 'elite' | 'partiu10k';
-  status: string;      // legado — substituído por tags[]
-  tags: string[];      // ativo | entrada_facilitada | devedor | cliente_problema | finalizado | cancelado
   asaas_customer_id: string | null;
   nome: string;
   email: string | null;
@@ -88,25 +88,38 @@ export type MentoradoRow = {
   rg: string | null;
   endereco: string | null;
   cep: string | null;
-  imersao_rise: string | null;   // edição: "VIP - 2025", "Rise 2026"...
-  origem: string | null;
-  valor_contrato: number | null;
-  valor_pago: number | null;     // calculado do Asaas — somente leitura
+  materia_pessoa: string | null;        // P10k: matéria que o professor ensina
+  asaas_total_contratado: number | null; // soma bruta de todas as cobranças (Asaas)
+  asaas_total_pago: number | null;        // soma bruta das cobranças pagas (Asaas)
   parcelas_vencidas: number;
-  materia: string | null;        // P10k: matéria que o professor ensina
-  caneca: string | null;         // Elite: Não | Em produção | Sim
-  renovacao: string | null;
-  forma_pagamento: string | null;
-  ciclo: number;                 // 1º, 2º ciclo da mentoria...
-  duracao_meses: number;         // término = início + duração
-  financeiro_manual: boolean;    // true = automação não sobrescreve valores
-  data_inicio: string | null;
-  data_termino: string | null;
   notas: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
 };
+
+// UM CICLO de mentoria (período). Curado pela Ana.
+export type MentoradoCicloRow = {
+  id: string;
+  mentorado_id: string;
+  numero: number;
+  tags: string[];                // ativo | entrada_facilitada | devedor | ...
+  data_inicio: string | null;
+  data_termino: string | null;
+  duracao_meses: number;
+  valor_contrato: number | null;
+  valor_pago: number | null;
+  forma_pagamento: string | null;
+  imersao_rise: string | null;   // ano(s) de ingresso Rise
+  caneca: string | null;         // Elite
+  origem: string | null;
+  notas: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+// Pessoa + seus ciclos (embedded do Supabase)
+export type MentoradoComCiclos = MentoradoRow & { mentorado_ciclos: MentoradoCicloRow[] };
 
 export type UserRoleRow = {
   email: string;
@@ -154,6 +167,7 @@ export interface Database {
       products: TableDef<ProductRow>;
       user_roles: TableDef<UserRoleRow>;
       mentorados: TableDef<MentoradoRow>;
+      mentorado_ciclos: TableDef<MentoradoCicloRow>;
     };
     Views: {
       vendas: { Row: VendaRow; Relationships: [] };

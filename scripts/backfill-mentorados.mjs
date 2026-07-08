@@ -84,46 +84,53 @@ for (const [key, pagamentos] of grupos) {
 
   // Existe?
   const existRes = await fetch(
-    `${SUPA_URL}/rest/v1/mentorados?select=id,financeiro_manual&mentoria=eq.${mentoria}&asaas_customer_id=eq.${customerId}`,
+    `${SUPA_URL}/rest/v1/mentorados?select=id&mentoria=eq.${mentoria}&asaas_customer_id=eq.${customerId}`,
     { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
   );
   const existentes = await existRes.json();
 
-  const contato = {
+  // A PESSOA guarda contato + resumo financeiro BRUTO do Asaas.
+  // Ciclos (período curado) nunca são tocados pelo backfill.
+  const pessoa = {
     nome: cust.name || 'Sem nome',
     email: cust.email || null,
     telefone: cust.mobilePhone || cust.phone || null,
     cpf: cust.cpfCnpj || null,
+    asaas_total_contratado: valorContrato,
+    asaas_total_pago: valorPago,
+    parcelas_vencidas: vencidas,
     updated_at: new Date().toISOString(),
   };
-  const financeiro = {
-    valor_contrato: valorContrato,
-    valor_pago: valorPago,
-    parcelas_vencidas: vencidas,
-  };
-  const autoFields = { ...contato, ...financeiro };
 
   let res;
   if (existentes.length > 0) {
-    // Trava financeira: valores editados à mão não são sobrescritos
-    const update = existentes[0].financeiro_manual ? contato : autoFields;
     res = await fetch(`${SUPA_URL}/rest/v1/mentorados?id=eq.${existentes[0].id}`, {
       method: 'PATCH',
       headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-      body: JSON.stringify(update),
+      body: JSON.stringify(pessoa),
     });
   } else {
-    res = await fetch(`${SUPA_URL}/rest/v1/mentorados`, {
+    // Pessoa nova: cria a pessoa e um Ciclo 1 rascunho com os valores do Asaas
+    const createRes = await fetch(`${SUPA_URL}/rest/v1/mentorados`, {
       method: 'POST',
-      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
       body: JSON.stringify([{
         mentoria,
         asaas_customer_id: customerId,
         endereco: endereco || null,
         cep: cust.postalCode || null,
-        ...autoFields,
+        ...pessoa,
       }]),
     });
+    res = createRes;
+    if (createRes.ok) {
+      const [novo] = await createRes.json();
+      await fetch(`${SUPA_URL}/rest/v1/mentorado_ciclos`, {
+        method: 'POST',
+        headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify([{ mentorado_id: novo.id, numero: 1, tags: ['ativo'], valor_contrato: valorContrato, valor_pago: valorPago }]),
+      });
+    }
   }
   if (!res.ok) console.warn(`  upsert ${cust.name} falhou: ${res.status} ${await res.text()}`);
 

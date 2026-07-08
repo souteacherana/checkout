@@ -83,36 +83,33 @@ export async function syncMentoradoFromAsaas(customerId: string, mentoria: Mento
   const enderecoPartes = [cust.address, cust.addressNumber, cust.complement, cust.province, cust.cityName, cust.state]
     .filter(Boolean).join(', ');
 
-  // 4. Upsert (chave: mentoria + cliente Asaas). Campos manuais da Ana
-  //    (RG, datas, imersão, brinde, origem, notas) nunca são sobrescritos.
+  // 4. A PESSOA guarda contato + resumo financeiro BRUTO do Asaas.
+  //    Os ciclos (período/valor curado) NUNCA são tocados pela automação.
   const { data: existing } = await supabaseAdmin
     .from('mentorados')
-    .select('id, financeiro_manual')
+    .select('id')
     .eq('mentoria', mentoria)
     .eq('asaas_customer_id', customerId)
     .maybeSingle();
 
-  const contato = {
+  const pessoa = {
     nome: cust.name || 'Sem nome',
     email: cust.email || null,
     telefone: cust.mobilePhone || cust.phone || null,
     cpf: cust.cpfCnpj || null,
-    updated_at: new Date().toISOString(),
-  };
-  const financeiro = {
-    valor_contrato: valorContrato,
-    valor_pago: valorPago,
+    asaas_total_contratado: valorContrato,
+    asaas_total_pago: valorPago,
     parcelas_vencidas: vencidas,
+    updated_at: new Date().toISOString(),
   };
 
   if (existing) {
-    // Trava financeira: valores editados à mão (multi-ciclo) não são sobrescritos
-    const update = existing.financeiro_manual ? contato : { ...contato, ...financeiro };
-    await supabaseAdmin.from('mentorados').update(update).eq('id', existing.id);
+    await supabaseAdmin.from('mentorados').update(pessoa).eq('id', existing.id);
     return existing.id;
   }
-  const autoFields = { ...contato, ...financeiro };
 
+  // Pessoa nova: cria a pessoa e um Ciclo 1 rascunho já com os valores do
+  // Asaas como ponto de partida (a Ana ajusta datas/valores depois).
   const { data: created, error } = await supabaseAdmin
     .from('mentorados')
     .insert([{
@@ -120,11 +117,52 @@ export async function syncMentoradoFromAsaas(customerId: string, mentoria: Mento
       asaas_customer_id: customerId,
       endereco: enderecoPartes || null,
       cep: cust.postalCode || null,
-      ...autoFields,
+      ...pessoa,
     }])
     .select('id')
     .single();
 
   if (error) throw error;
+
+  if (created) {
+    await supabaseAdmin.from('mentorado_ciclos').insert([{
+      mentorado_id: created.id,
+      numero: 1,
+      tags: ['ativo'],
+      valor_contrato: valorContrato,
+      valor_pago: valorPago,
+    }]);
+  }
   return created?.id ?? null;
+}
+
+/**
+ * Soma as cobranças do cliente no Asaas dentro de uma janela de datas
+ * (usado pelo botão "puxar cobranças do período" ao curar um ciclo).
+ */
+export async function asaasTotaisPeriodo(customerId: string, inicio: string, fim: string) {
+  const payments: AsaasPayment[] = [];
+  let offset = 0;
+  let hasMore = true;
+  while (hasMore && offset < 500) {
+    const res = await fetch(`${ASAAS_BASE}/payments?customer=${customerId}&limit=100&offset=${offset}`, { headers: asaasHeaders() });
+    if (!res.ok) throw new Error(`Asaas payments ${customerId}: ${res.status}`);
+    const data = await res.json();
+    payments.push(...(data.data || []));
+    hasMore = data.hasMore;
+    offset += 100;
+  }
+  const de = new Date(inicio).getTime();
+  const ate = new Date(fim).getTime() + 86400000; // inclui o dia final
+  const naJanela = payments.filter(p => {
+    const d = new Date((p as AsaasPayment & { dueDate?: string; dateCreated?: string }).dueDate
+      || (p as AsaasPayment & { dateCreated?: string }).dateCreated || 0).getTime();
+    return d >= de && d < ate && !p.deleted;
+  });
+  const pagos = ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH', 'DUNNING_RECEIVED'];
+  return {
+    contratado: naJanela.reduce((a, p) => a + Number(p.value || 0), 0),
+    pago: naJanela.filter(p => pagos.includes(p.status)).reduce((a, p) => a + Number(p.value || 0), 0),
+    parcelas: naJanela.length,
+  };
 }
