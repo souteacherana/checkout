@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getRoleFromRequest } from '@/lib/api-auth';
 import { syncEduzz } from '@/lib/eduzz-sync';
 
+export const maxDuration = 60;
+
 export async function POST(req: Request) {
   try {
     // Apenas ADMIN e SUPERADMIN podem disparar o sync (VIEWER só visualiza)

@@ -27,6 +27,9 @@ export default function AdminDashboard() {
   const [sortBy, setSortBy] = useState<string>('date_desc');
   const [showEduzzData, setShowEduzzData] = useState<boolean>(true);
   const [range, setRange] = useState<DateRange>({ from: null, to: null });
+  const [eduzzSyncAt, setEduzzSyncAt] = useState<string | null>(null);
+  // Congela o "agora" no mount (react-hooks/purity)
+  const [now] = useState(() => Date.now());
 
   const fetchCheckouts = async () => {
     setLoading(true);
@@ -41,7 +44,26 @@ export default function AdminDashboard() {
     if (!error && data) {
       setCheckouts(data.map(vendaToUI));
     }
+
+    // Frescor do sync automático da Eduzz (updated_at é tocado a cada upsert)
+    const { data: ultimo } = await supabase
+      .from('eduzz_sales')
+      .select('updated_at')
+      .order('updated_at', { ascending: false })
+      .limit(1);
+    setEduzzSyncAt(ultimo?.[0]?.updated_at ?? null);
+
     setLoading(false);
+  };
+
+  const eduzzFrescor = (): string | null => {
+    if (!eduzzSyncAt) return null;
+    const min = Math.floor((now - new Date(eduzzSyncAt).getTime()) / 60000);
+    if (min < 1) return "agora";
+    if (min < 60) return `há ${min} min`;
+    const h = Math.floor(min / 60);
+    if (h < 24) return `há ${h}h`;
+    return `há ${Math.floor(h / 24)}d`;
   };
 
   const checkSession = async () => {
@@ -205,11 +227,16 @@ export default function AdminDashboard() {
               </span>
             )}
           </div>
-          <div className="flex gap-3">
+          <div className="flex items-center gap-3">
             {isFinanceVisible && (
-              <button onClick={handleSyncEduzz} disabled={syncing} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 shadow-sm transition-all disabled:opacity-50">
-                <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Sincronizando...' : 'Sincronizar Eduzz'}
-              </button>
+              <div className="flex flex-col items-end gap-0.5">
+                <button onClick={handleSyncEduzz} disabled={syncing} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 shadow-sm transition-all disabled:opacity-50">
+                  <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Sincronizando...' : 'Sincronizar Eduzz'}
+                </button>
+                {eduzzFrescor() && (
+                  <span className="text-[10px] text-gray-400">Eduzz sincronizada {eduzzFrescor()} · auto a cada 10 min</span>
+                )}
+              </div>
             )}
             <button onClick={exportToCSV} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-sm transition-all hover:shadow-emerald-600/20 hover:-translate-y-0.5">
               <Download size={16} /> Exportar CSV

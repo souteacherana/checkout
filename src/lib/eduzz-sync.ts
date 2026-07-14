@@ -40,27 +40,34 @@ export async function syncEduzz(days = 30): Promise<{ count: number }> {
   const startDate = new Date(today.getTime() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const endDate = today.toISOString().split('T')[0];
 
-  const allSales: EduzzSale[] = [];
-  let page = 1;
-  let totalPages = 1;
   const MAX_PAGES = 60; // 600 vendas por sync — proteção contra timeout
-
-  do {
+  const fetchPage = async (page: number): Promise<{ pages: number; items: EduzzSale[] }> => {
     const salesUrl = `https://api.eduzz.com/myeduzz/v1/sales?page=${page}&startDate=${startDate}&endDate=${endDate}`;
     const salesRes = await fetch(salesUrl, {
       headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' }
     });
-
     if (!salesRes.ok) {
       console.error("Eduzz Sales Fetch Error", salesRes.status, await salesRes.text());
-      break;
+      return { pages: 1, items: [] };
     }
+    const data = await salesRes.json();
+    return { pages: data.pages || 1, items: data.items || [] };
+  };
 
-    const salesData = await salesRes.json();
-    totalPages = salesData.pages || 1;
-    if (salesData.items?.length) allSales.push(...salesData.items);
-    page++;
-  } while (page <= totalPages && page <= MAX_PAGES);
+  // Página 1 revela o total; as demais são buscadas em PARALELO (lotes de 5)
+  // — a API pagina fixo em 10 itens, e o sequencial levava ~17s pra 30 dias.
+  const primeira = await fetchPage(1);
+  const allSales: EduzzSale[] = [...primeira.items];
+  const totalPages = Math.min(primeira.pages, MAX_PAGES);
+
+  const LOTE = 5;
+  for (let inicio = 2; inicio <= totalPages; inicio += LOTE) {
+    const fim = Math.min(inicio + LOTE - 1, totalPages);
+    const paginas = await Promise.all(
+      Array.from({ length: fim - inicio + 1 }, (_, i) => fetchPage(inicio + i))
+    );
+    for (const p of paginas) allSales.push(...p.items);
+  }
 
   // Ignora vendas sem id (não dá pra fazer upsert idempotente sem chave)
   const mappedData = allSales.filter(s => s.id != null).map(mapEduzzSale);
