@@ -11,11 +11,24 @@ interface UserRole {
   utm_code?: string | null;
 }
 
+const OWNER_EMAIL = "henryccost@gmail.com";
+
+const ROLES = [
+  { value: "VENDEDOR", label: "Vendedor" },
+  { value: "VIEWER", label: "Visualizador" },
+  { value: "EMMY", label: "Emmy" },
+  { value: "ANA", label: "Ana" },
+  { value: "ADMIN", label: "Administrador" },
+  { value: "SUPERADMIN", label: "Super Admin" },
+];
+
 export default function EquipePage() {
   const [users, setUsers] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [changingRole, setChangingRole] = useState<string | null>(null);
+  const [myEmail, setMyEmail] = useState<string | null>(null);
 
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -25,6 +38,7 @@ export default function EquipePage() {
   const fetchUsers = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      setMyEmail(session?.user?.email || null);
       const res = await fetch("/api/admin/users", {
         headers: { Authorization: `Bearer ${session?.access_token}` }
       });
@@ -110,6 +124,37 @@ export default function EquipePage() {
       }
     } catch {
       alert("Erro de conexão");
+    }
+  };
+
+  const handleChangeRole = async (u: UserRole, novaRole: string) => {
+    if (novaRole === u.role) return;
+    // Rebaixar a própria conta pode trancar você fora — confirma antes
+    if (u.email === myEmail && novaRole !== "SUPERADMIN") {
+      if (!confirm("Você está alterando o SEU PRÓPRIO cargo. Pode perder o acesso a esta página. Continuar?")) return;
+    }
+
+    setChangingRole(u.email);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      // Envia só email + role: utm_code é omitido e preservado no upsert
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ email: u.email, role: novaRole })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert("Erro ao alterar cargo: " + (err.error || "Desconhecido"));
+      }
+      await fetchUsers();
+    } catch {
+      alert("Erro de conexão");
+    } finally {
+      setChangingRole(null);
     }
   };
 
@@ -255,14 +300,26 @@ export default function EquipePage() {
                         <div className="text-xs text-gray-400">Desde {new Date(u.created_at).toLocaleDateString('pt-BR')}</div>
                       </td>
                       <td className="p-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${
-                          u.role === 'SUPERADMIN' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                          u.role === 'ADMIN' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                          u.role === 'VENDEDOR' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                          'bg-gray-50 text-gray-700 border-gray-200'
-                        }`}>
-                          {u.role}
-                        </span>
+                        {u.email === OWNER_EMAIL ? (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border bg-purple-50 text-purple-700 border-purple-200" title="O dono da conta é sempre Super Admin">
+                            SUPERADMIN 🔒
+                          </span>
+                        ) : (
+                          <select
+                            value={u.role}
+                            disabled={changingRole === u.email}
+                            onChange={e => handleChangeRole(u, e.target.value)}
+                            className={`text-xs font-medium border rounded-md px-2 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 ${
+                              u.role === 'SUPERADMIN' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                              u.role === 'ADMIN' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                              u.role === 'ANA' ? 'bg-pink-50 text-pink-700 border-pink-200' :
+                              u.role === 'VENDEDOR' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                              'bg-gray-50 text-gray-700 border-gray-200'
+                            }`}
+                          >
+                            {ROLES.map(r => <option key={r.value} value={r.value}>{r.value}</option>)}
+                          </select>
+                        )}
                       </td>
                       <td className="p-4">
                         <button

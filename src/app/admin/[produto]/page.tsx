@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { vendaToUI, type VendaUI } from "@/lib/vendas";
 import { getUserRole } from "../actions";
+import { PeriodFilter, rangeFromDays, type DateRange } from "@/components/PeriodFilter";
 
 type Product = {
   slug: string;
@@ -20,13 +21,6 @@ type Product = {
   price: number;
   accent_color: string | null;
 };
-
-const PERIODS = [
-  { label: "7 dias", days: 7 },
-  { label: "30 dias", days: 30 },
-  { label: "90 dias", days: 90 },
-  { label: "Tudo", days: 0 },
-];
 
 const brl = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -70,7 +64,7 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
   const [rows, setRows] = useState<VendaUI[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [periodDays, setPeriodDays] = useState(30);
+  const [range, setRange] = useState<DateRange>(() => rangeFromDays(30));
   const [search, setSearch] = useState("");
   // Congela o "agora" no mount: useMemo precisa ser puro (react-hooks/purity)
   const [now] = useState(() => Date.now());
@@ -120,9 +114,13 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
   // Recorte do período selecionado
   const filtered = useMemo(() => {
     let list = rows;
-    if (periodDays > 0) {
-      const cutoff = now - periodDays * 24 * 60 * 60 * 1000;
-      list = list.filter(r => new Date(r.created_at).getTime() >= cutoff);
+    if (range.from !== null || range.to !== null) {
+      const from = range.from ?? -Infinity;
+      const to = range.to ?? Infinity;
+      list = list.filter(r => {
+        const t = new Date(r.created_at).getTime();
+        return t >= from && t <= to;
+      });
     }
     if (search) {
       const q = search.toLowerCase();
@@ -133,7 +131,7 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
       );
     }
     return [...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [rows, periodDays, search, now]);
+  }, [rows, range, search]);
 
   const metrics = useMemo(() => {
     const paid = filtered.filter(r => r.status === "PAID");
@@ -158,9 +156,9 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
     const paid = filtered.filter(r => r.status === "PAID");
     const byDay = new Map<string, { vendas: number; receita: number }>();
 
-    const end = new Date(now);
-    const start = periodDays > 0
-      ? new Date(now - periodDays * 24 * 60 * 60 * 1000)
+    const end = new Date(range.to ?? now);
+    const start = range.from != null
+      ? new Date(range.from)
       : (filtered.length ? new Date(Math.min(...filtered.map(r => new Date(r.created_at).getTime()))) : end);
 
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -177,14 +175,16 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
       dia: new Date(day + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
       ...v,
     }));
-  }, [filtered, periodDays, now]);
+  }, [filtered, range, now]);
 
   // Comparativo: período selecionado × período anterior de mesmo tamanho
   const comparison = useMemo(() => {
-    if (periodDays <= 0) return null;
-    const P = periodDays * 24 * 60 * 60 * 1000;
-    const cur = windowMetrics(rows, now - P, now + 1);
-    const prev = windowMetrics(rows, now - 2 * P, now - P);
+    if (range.from == null) return null; // "Tudo" não tem período anterior
+    const to = range.to ?? now;
+    const dur = to - range.from;
+    if (dur <= 0) return null;
+    const cur = windowMetrics(rows, range.from, to + 1);
+    const prev = windowMetrics(rows, range.from - dur, range.from);
     const delta = (c: number, p: number): number | null =>
       p > 0 ? ((c - p) / p) * 100 : (c > 0 ? null : 0);
     return {
@@ -192,7 +192,7 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
       receita: delta(cur.gross, prev.gross),
       conversao: delta(cur.conversion, prev.conversion),
     };
-  }, [rows, periodDays, now]);
+  }, [rows, range, now]);
 
   // Vendas pagas por dia, uma série por criativo (top 6 utm_content)
   const creativeChart = useMemo(() => {
@@ -211,9 +211,9 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
     if (top.length === 0) return { data: [], top };
 
     const byDay = new Map<string, Record<string, number>>();
-    const end = new Date(now);
-    const start = periodDays > 0
-      ? new Date(now - periodDays * 24 * 60 * 60 * 1000)
+    const end = new Date(range.to ?? now);
+    const start = range.from != null
+      ? new Date(range.from)
       : (filtered.length ? new Date(Math.min(...filtered.map(r => new Date(r.created_at).getTime()))) : end);
 
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -232,7 +232,7 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
       ...v,
     }));
     return { data, top };
-  }, [filtered, periodDays, now]);
+  }, [filtered, range, now]);
 
   // Breakdown por UTM Content (só vendas pagas) — o content é o que
   // diferencia o anúncio/criativo; source e campaign viram contexto
@@ -292,18 +292,8 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
           </div>
 
           {/* Filtro de Período */}
-          <div className="flex gap-1 bg-gray-100 rounded-lg p-1 flex-shrink-0">
-            {PERIODS.map(p => (
-              <button
-                key={p.days}
-                onClick={() => setPeriodDays(p.days)}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
-                  periodDays === p.days ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-800"
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
+          <div className="flex-shrink-0">
+            <PeriodFilter defaultDays={30} onChange={setRange} />
           </div>
         </div>
       </header>

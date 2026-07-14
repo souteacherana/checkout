@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { vendaToUI, type VendaUI } from "@/lib/vendas";
 import { getUserRole } from "./actions";
+import { PeriodFilter, type DateRange } from "@/components/PeriodFilter";
 import { Download, LogOut, CheckCircle, AlertCircle, RefreshCw, Search, Filter, ArrowUpDown, Trash2, TrendingUp, DollarSign, Users, CreditCard, X } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -25,6 +26,7 @@ export default function AdminDashboard() {
   const [filterProduct, setFilterProduct] = useState<string>('ALL');
   const [sortBy, setSortBy] = useState<string>('date_desc');
   const [showEduzzData, setShowEduzzData] = useState<boolean>(true);
+  const [range, setRange] = useState<DateRange>({ from: null, to: null });
 
   const fetchCheckouts = async () => {
     setLoading(true);
@@ -142,6 +144,11 @@ export default function AdminDashboard() {
 
   // Processamento dos dados (Filtros e Sort)
   const processedCheckouts = [...checkouts]
+    .filter(c => {
+      if (range.from === null && range.to === null) return true;
+      const t = new Date(c.created_at).getTime();
+      return t >= (range.from ?? -Infinity) && t <= (range.to ?? Infinity);
+    })
     .filter(c => showEduzzData ? true : c.source !== 'Eduzz')
     .filter(c => filterStatus === 'ALL' || c.status === filterStatus)
     .filter(c => filterProduct === 'ALL' || c.product_name === filterProduct)
@@ -263,6 +270,11 @@ export default function AdminDashboard() {
 
         {/* Barra de Controles (Filtros e Ordenação) */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 p-4">
+          {/* Filtro de Período */}
+          <div className="flex items-center gap-2 mb-4 pb-4 border-b border-gray-100">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mr-1">Período</span>
+            <PeriodFilter defaultDays={0} onChange={setRange} />
+          </div>
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="flex flex-1 gap-4 w-full md:w-auto flex-wrap md:flex-nowrap">
               {/* Pesquisa */}
