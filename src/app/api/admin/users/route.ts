@@ -50,9 +50,17 @@ export async function POST(request: Request) {
     // Insere ou atualiza a role na tabela.
     // utm_code só entra no payload quando enviado — em upsert por conflito,
     // colunas omitidas são preservadas (não zera o código ao trocar a role).
-    const payload: { email: string; role: string; created_at: string; utm_code?: string | null } = {
-      email, role, created_at: new Date().toISOString()
+    // created_at idem: só na criação, senão trocar cargo reescreve o "Desde".
+    const { data: existing } = await supabaseAdmin
+      .from('user_roles')
+      .select('email')
+      .eq('email', email)
+      .maybeSingle();
+
+    const payload: { email: string; role: string; created_at?: string; utm_code?: string | null } = {
+      email, role
     };
+    if (!existing) payload.created_at = new Date().toISOString();
     if (utm_code !== undefined) {
       payload.utm_code = utm_code ? String(utm_code).trim().toLowerCase() : null;
     }
@@ -61,7 +69,9 @@ export async function POST(request: Request) {
       .from('user_roles')
       .upsert(payload);
 
-    if (dbError) throw dbError;
+    // PostgrestError não é instância de Error — se cair no catch a mensagem
+    // real do banco vira "Unexpected error". Devolve direto, como no GET.
+    if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 });
 
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
@@ -91,7 +101,7 @@ export async function DELETE(request: Request) {
       .delete()
       .eq('email', email);
 
-    if (error) throw error;
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
