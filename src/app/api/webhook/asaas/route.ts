@@ -4,6 +4,42 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { astronService } from '@/lib/astron';
 import { sendCapiEvent } from '@/lib/capi';
 import { detectMentoria, syncMentoradoFromAsaas } from '@/lib/mentorados';
+import { asaasService } from '@/lib/asaas';
+
+const PAGO_STATUSES = ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH', 'DUNNING_RECEIVED'];
+
+/**
+ * Atualiza o status de uma venda de mentoria (/m/{codigo}) a partir do
+ * estado real no Asaas: todas as parcelas pagas → PAGO; algumas → PARCIAL.
+ */
+async function atualizarVendaMentoria(codigo: string) {
+  try {
+    const { data: venda } = await supabaseAdmin
+      .from('vendas_mentoria')
+      .select('id, status')
+      .eq('codigo', codigo)
+      .single();
+    if (!venda || venda.status === 'PAGO' || venda.status === 'CANCELADO') return;
+
+    const cobrancas = (await asaasService.listPaymentsByExternalReference(codigo))
+      .filter(p => !p.deleted);
+    if (cobrancas.length === 0) return;
+
+    const pagas = cobrancas.filter(p => PAGO_STATUSES.includes(p.status));
+    const tudoPago = pagas.length === cobrancas.length;
+
+    await supabaseAdmin.from('vendas_mentoria').update({
+      status: tudoPago ? 'PAGO' : (pagas.length > 0 ? 'PARCIAL' : 'AGUARDANDO_PAGAMENTO'),
+      paid_at: tudoPago ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', venda.id);
+
+    console.log(`[Webhook Asaas] Venda mentoria ${codigo}: ${pagas.length}/${cobrancas.length} parcelas pagas.`);
+  } catch (err) {
+    Sentry.captureException(err, { tags: { area: 'vendas-mentoria-webhook' } });
+    console.error(`Erro ao atualizar venda de mentoria ${codigo}:`, err);
+  }
+}
 
 export async function POST(req: Request) {
   try {
@@ -35,6 +71,12 @@ export async function POST(req: Request) {
         .single();
 
       if (fetchError || !checkout) {
+        // Venda de mentoria do nosso checkout? O externalReference carrega o
+        // código do link (/m/{codigo}) — atualiza o status (PARCIAL/PAGO).
+        if (payment.externalReference) {
+          await atualizarVendaMentoria(String(payment.externalReference));
+        }
+
         // Pagamento externo ao checkout: pode ser mentoria cobrada direto
         // no Asaas (Elite / Partiu 10k) → cria/atualiza o mentorado da Ana.
         const mentoria = detectMentoria(payment.description);

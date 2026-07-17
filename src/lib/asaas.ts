@@ -72,6 +72,69 @@ export const asaasService = {
     }
   },
 
+  // Criar cobrança via Boleto (à vista ou parcelado).
+  // Multa fixa por atraso configurada por cobrança — o Asaas soma sozinho
+  // ao valor da parcela quando o pagamento acontece após o vencimento.
+  async createBoletoPayment(data: {
+    customer: string;
+    installmentCount: number;      // 1 = à vista
+    installmentValue: number;      // valor de CADA parcela
+    description: string;
+    dueDate: string;               // vencimento da 1ª parcela (yyyy-mm-dd)
+    fineValue: number;             // multa fixa em R$ (ex: 40)
+    externalReference?: string;
+  }) {
+    try {
+      const payload: any = {
+        customer: data.customer,
+        billingType: 'BOLETO',
+        dueDate: data.dueDate,
+        description: data.description,
+        externalReference: data.externalReference,
+        fine: { value: data.fineValue, type: 'FIXED' },
+      };
+      if (data.installmentCount > 1) {
+        payload.installmentCount = data.installmentCount;
+        payload.installmentValue = data.installmentValue;
+      } else {
+        payload.value = data.installmentValue;
+      }
+
+      const response = await asaasApi.post('/payments', payload);
+      return response.data;
+    } catch (err: unknown) {
+      const error = err as any;
+      console.error('Erro ao criar Boleto no Asaas:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // Listar cobranças por externalReference (todas as parcelas de uma venda)
+  async listPaymentsByExternalReference(externalReference: string) {
+    try {
+      const response = await asaasApi.get('/payments', {
+        params: { externalReference, limit: 100 },
+      });
+      return (response.data?.data || []) as { id: string; status: string; value: number; deleted?: boolean }[];
+    } catch (err: unknown) {
+      const error = err as any;
+      console.error('Erro ao listar cobranças no Asaas:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // Buscar uma cobrança existente (pra reexibir QR/boleto sem duplicar)
+  async getPayment(paymentId: string) {
+    try {
+      const response = await asaasApi.get(`/payments/${paymentId}`);
+      return response.data; // { id, status, invoiceUrl, bankSlipUrl, ... }
+    } catch (err: unknown) {
+      const error = err as any;
+      console.error('Erro ao buscar cobrança no Asaas:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   // Criar cobrança via Cartão de Crédito
   async createCreditCardPayment(data: {
     customer: string;
