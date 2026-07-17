@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Store, LogOut, Users, Package, RotateCcw, Link2, GraduationCap, BadgeDollarSign } from "lucide-react";
+import { LayoutDashboard, Store, LogOut, Users, Package, RotateCcw, Link2, GraduationCap, BadgeDollarSign, TrendingUp } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -121,6 +121,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             >
               <BadgeDollarSign size={16} />
               Nova Venda
+            </Link>
+            <Link
+              href="/admin/minhas-vendas"
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                pathname?.startsWith('/admin/minhas-vendas')
+                  ? 'bg-emerald-50 text-emerald-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <TrendingUp size={16} />
+              Minhas Vendas
             </Link>
             {['ANA', 'ADMIN', 'SUPERADMIN'].includes(userRole) && (
               <Link

@@ -11,19 +11,21 @@ const PAGO_STATUSES = ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH', 'DUNNING_REC
 /**
  * Atualiza o status de uma venda de mentoria (/m/{codigo}) a partir do
  * estado real no Asaas: todas as parcelas pagas → PAGO; algumas → PARCIAL.
+ * Devolve a venda pra quem chamou (a tag de entrada facilitada depende dela).
  */
 async function atualizarVendaMentoria(codigo: string) {
   try {
     const { data: venda } = await supabaseAdmin
       .from('vendas_mentoria')
-      .select('id, status')
+      .select('id, status, entrada_facilitada')
       .eq('codigo', codigo)
       .single();
-    if (!venda || venda.status === 'PAGO' || venda.status === 'CANCELADO') return;
+    if (!venda || venda.status === 'CANCELADO') return venda ?? null;
+    if (venda.status === 'PAGO') return venda;
 
     const cobrancas = (await asaasService.listPaymentsByExternalReference(codigo))
       .filter(p => !p.deleted);
-    if (cobrancas.length === 0) return;
+    if (cobrancas.length === 0) return venda;
 
     const pagas = cobrancas.filter(p => PAGO_STATUSES.includes(p.status));
     const tudoPago = pagas.length === cobrancas.length;
@@ -35,9 +37,37 @@ async function atualizarVendaMentoria(codigo: string) {
     }).eq('id', venda.id);
 
     console.log(`[Webhook Asaas] Venda mentoria ${codigo}: ${pagas.length}/${cobrancas.length} parcelas pagas.`);
+    return venda;
   } catch (err) {
     Sentry.captureException(err, { tags: { area: 'vendas-mentoria-webhook' } });
     console.error(`Erro ao atualizar venda de mentoria ${codigo}:`, err);
+    return null;
+  }
+}
+
+/**
+ * Marca o ciclo mais recente do mentorado com a tag entrada_facilitada
+ * (o mesmo vocabulário da barra de filtros da aba Mentorados).
+ */
+async function aplicarTagEntradaFacilitada(mentoradoId: string) {
+  try {
+    const { data: ciclo } = await supabaseAdmin
+      .from('mentorado_ciclos')
+      .select('id, tags')
+      .eq('mentorado_id', mentoradoId)
+      .order('numero', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!ciclo || (ciclo.tags || []).includes('entrada_facilitada')) return;
+
+    await supabaseAdmin
+      .from('mentorado_ciclos')
+      .update({ tags: [...(ciclo.tags || []), 'entrada_facilitada'], updated_at: new Date().toISOString() })
+      .eq('id', ciclo.id);
+    console.log(`[Webhook Asaas] Tag entrada_facilitada aplicada ao ciclo do mentorado ${mentoradoId}.`);
+  } catch (err) {
+    Sentry.captureException(err, { tags: { area: 'vendas-mentoria-webhook' } });
+    console.error(`Erro ao aplicar tag de entrada facilitada (${mentoradoId}):`, err);
   }
 }
 
@@ -73,8 +103,9 @@ export async function POST(req: Request) {
       if (fetchError || !checkout) {
         // Venda de mentoria do nosso checkout? O externalReference carrega o
         // código do link (/m/{codigo}) — atualiza o status (PARCIAL/PAGO).
+        let vendaMentoria: { entrada_facilitada: boolean } | null = null;
         if (payment.externalReference) {
-          await atualizarVendaMentoria(String(payment.externalReference));
+          vendaMentoria = await atualizarVendaMentoria(String(payment.externalReference));
         }
 
         // Pagamento externo ao checkout: pode ser mentoria cobrada direto
@@ -83,6 +114,9 @@ export async function POST(req: Request) {
         if (mentoria && payment.customer) {
           try {
             const id = await syncMentoradoFromAsaas(payment.customer, mentoria);
+            if (id && vendaMentoria?.entrada_facilitada) {
+              await aplicarTagEntradaFacilitada(id);
+            }
             console.log(`[Webhook Asaas] Mentorado ${mentoria} sincronizado (${id}) a partir do pagamento ${paymentId}.`);
             return NextResponse.json({ success: true, message: 'Mentorado synced' }, { status: 200 });
           } catch (err) {
