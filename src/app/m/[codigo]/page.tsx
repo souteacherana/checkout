@@ -12,6 +12,7 @@ type Dados = {
   codigo: string;
   mentoria: string;
   mentoria_label: string;
+  image_src: string | null;
   primeiro_nome: string;
   valor_total: number;
   entrada_valor: number | null;
@@ -22,12 +23,8 @@ type Dados = {
   pagamento: { tipo: string; qr?: { encodedImage: string; payload: string }; invoiceUrl?: string; bankSlipUrl?: string } | null;
 };
 
-// Foto do topo por mentoria (mesmo papel do imageSrc dos checkouts padrão).
-// null = cabeçalho tipográfico; é só colar a URL quando a arte existir.
-const TEMAS: Record<string, { imageSrc: string | null }> = {
-  partiu10k: { imageSrc: null },
-  elite: { imageSrc: null },
-};
+// Foto do topo vem da config da mentoria (editável na aba Mentorias).
+// Sem foto = cabeçalho tipográfico.
 
 // Mesma gramática do checkout de produtos (accent via CSS), refinada:
 // acento ink profundo + detalhes champagne, serifa nos títulos e valores.
@@ -163,14 +160,12 @@ export default function CheckoutMentoria({ params }: { params: Promise<{ codigo:
     </div>
   );
 
-  const tema = TEMAS[dados.mentoria] || { imageSrc: null };
-
   const Cabecalho = (
     <header className="mb-6 text-center">
-      {tema.imageSrc && (
+      {dados.image_src && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={tema.imageSrc}
+          src={dados.image_src}
           alt={`Mentoria ${dados.mentoria_label}`}
           className="w-full rounded-2xl mb-6 shadow-md"
         />

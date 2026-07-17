@@ -210,6 +210,13 @@ export type VendaMentoriaRow = {
   updated_at: string;
 };
 
+// Config visual de uma mentoria (foto do checkout /m)
+export type MentoriaConfigRow = {
+  mentoria: string;       // elite | partiu10k
+  image_src: string | null;
+  updated_at: string;
+};
+
 // Documento anexado a um mentorado (contrato / nota fiscal)
 export type MentoradoDocRow = {
   id: string;
@@ -239,6 +246,7 @@ export interface Database {
       mentorado_ciclos: TableDef<MentoradoCicloRow>;
       mentorado_reunioes: TableDef<MentoradoReuniaoRow>;
       mentoria_precos: TableDef<MentoriaPrecoRow>;
+      mentoria_config: TableDef<MentoriaConfigRow>;
       vendas_mentoria: TableDef<VendaMentoriaRow>;
       mentorado_docs: TableDef<MentoradoDocRow>;
     };

@@ -34,12 +34,19 @@ export async function GET(
     const entrada = venda.entrada_valor ? Number(venda.entrada_valor) : 0;
     const restante = Math.max(valorTotal - entrada, 0);
 
-    const { data: precos } = await supabaseAdmin
-      .from('mentoria_precos')
-      .select('*')
-      .eq('mentoria', venda.mentoria)
-      .order('metodo')
-      .order('parcelas');
+    const [{ data: precos }, { data: config }] = await Promise.all([
+      supabaseAdmin
+        .from('mentoria_precos')
+        .select('*')
+        .eq('mentoria', venda.mentoria)
+        .order('metodo')
+        .order('parcelas'),
+      supabaseAdmin
+        .from('mentoria_config')
+        .select('image_src')
+        .eq('mentoria', venda.mentoria)
+        .maybeSingle(),
+    ]);
 
     const opcoes = calcularOpcoes(precos || [], valorTotal, restante);
 
@@ -64,6 +71,7 @@ export async function GET(
       codigo: venda.codigo,
       mentoria: venda.mentoria,
       mentoria_label: MENTORIA_CHECKOUT_LABELS[venda.mentoria] || venda.mentoria,
+      image_src: config?.image_src || null,
       primeiro_nome: (venda.cliente_nome || '').split(' ')[0],
       valor_total: valorTotal,
       entrada_valor: entrada || null,
