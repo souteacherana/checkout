@@ -19,8 +19,18 @@ asaasApi.interceptors.request.use((config) => {
 });
 
 export const asaasService = {
-  // Criar cliente
-  async createCustomer(data: { name: string; cpfCnpj: string; email: string }) {
+  // Criar cliente (campos além de name/cpfCnpj/email são opcionais no Asaas)
+  async createCustomer(data: {
+    name: string;
+    cpfCnpj: string;
+    email: string;
+    mobilePhone?: string;
+    address?: string;
+    addressNumber?: string;
+    province?: string;      // bairro, na nomenclatura do Asaas
+    postalCode?: string;
+    externalReference?: string;
+  }) {
     try {
       const response = await asaasApi.post('/customers', data);
       return response.data;

@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Store, LogOut, Users, Package, RotateCcw, Link2, GraduationCap } from "lucide-react";
+import { LayoutDashboard, Store, LogOut, Users, Package, RotateCcw, Link2, GraduationCap, BadgeDollarSign } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -108,6 +108,34 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <RotateCcw size={18} />
             Recuperação
           </Link>
+
+          <div className="pt-3">
+            <p className="px-3 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Mentoria</p>
+            <Link
+              href="/admin/nova-venda"
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                pathname?.startsWith('/admin/nova-venda')
+                  ? 'bg-emerald-50 text-emerald-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <BadgeDollarSign size={16} />
+              Nova Venda
+            </Link>
+            {['ANA', 'ADMIN', 'SUPERADMIN'].includes(userRole) && (
+              <Link
+                href="/admin/mentorias"
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  pathname?.startsWith('/admin/mentorias')
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <GraduationCap size={16} />
+                Mentorias
+              </Link>
+            )}
+          </div>
 
           {['ANA', 'ADMIN', 'SUPERADMIN', 'EMMY'].includes(userRole) && (
             <div className="pt-3">

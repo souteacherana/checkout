@@ -166,6 +166,61 @@ export type VendaRow = {
   recovery_contacted_at: string | null;
 };
 
+// Preço de uma opção de pagamento de mentoria (editável na aba Mentorias)
+export type MentoriaPrecoRow = {
+  mentoria: string;       // elite | partiu10k
+  metodo: string;         // PIX | BOLETO | CREDIT_CARD
+  parcelas: number;
+  valor_parcela: number;
+};
+
+// Venda de mentoria criada pelo seller (link /m/{codigo})
+export type VendaMentoriaRow = {
+  id: string;
+  codigo: string;
+  seller_email: string;
+  mentoria: string;       // elite | partiu10k
+  renovacao: boolean;
+  valor_total: number;
+  entrada_valor: number | null;
+  entrada_facilitada: boolean;
+  cliente_nome: string;
+  cliente_telefone: string | null;
+  cliente_email: string | null;
+  cliente_cpf: string | null;
+  cliente_rg: string | null;
+  cliente_nacionalidade: string | null;
+  cliente_estado_civil: string | null;
+  cliente_profissao: string | null;
+  end_rua: string | null;
+  end_numero: string | null;
+  end_bairro: string | null;
+  end_cidade: string | null;
+  end_estado: string | null;
+  end_cep: string | null;
+  descricao: string | null;
+  prazo_meses: number;
+  status: string;         // LINK_CRIADO | AGUARDANDO_PAGAMENTO | PARCIAL | PAGO | CANCELADO
+  metodo_escolhido: string | null;
+  parcelas_escolhidas: number | null;
+  asaas_customer_id: string | null;
+  asaas_payment_id: string | null;
+  paid_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+// Documento anexado a um mentorado (contrato / nota fiscal)
+export type MentoradoDocRow = {
+  id: string;
+  mentorado_id: string;
+  tipo: string;           // contrato | nota_fiscal
+  nome_arquivo: string;
+  storage_path: string;
+  uploaded_by: string | null;
+  created_at: string;
+};
+
 type TableDef<Row> = {
   Row: Row;
   Insert: Partial<Row>;
@@ -183,6 +238,9 @@ export interface Database {
       mentorados: TableDef<MentoradoRow>;
       mentorado_ciclos: TableDef<MentoradoCicloRow>;
       mentorado_reunioes: TableDef<MentoradoReuniaoRow>;
+      mentoria_precos: TableDef<MentoriaPrecoRow>;
+      vendas_mentoria: TableDef<VendaMentoriaRow>;
+      mentorado_docs: TableDef<MentoradoDocRow>;
     };
     Views: {
       vendas: { Row: VendaRow; Relationships: [] };

@@ -10,6 +10,14 @@ export const FINANCE_ROLES = ['ANA', 'ADMIN', 'SUPERADMIN'];
  * na tabela user_roles, ou null se não autenticado / sem role.
  */
 export async function getRoleFromRequest(request: Request): Promise<UserRole | null> {
+  return (await getUserFromRequest(request))?.role ?? null;
+}
+
+/**
+ * Como getRoleFromRequest, mas devolve também o e-mail do usuário —
+ * necessário quando a rota grava atribuição (ex: seller_email nas vendas).
+ */
+export async function getUserFromRequest(request: Request): Promise<{ email: string; role: UserRole } | null> {
   const authHeader = request.headers.get('Authorization') || request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) return null;
 
@@ -23,5 +31,6 @@ export async function getRoleFromRequest(request: Request): Promise<UserRole | n
     .eq('email', user.email)
     .single();
 
-  return (data?.role as UserRole) || null;
+  if (!data?.role) return null;
+  return { email: user.email, role: data.role as UserRole };
 }
