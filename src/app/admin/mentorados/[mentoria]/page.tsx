@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getUserRole } from "../../actions";
 import type { MentoradoComCiclos, MentoradoCicloRow, MentoradoReuniaoRow } from "@/lib/database.types";
+import MentoradoDocs from "@/components/MentoradoDocs";
 import {
   GraduationCap, Search, X, AlertCircle, CalendarClock, Save, Loader2,
   Plus, Trash2, Download, Layers, ChevronDown, ChevronRight, Users2, CheckCircle,
@@ -448,6 +449,11 @@ function FichaInline({ pessoa, mentoria, cfg, canEditAll, role, now, onChange, o
         resumo={`${reunioes.length} registro${reunioes.length !== 1 ? "s" : ""}`}
       >
         <ReunioesSecao mentoradoId={p.id} mentoria={mentoria} reunioes={reunioes} canEdit={canEditAll} onChange={onChange} />
+      </Secao>
+
+      {/* Documentos (contrato / nota fiscal) */}
+      <Secao titulo="Documentos" resumo="contrato e nota fiscal">
+        <MentoradoDocs mentoradoId={p.id} canEdit={canEditAll} />
       </Secao>
 
       {canEditAll && (
