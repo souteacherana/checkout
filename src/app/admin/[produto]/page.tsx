@@ -14,6 +14,7 @@ import {
 import { vendaToUI, type VendaUI } from "@/lib/vendas";
 import { getUserRole } from "../actions";
 import { PeriodFilter, rangeFromDays, type DateRange } from "@/components/PeriodFilter";
+import { dataBR, horaBR } from "@/lib/datas";
 
 type Product = {
   slug: string;
@@ -465,8 +466,8 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
                   {filtered.map(c => (
                     <tr key={c.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-5 py-3 whitespace-nowrap text-xs">
-                        <span className="text-gray-900 font-medium">{new Date(c.created_at).toLocaleDateString("pt-BR")}</span><br />
-                        <span className="text-gray-400">{new Date(c.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                        <span className="text-gray-900 font-medium">{dataBR(c.created_at)}</span><br />
+                        <span className="text-gray-400">{horaBR(c.created_at, false)}</span>
                       </td>
                       <td className="px-5 py-3">
                         {c.status === "PAID" && <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-xs font-semibold"><CheckCircle size={12} /> Paga</span>}

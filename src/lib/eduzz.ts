@@ -39,10 +39,34 @@ export function fixMojibake(value?: string | null): string | null {
 }
 
 /**
+ * A API da Eduzz carimba "Z" (UTC) em timestamps que na verdade estão em
+ * horário de BRASÍLIA. Confirmado em 25/07/2026 comparando o painel deles
+ * com a API: a venda 101338882 aparece como 11:45:52 no painel da Eduzz e
+ * chega na API como "2026-07-25T11:45:52.000Z" — mesmo número, dois fusos.
+ * Sem esta correção o banco fica 3h atrasado.
+ *
+ * +3h fixas: o Brasil não tem horário de verão desde 2019 e todo o
+ * histórico importado é posterior a isso.
+ *
+ * ⚠ Se a Eduzz um dia corrigir a API, este ajuste passa a errar 3h para o
+ * outro lado — o sintoma seria venda aparecendo no futuro. Para conferir,
+ * compare o horário de uma venda no painel deles com o do nosso admin.
+ */
+const EDUZZ_BRT_OFFSET_MS = 3 * 60 * 60 * 1000;
+
+export function eduzzDateToUTC(value?: string | null): string | null {
+  if (!value) return null;
+  const t = Date.parse(value);
+  if (Number.isNaN(t)) return null;
+  return new Date(t + EDUZZ_BRT_OFFSET_MS).toISOString();
+}
+
+/**
  * Mapeia uma venda da API MyEduzz para a linha da tabela eduzz_sales.
  * - `value` é o TOTAL da venda (total.value), não o ganho do produtor
  * - `net_value` é o ganho líquido real (netGain.value)
  * - UTMs reais da venda são preservadas
+ * - datas são reinterpretadas de Brasília para UTC (ver eduzzDateToUTC)
  */
 export function mapEduzzSale(sale: EduzzSale) {
   return {
@@ -54,8 +78,8 @@ export function mapEduzzSale(sale: EduzzSale) {
     value: sale.total?.value ?? 0,
     net_value: sale.netGain?.value ?? null,
     status: (sale.status || 'unknown').toLowerCase(),
-    created_at: sale.createdAt || new Date().toISOString(),
-    paid_at: sale.paidAt || null,
+    created_at: eduzzDateToUTC(sale.createdAt) || new Date().toISOString(),
+    paid_at: eduzzDateToUTC(sale.paidAt),
     payment_method: sale.paymentMethod || sale.payment?.method || null,
     installments: sale.installments || 1,
     utm_source: fixMojibake(sale.utm?.source) || null,

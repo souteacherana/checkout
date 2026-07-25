@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { dataBR } from '@/lib/datas';
 
 function escapeCSV(field: string | number | null | undefined): string {
   if (field === null || field === undefined) return '';
@@ -58,7 +59,9 @@ export async function GET(req: Request) {
       const fee = amount - netValue; // Diferença entre o Bruto e o Líquido é a Taxa do Gateway
 
       // Datas formato PT-BR
-      const dateToBR = (isoStr: string | null) => isoStr ? new Date(isoStr).toLocaleDateString('pt-BR') : '';
+      // Fuso fixo: a rota roda na Vercel (UTC), então sem timeZone uma venda
+      // das 22h de Brasília sairia no CSV com a data do dia seguinte.
+      const dateToBR = (isoStr: string | null) => dataBR(isoStr);
       
       // Formata como 1234,56 (padrão excel pt-BR)
       const amountToStr = (val: number) => val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

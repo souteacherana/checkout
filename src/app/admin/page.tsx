@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { vendaToUI, type VendaUI } from "@/lib/vendas";
 import { getUserRole } from "./actions";
 import { PeriodFilter, type DateRange } from "@/components/PeriodFilter";
+import { dataBR, horaBR } from "@/lib/datas";
 import { Download, LogOut, CheckCircle, AlertCircle, RefreshCw, Search, Filter, ArrowUpDown, Trash2, TrendingUp, DollarSign, Users, CreditCard, X } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -416,8 +417,8 @@ export default function AdminDashboard() {
                 {processedCheckouts.slice(0, visibleCount).map((c) => (
                   <tr key={c.id} className="hover:bg-gray-50 transition-colors group">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-gray-900 font-medium">{new Date(c.created_at).toLocaleDateString('pt-BR')}</span> <br/>
-                      <span className="text-xs text-gray-400">{new Date(c.created_at).toLocaleTimeString('pt-BR')}</span>
+                      <span className="text-gray-900 font-medium">{dataBR(c.created_at)}</span> <br/>
+                      <span className="text-xs text-gray-400">{horaBR(c.created_at)}</span>
                     </td>
                     <td className="px-6 py-4">
                       {c.status === 'PAID' && <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-md text-xs font-semibold"><CheckCircle size={14}/> Paga</span>}

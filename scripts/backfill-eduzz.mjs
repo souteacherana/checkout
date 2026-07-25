@@ -33,6 +33,16 @@ function fixMojibake(value) {
   return decoded.includes('�') ? value : decoded;
 }
 
+// A Eduzz carimba "Z" em horário de Brasília — ver src/lib/eduzz.ts
+const EDUZZ_BRT_OFFSET_MS = 3 * 60 * 60 * 1000;
+
+function eduzzDateToUTC(value) {
+  if (!value) return null;
+  const t = Date.parse(value);
+  if (Number.isNaN(t)) return null;
+  return new Date(t + EDUZZ_BRT_OFFSET_MS).toISOString();
+}
+
 function mapEduzzSale(sale) {
   return {
     id: String(sale.id),
@@ -43,8 +53,8 @@ function mapEduzzSale(sale) {
     value: sale.total?.value ?? 0,
     net_value: sale.netGain?.value ?? null,
     status: (sale.status || 'unknown').toLowerCase(),
-    created_at: sale.createdAt || new Date().toISOString(),
-    paid_at: sale.paidAt || null,
+    created_at: eduzzDateToUTC(sale.createdAt) || new Date().toISOString(),
+    paid_at: eduzzDateToUTC(sale.paidAt),
     payment_method: sale.paymentMethod || sale.payment?.method || null,
     installments: sale.installments || 1,
     utm_source: fixMojibake(sale.utm?.source) || null,

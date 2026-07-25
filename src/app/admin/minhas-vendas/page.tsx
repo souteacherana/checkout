@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { BadgeDollarSign, Check, CheckCircle, Copy, Hourglass, Link2, TrendingUp } from "lucide-react";
 import type { VendaMentoriaRow } from "@/lib/database.types";
 import { PeriodFilter, type DateRange } from "@/components/PeriodFilter";
+import { dataBR } from "@/lib/datas";
 import { getUserRole } from "../actions";
 
 const brl = (v: number) =>
@@ -222,7 +223,7 @@ export default function MinhasVendasPage() {
                     </td>
                     {veTodas && <td className="p-4 text-xs text-gray-500">{v.seller_email}</td>}
                     <td className="p-4 text-xs text-gray-500">
-                      {new Date(v.created_at).toLocaleDateString("pt-BR")}
+                      {dataBR(v.created_at)}
                     </td>
                     <td className="p-4 text-right">
                       <button
