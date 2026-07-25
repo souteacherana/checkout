@@ -35,12 +35,26 @@ function fixMojibake(value) {
 
 // A Eduzz carimba "Z" em horário de Brasília — ver src/lib/eduzz.ts
 const EDUZZ_BRT_OFFSET_MS = 3 * 60 * 60 * 1000;
+const TOLERANCIA_FUTURO_MS = 10 * 60 * 1000;
+let jaAvisouOffsetObsoleto = false;
 
 function eduzzDateToUTC(value) {
   if (!value) return null;
   const t = Date.parse(value);
   if (Number.isNaN(t)) return null;
-  return new Date(t + EDUZZ_BRT_OFFSET_MS).toISOString();
+
+  // Venda não acontece no futuro: se +3h estourar o agora, a Eduzz corrigiu
+  // a API e o ajuste deve sair de cena (mesma regra de src/lib/eduzz.ts).
+  const convertido = t + EDUZZ_BRT_OFFSET_MS;
+  if (convertido > Date.now() + TOLERANCIA_FUTURO_MS) {
+    if (!jaAvisouOffsetObsoleto) {
+      jaAvisouOffsetObsoleto = true;
+      console.warn(`\n⚠  "${value}" cairia no futuro com +3h — a Eduzz parece ter corrigido a API.`);
+      console.warn('   Ajuste desativado para esses registros. Remova EDUZZ_BRT_OFFSET_MS daqui e de src/lib/eduzz.ts.\n');
+    }
+    return new Date(t).toISOString();
+  }
+  return new Date(convertido).toISOString();
 }
 
 function mapEduzzSale(sale) {
@@ -55,6 +69,8 @@ function mapEduzzSale(sale) {
     status: (sale.status || 'unknown').toLowerCase(),
     created_at: eduzzDateToUTC(sale.createdAt) || new Date().toISOString(),
     paid_at: eduzzDateToUTC(sale.paidAt),
+    created_at_raw: sale.createdAt ?? null,
+    paid_at_raw: sale.paidAt ?? null,
     payment_method: sale.paymentMethod || sale.payment?.method || null,
     installments: sale.installments || 1,
     utm_source: fixMojibake(sale.utm?.source) || null,

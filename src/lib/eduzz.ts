@@ -1,3 +1,5 @@
+import * as Sentry from '@sentry/nextjs';
+
 /**
  * Traduz os status da API MyEduzz (e de seeds legados) para o
  * vocabulário canônico usado no painel admin.
@@ -54,11 +56,43 @@ export function fixMojibake(value?: string | null): string | null {
  */
 const EDUZZ_BRT_OFFSET_MS = 3 * 60 * 60 * 1000;
 
-export function eduzzDateToUTC(value?: string | null): string | null {
+/** Folga pro relógio: só consideramos "futuro" o que passar disso. */
+const TOLERANCIA_FUTURO_MS = 10 * 60 * 1000;
+
+// Alerta uma vez por instância — um sync traz centenas de vendas e não
+// queremos centenas de eventos idênticos no Sentry.
+let jaAvisouOffsetObsoleto = false;
+
+function avisarOffsetObsoleto(valorCru: string) {
+  if (jaAvisouOffsetObsoleto) return;
+  jaAvisouOffsetObsoleto = true;
+  const msg =
+    `Eduzz: timestamp "${valorCru}" cairia no futuro com o ajuste de +3h. ` +
+    `A API provavelmente passou a mandar UTC de verdade — o ajuste foi ` +
+    `desativado automaticamente. Remova EDUZZ_BRT_OFFSET_MS de src/lib/eduzz.ts ` +
+    `(e do scripts/backfill-eduzz.mjs) e reimporte o histórico.`;
+  Sentry.captureMessage(msg, 'warning');
+  console.warn(`[Eduzz] ${msg}`);
+}
+
+/**
+ * Converte o timestamp da Eduzz (Brasília carimbado como "Z") para UTC real.
+ *
+ * Autodefesa: venda não acontece no futuro. Se somar 3h estourar o "agora",
+ * a premissa deixou de valer (Eduzz corrigiu a API) — devolvemos o valor cru
+ * e avisamos, em vez de jogar todo o histórico 3h pra frente em silêncio.
+ */
+export function eduzzDateToUTC(value?: string | null, agora = Date.now()): string | null {
   if (!value) return null;
   const t = Date.parse(value);
   if (Number.isNaN(t)) return null;
-  return new Date(t + EDUZZ_BRT_OFFSET_MS).toISOString();
+
+  const convertido = t + EDUZZ_BRT_OFFSET_MS;
+  if (convertido > agora + TOLERANCIA_FUTURO_MS) {
+    avisarOffsetObsoleto(value);
+    return new Date(t).toISOString();
+  }
+  return new Date(convertido).toISOString();
 }
 
 /**
@@ -80,6 +114,10 @@ export function mapEduzzSale(sale: EduzzSale) {
     status: (sale.status || 'unknown').toLowerCase(),
     created_at: eduzzDateToUTC(sale.createdAt) || new Date().toISOString(),
     paid_at: eduzzDateToUTC(sale.paidAt),
+    // Valor original da API, sem interpretação — permite recalcular as
+    // datas acima se a regra de fuso mudar (ver migration 018).
+    created_at_raw: sale.createdAt ?? null,
+    paid_at_raw: sale.paidAt ?? null,
     payment_method: sale.paymentMethod || sale.payment?.method || null,
     installments: sale.installments || 1,
     utm_source: fixMojibake(sale.utm?.source) || null,

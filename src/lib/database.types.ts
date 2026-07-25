@@ -58,6 +58,9 @@ export type EduzzSaleRow = {
   sku: string | null;
   offer_name: string | null;
   deleted_at: string | null;
+  /** Timestamps como a API da Eduzz mandou (Brasília rotulado "Z") */
+  created_at_raw: string | null;
+  paid_at_raw: string | null;
 };
 
 export type ProductRow = {
