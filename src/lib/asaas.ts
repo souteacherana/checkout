@@ -123,6 +123,20 @@ export const asaasService = {
     }
   },
 
+  // Como getPayment, mas tolera cobrança removida do Asaas (404 → null),
+  // que é situação normal quando alguém cancela a cobrança pelo painel.
+  async getPaymentSafe(paymentId: string) {
+    try {
+      const response = await asaasApi.get(`/payments/${paymentId}`);
+      return response.data as { id: string; status: string; deleted?: boolean; invoiceUrl?: string; bankSlipUrl?: string };
+    } catch (err: unknown) {
+      const error = err as any;
+      if (error.response?.status === 404) return null;
+      console.error('Erro ao consultar cobrança no Asaas:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   // Buscar uma cobrança existente (pra reexibir QR/boleto sem duplicar)
   async getPayment(paymentId: string) {
     try {

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { asaasService } from '@/lib/asaas';
-import { calcularOpcoes, MENTORIA_CHECKOUT_LABELS } from '@/lib/vendas-mentoria';
+import { calcularOpcoes, cobrancaPagavel, MENTORIA_CHECKOUT_LABELS } from '@/lib/vendas-mentoria';
 
 /**
  * GET — dados públicos de uma venda de mentoria pro checkout do cliente.
@@ -52,14 +52,35 @@ export async function GET(
 
     // Se já existe cobrança gerada, reapresenta em vez de deixar duplicar
     let pagamento: Record<string, unknown> | null = null;
-    if (venda.asaas_payment_id && venda.status !== 'LINK_CRIADO') {
+    let status = venda.status;
+    let metodoEscolhido = venda.metodo_escolhido;
+
+    if (venda.asaas_payment_id && status !== 'LINK_CRIADO') {
       try {
-        if (venda.metodo_escolhido === 'PIX' && venda.status === 'AGUARDANDO_PAGAMENTO') {
-          const qr = await asaasService.getPixQrCode(venda.asaas_payment_id);
-          pagamento = { tipo: 'PIX', qr };
-        } else if (venda.metodo_escolhido === 'BOLETO') {
-          const p = await asaasService.getPayment(venda.asaas_payment_id);
-          pagamento = { tipo: 'BOLETO', invoiceUrl: p.invoiceUrl, bankSlipUrl: p.bankSlipUrl };
+        const p = await asaasService.getPaymentSafe(venda.asaas_payment_id);
+
+        if (status === 'AGUARDANDO_PAGAMENTO' && !cobrancaPagavel(p, metodoEscolhido)) {
+          // A cobrança morreu (cancelada no Asaas ou Pix vencido). Devolve a
+          // venda pra tela de escolha em vez de prender o cliente num QR
+          // inútil — recarregar a página conserta sozinho.
+          await supabaseAdmin.from('vendas_mentoria').update({
+            status: 'LINK_CRIADO',
+            metodo_escolhido: null,
+            parcelas_escolhidas: null,
+            asaas_payment_id: null,
+            updated_at: new Date().toISOString(),
+          }).eq('id', venda.id);
+
+          console.log(`[Checkout mentoria] Cobrança ${venda.asaas_payment_id} morta (${p ? p.status : 'removida'}) — venda ${venda.codigo} liberada para nova escolha.`);
+          status = 'LINK_CRIADO';
+          metodoEscolhido = null;
+        } else if (p) {
+          if (metodoEscolhido === 'PIX' && status === 'AGUARDANDO_PAGAMENTO') {
+            const qr = await asaasService.getPixQrCode(venda.asaas_payment_id);
+            pagamento = { tipo: 'PIX', qr };
+          } else if (metodoEscolhido === 'BOLETO') {
+            pagamento = { tipo: 'BOLETO', invoiceUrl: p.invoiceUrl, bankSlipUrl: p.bankSlipUrl };
+          }
         }
       } catch {
         // Sem drama: o cliente ainda vê o status; só não reexibimos o QR/boleto
@@ -76,9 +97,9 @@ export async function GET(
       valor_total: valorTotal,
       entrada_valor: entrada || null,
       restante,
-      status: venda.status,
-      metodo_escolhido: venda.metodo_escolhido,
-      parcelas_escolhidas: venda.parcelas_escolhidas,
+      status,
+      metodo_escolhido: metodoEscolhido,
+      parcelas_escolhidas: status === 'LINK_CRIADO' ? null : venda.parcelas_escolhidas,
       opcoes,
       pagamento,
     });

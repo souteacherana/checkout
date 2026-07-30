@@ -16,6 +16,28 @@ export function descricaoCobranca(mentoria: string): string {
 
 const round2 = (v: number) => Math.round(v * 100) / 100;
 
+/**
+ * A cobrança já gerada ainda serve pro cliente pagar?
+ *
+ * O checkout impede gerar duas cobranças pro mesmo link, mas uma cobrança
+ * que morreu não pode deixar o cliente preso — ele fica olhando um QR/boleto
+ * inútil sem conseguir escolher outra forma de pagamento. Não serve mais:
+ *
+ * - removida do Asaas (404 ou deleted): cancelada pela equipe no painel;
+ * - Pix vencido: o QR expira (vence em 24h) e não é mais pagável.
+ *
+ * Boleto vencido CONTINUA pagável — a regra comercial é multa fixa de R$ 40,
+ * então liberar cobrança nova seria dar ao cliente uma forma de fugir dela.
+ */
+export function cobrancaPagavel(
+  payment: { status?: string; deleted?: boolean } | null,
+  metodo: string | null,
+): boolean {
+  if (!payment || payment.deleted) return false;
+  if (metodo === 'PIX' && payment.status === 'OVERDUE') return false;
+  return true;
+}
+
 export type OpcaoPagamento = {
   metodo: string;
   parcelas: number;

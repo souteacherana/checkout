@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { asaasService } from '@/lib/asaas';
-import { calcularOpcoes, descricaoCobranca } from '@/lib/vendas-mentoria';
+import { calcularOpcoes, cobrancaPagavel, descricaoCobranca } from '@/lib/vendas-mentoria';
 
 const MULTA_BOLETO = 40; // R$ fixos por parcela em atraso (regra comercial)
 
@@ -36,9 +36,15 @@ export async function POST(
     if (venda.status === 'CANCELADO') {
       return NextResponse.json({ error: 'Este link não está mais ativo.' }, { status: 410 });
     }
-    // Cobrança já gerada (pix/boleto aguardando): não duplica — o GET reexibe
+    // Cobrança já gerada: só recusa se ela ainda for pagável. Se morreu
+    // (cancelada no painel do Asaas ou Pix vencido), o cliente precisa poder
+    // gerar outra — senão fica preso num link inútil.
     if (venda.status === 'AGUARDANDO_PAGAMENTO' && venda.asaas_payment_id) {
-      return NextResponse.json({ error: 'Já existe uma cobrança gerada para este link. Recarregue a página para vê-la.' }, { status: 409 });
+      const existente = await asaasService.getPaymentSafe(venda.asaas_payment_id);
+      if (cobrancaPagavel(existente, venda.metodo_escolhido)) {
+        return NextResponse.json({ error: 'Já existe uma cobrança gerada para este link. Recarregue a página para vê-la.' }, { status: 409 });
+      }
+      console.log(`[Checkout mentoria] Cobrança ${venda.asaas_payment_id} não é mais pagável (${existente ? existente.status : 'removida'}) — liberando nova para ${codigo}.`);
     }
     if (!venda.asaas_customer_id) {
       return NextResponse.json({ error: 'Cadastro incompleto. Fale com seu consultor.' }, { status: 500 });
