@@ -23,6 +23,13 @@ const MAIN_DOMAIN_PATHS: string[] = [];
 // Ao adicionar uma landing nova, inclua o slug nesta lista.
 const LANDINGS = ['pht'];
 
+// Landing servida na RAIZ do domínio principal (riseeducacao.com.br/).
+// Antes a raiz redirecionava pro checkout genérico; enquanto a homepage
+// institucional não existe, ela abre a landing do workshop em campanha.
+// Trocar de campanha = trocar o slug aqui. `null` devolve o comportamento
+// antigo (raiz → checkout).
+const LANDING_RAIZ: string | null = 'pht';
+
 /** '/pht' e '/pht/' → 'pht'; '/' → '' */
 const slugDe = (pathname: string) => pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
 
@@ -61,6 +68,13 @@ export function proxy(request: NextRequest) {
     const slug = slugDe(pathname);
     if (LANDINGS.includes(slug)) {
       return NextResponse.rewrite(new URL(`/lp/${slug}${search}`, request.url));
+    }
+
+    // Raiz do domínio → landing da campanha atual, na própria URL "/".
+    // (O canonical da landing aponta pra /{slug}, então servir nos dois
+    // endereços não gera conteúdo duplicado pro Google.)
+    if (slug === '' && LANDING_RAIZ) {
+      return NextResponse.rewrite(new URL(`/lp/${LANDING_RAIZ}${search}`, request.url));
     }
 
     // APIs continuam servidas nos dois hosts (o painel usa fetch relativo)
