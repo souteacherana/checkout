@@ -21,6 +21,9 @@ export const metadata: Metadata = {
   title: "Professor High Ticket | Teacher Ana",
   description:
     "Descubra como se posicionar para atrair os alunos que pagam mais e ainda te valorizam como especialista.",
+  // O endereço público é riseeducacao.com.br/pht (o proxy faz rewrite de
+  // /lp/pht); o canonical evita que a rota interna seja indexada à parte.
+  alternates: { canonical: "https://www.riseeducacao.com.br/pht" },
 };
 
 export default function PhtLandingLayout({

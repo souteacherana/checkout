@@ -17,6 +17,15 @@ const ADMIN_HOST = (process.env.ADMIN_DOMAIN || '').toLowerCase();
 // Quando a homepage for construída, adicione as rotas dela aqui (ex: '/', '/sobre').
 const MAIN_DOMAIN_PATHS: string[] = [];
 
+// Workshops cuja landing page vive no projeto (src/app/lp/{slug}).
+// riseeducacao.com.br/{slug} serve a landing sem mudar a URL; slug que não
+// estiver aqui mantém o comportamento antigo (redirect pro checkout).
+// Ao adicionar uma landing nova, inclua o slug nesta lista.
+const LANDINGS = ['pht'];
+
+/** '/pht' e '/pht/' → 'pht'; '/' → '' */
+const slugDe = (pathname: string) => pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
+
 export function proxy(request: NextRequest) {
   if (!CHECKOUT_HOST || !ADMIN_HOST) return NextResponse.next();
 
@@ -26,11 +35,26 @@ export function proxy(request: NextRequest) {
   const isAdminPath = pathname === '/admin' || pathname.startsWith('/admin/');
   const isApiPath = pathname.startsWith('/api');
 
-  if (host === CHECKOUT_HOST && isAdminPath) {
-    return NextResponse.redirect(`https://${ADMIN_HOST}${pathname}${search}`);
+  if (host === CHECKOUT_HOST) {
+    if (isAdminPath) {
+      return NextResponse.redirect(`https://${ADMIN_HOST}${pathname}${search}`);
+    }
+    // A landing pertence ao domínio principal: manda /lp/{slug} pra lá em vez
+    // de servir a mesma página em dois endereços (conteúdo duplicado no SEO).
+    if (pathname.startsWith('/lp/')) {
+      const slug = slugDe(pathname.slice('/lp'.length));
+      return NextResponse.redirect(`https://${ADMIN_HOST}/${slug}${search}`);
+    }
   }
 
   if (host === ADMIN_HOST || host === `www.${ADMIN_HOST}`) {
+    // Landing do workshop: o visitante continua vendo riseeducacao.com.br/pht
+    // (rewrite, não redirect) e o conteúdo vem de /lp/pht.
+    const slug = slugDe(pathname);
+    if (LANDINGS.includes(slug)) {
+      return NextResponse.rewrite(new URL(`/lp/${slug}${search}`, request.url));
+    }
+
     // APIs continuam servidas nos dois hosts (o painel usa fetch relativo)
     if (!isAdminPath && !isApiPath && !MAIN_DOMAIN_PATHS.includes(pathname)) {
       return NextResponse.redirect(`https://${CHECKOUT_HOST}${pathname}${search}`);
