@@ -12,8 +12,10 @@ gsap.registerPlugin(ScrollTrigger);
 export default function Offer() {
   const container = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  // Leva pro checkout carregando as UTMs que trouxeram a pessoa até aqui
-  const checkoutHref = useCheckoutHref("pht");
+  // TESTE DE PLATAFORMA: o CTA desta landing aponta pra Eduzz em vez do nosso
+  // checkout. Pra voltar ao normal, troque a URL abaixo por "pht".
+  // As UTMs continuam sendo repassadas ao destino de qualquer forma.
+  const checkoutHref = useCheckoutHref("https://sun.eduzz.com/Q9N2O4GB01");
 
   useEffect(() => {
     const ctx = gsap.context(() => {
