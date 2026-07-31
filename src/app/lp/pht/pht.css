@@ -1,0 +1,50 @@
+/*
+ * Estilos da landing PHT — TUDO escopado em .lp-pht.
+ *
+ * A landing original definia fundo preto e fontes no `body`/`:root`, o que
+ * pintaria o checkout e o admin de preto (os dois vivem no mesmo app e no
+ * mesmo layout raiz). Aqui nada vaza: o tema escuro vale só dentro do
+ * wrapper, e o que precisa alcançar a janela (scrollbar, overflow) usa
+ * :has() pra valer somente quando a landing está na página.
+ */
+
+.lp-pht {
+  /* Redefine os tokens de fonte só neste escopo — as utilities font-sans /
+     font-serif do Tailwind leem estas vars, então dentro da landing elas
+     apontam pra Inter/Instrument Serif sem afetar o resto do app. */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-instrument-serif), ui-serif, Georgia, serif;
+
+  background-color: #000000;
+  color: #ffffff;
+  font-family: var(--font-sans);
+}
+
+.lp-pht ::selection {
+  background-color: #bb9c4c;
+  color: #000000;
+}
+
+/* Base das animações GSAP (esconde antes do reveal, evitando FOUC) */
+.lp-pht .gsap-reveal {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Barra de rolagem premium — só quando a landing está montada na página */
+html:has(.lp-pht) body {
+  overflow-x: hidden;
+}
+html:has(.lp-pht) ::-webkit-scrollbar {
+  width: 8px;
+}
+html:has(.lp-pht) ::-webkit-scrollbar-track {
+  background: #050505;
+}
+html:has(.lp-pht) ::-webkit-scrollbar-thumb {
+  background: #222222;
+  border-radius: 4px;
+}
+html:has(.lp-pht) ::-webkit-scrollbar-thumb:hover {
+  background: #bb9c4c;
+}

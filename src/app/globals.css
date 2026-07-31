@@ -3,6 +3,29 @@
 @theme {
   --color-accent: var(--theme-accent);
   --color-accent-hover: var(--theme-accent-hover);
+
+  /* Tokens das landing pages (só geram utilitários; o visual escuro fica
+     escopado no wrapper de cada landing — ver src/app/lp/pht/pht.css) */
+  --color-gold-300: #e8d5a6;
+  --color-gold-400: #d7c087;
+  --color-gold-500: #bb9c4c;
+  --color-gold-600: #9c803a;
+  --color-ink-900: #050505;
+  --color-ink-800: #111111;
+  --color-ink-700: #222222;
+
+  --animate-marquee: marquee var(--duration, 40s) linear infinite;
+  --animate-marquee-vertical: marquee-vertical var(--duration, 40s) linear infinite;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-100% - var(--gap, 1rem))); }
+}
+
+@keyframes marquee-vertical {
+  from { transform: translateY(0); }
+  to { transform: translateY(calc(-100% - var(--gap, 1rem))); }
 }
 
 :root {
