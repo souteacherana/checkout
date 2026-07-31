@@ -139,13 +139,13 @@ export default function Hero() {
       </div>
 
       {/* MOBILE: ANA3 unificada no topo */}
-      <div className="md:hidden relative w-full flex justify-center z-20 pointer-events-none mt-4">
+      <div className="md:hidden relative w-full flex justify-center z-20 pointer-events-none mt-1">
         <div className="relative">
           <img
             ref={anaMobileRef}
             src="https://teacherana.com.br/wp-content/uploads/Rise/workshops/PHT2026/ANA3.png"
             alt="Teacher Ana"
-            className="w-[140vw] max-w-[550px] h-auto object-contain opacity-0 drop-shadow-2xl -mt-10"
+            className="w-[118vw] max-w-[550px] h-auto object-contain opacity-0 drop-shadow-2xl -mt-10"
           />
           {/* Sombra base da Ana no Mobile para fundir com a caixa de blur */}
           <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black via-black/80 to-transparent" />
@@ -157,7 +157,7 @@ export default function Hero() {
       {/* ============================================================== */}
       <div
         ref={blurBoxRef}
-        className="relative z-30 w-[94%] md:w-[85%] max-w-2xl mx-auto backdrop-blur-md bg-white/5 border border-white/10 rounded-[2rem] md:rounded-[3rem] px-4 py-6 md:px-10 md:py-12 text-center shadow-[0_0_80px_rgba(0,0,0,0.6)] flex flex-col items-center opacity-0 -mt-16 md:mt-0"
+        className="relative z-30 w-[94%] md:w-[85%] max-w-2xl mx-auto backdrop-blur-md bg-white/5 border border-white/10 rounded-[2rem] md:rounded-[3rem] px-4 py-6 md:px-10 md:py-12 text-center shadow-[0_0_80px_rgba(0,0,0,0.6)] flex flex-col items-center opacity-0 -mt-20 md:mt-0"
       >
         {/* Glow interno superior para dar volume na caixa */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
