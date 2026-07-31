@@ -26,11 +26,19 @@ const LANDINGS = ['pht'];
 /** '/pht' e '/pht/' → 'pht'; '/' → '' */
 const slugDe = (pathname: string) => pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
 
+// Arquivo estático de public/ (imagem, fonte, svg…). Precisa sair do
+// roteamento por domínio: os assets da landing vivem em /lp/{slug}/… e,
+// sem esta guarda, caem no redirect genérico e entram em loop entre os
+// dois hosts — derrubando todas as imagens da página.
+const EH_ARQUIVO = /\.[a-zA-Z0-9]+$/;
+
 export function proxy(request: NextRequest) {
   if (!CHECKOUT_HOST || !ADMIN_HOST) return NextResponse.next();
 
   const host = (request.headers.get('host') || '').toLowerCase();
   const { pathname, search } = request.nextUrl;
+
+  if (EH_ARQUIVO.test(pathname)) return NextResponse.next();
 
   const isAdminPath = pathname === '/admin' || pathname.startsWith('/admin/');
   const isApiPath = pathname.startsWith('/api');
