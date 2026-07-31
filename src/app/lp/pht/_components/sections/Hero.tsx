@@ -97,9 +97,12 @@ export default function Hero() {
   }, []);
 
   return (
+    // min-h-dvh (não min-h-screen/100vh): no celular o 100vh ignora a barra do
+    // navegador, então a hero ficava mais alta que a tela e empurrava o CTA
+    // pra baixo da dobra. O dvh acompanha a área realmente visível.
     <section
       ref={container}
-      className="relative min-h-screen w-full overflow-hidden bg-black flex flex-col justify-center items-center z-10 py-10 md:py-0"
+      className="relative min-h-dvh w-full overflow-hidden bg-black flex flex-col justify-center items-center z-10 py-6 md:py-0"
     >
       {/* Background Image Layer */}
       <div className="absolute inset-0 z-0">
@@ -154,7 +157,7 @@ export default function Hero() {
       {/* ============================================================== */}
       <div
         ref={blurBoxRef}
-        className="relative z-30 w-[94%] md:w-[85%] max-w-2xl mx-auto backdrop-blur-md bg-white/5 border border-white/10 rounded-[2rem] md:rounded-[3rem] px-4 py-8 md:px-10 md:py-12 text-center shadow-[0_0_80px_rgba(0,0,0,0.6)] flex flex-col items-center opacity-0 -mt-16 md:mt-0"
+        className="relative z-30 w-[94%] md:w-[85%] max-w-2xl mx-auto backdrop-blur-md bg-white/5 border border-white/10 rounded-[2rem] md:rounded-[3rem] px-4 py-6 md:px-10 md:py-12 text-center shadow-[0_0_80px_rgba(0,0,0,0.6)] flex flex-col items-center opacity-0 -mt-16 md:mt-0"
       >
         {/* Glow interno superior para dar volume na caixa */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
@@ -164,22 +167,22 @@ export default function Hero() {
         <img
           src="https://teacherana.com.br/wp-content/uploads/Rise/workshops/PHT2026/PHT.svg"
           alt="PHT Workshop Logo"
-          className="h-24 md:h-64 w-auto object-contain mb-8 md:mb-1 drop-shadow-lg"
+          className="h-20 md:h-64 w-auto object-contain mb-4 md:mb-1 drop-shadow-lg"
         />
 
-        <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl lg:text-[4.5rem] leading-[1.05] tracking-tight mb-4 md:mb-8 drop-shadow-2xl">
+        <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl lg:text-[4.5rem] leading-[1.05] tracking-tight mb-3 md:mb-8 drop-shadow-2xl">
           <span className="block text-white">COMO COBRAR MAIS</span>
           <span className="block font-bold text-transparent bg-clip-text bg-gradient-to-r from-gold-300 via-gold-400 to-gold-600 italic pr-2 md:pr-4 pb-1">
             SEM PERDER ALUNOS
           </span>
         </h1>
 
-        <p className="text-zinc-300 text-sm sm:text-base md:text-xl font-light max-w-2xl mb-8 md:mb-10 text-balance leading-relaxed">
+        <p className="text-zinc-300 text-sm sm:text-base md:text-xl font-light max-w-2xl mb-5 md:mb-10 text-balance leading-relaxed">
           Aprenda a se posicionar como um professor premium, atrair alunos que valorizam o seu trabalho e cobrar R$100, R$150 ou mais por aula sem medo de perder alunos.
         </p>
 
         {/* Informações do Evento */}
-        <div className="flex flex-row flex-wrap items-center justify-center gap-x-4 gap-y-2 md:gap-8 mb-8 md:mb-12">
+        <div className="flex flex-row flex-wrap items-center justify-center gap-x-4 gap-y-2 md:gap-8 mb-5 md:mb-12">
           <div className="flex items-center gap-1.5 md:gap-2 text-gold-400 font-medium text-[11px] sm:text-xs md:text-sm tracking-widest uppercase">
             <Calendar className="w-4 h-4 md:w-5 md:h-5" />
             <span>22/08</span>

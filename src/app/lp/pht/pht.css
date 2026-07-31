@@ -18,6 +18,12 @@
   background-color: #000000;
   color: #ffffff;
   font-family: var(--font-sans);
+
+  /* O wrapper precisa ocupar a largura toda: o body do layout raiz é
+     flex-col e, sem isto, sobrava uma faixa clara na lateral no celular. */
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 .lp-pht ::selection {
@@ -31,9 +37,16 @@
   visibility: hidden;
 }
 
-/* Barra de rolagem premium — só quando a landing está montada na página */
+/* Contenção horizontal: a hero usa elementos propositalmente mais largos que
+   a tela (a foto da Ana em 140vw, a textura de anéis em 300%). O `hidden` só
+   no body não segurava no celular — dava pra arrastar a página pro lado. Com
+   `clip` nos dois níveis o corte é firme e, ao contrário de `hidden`, não
+   transforma o elemento em contêiner de rolagem (o que quebraria o
+   position: fixed da textura de fundo). */
+html:has(.lp-pht),
 html:has(.lp-pht) body {
-  overflow-x: hidden;
+  overflow-x: clip;
+  max-width: 100%;
 }
 html:has(.lp-pht) ::-webkit-scrollbar {
   width: 8px;
