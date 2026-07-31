@@ -37,6 +37,37 @@
   visibility: hidden;
 }
 
+/*
+ * Celular de tela baixa (aparelho pequeno, ou navegador com barra alta).
+ * O que decide se o CTA fica acima da dobra é a ALTURA disponível, e o
+ * Tailwind só tem breakpoints de largura — daí a media query aqui.
+ * Comprime a hero proporcionalmente; telas maiores não são tocadas.
+ */
+@media (max-width: 767px) and (max-height: 680px) {
+  .lp-pht .hero-ana {
+    width: 92vw;
+    margin-top: -1.5rem;
+  }
+  .lp-pht .hero-card {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    margin-top: -4.5rem;
+  }
+  .lp-pht .hero-logo {
+    height: 3.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .lp-pht .hero-title {
+    font-size: 1.75rem;
+    margin-bottom: 0.5rem;
+  }
+  .lp-pht .hero-sub {
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    margin-bottom: 0.75rem;
+  }
+}
+
 /* Contenção horizontal: a hero usa elementos propositalmente mais largos que
    a tela (a foto da Ana em 140vw, a textura de anéis em 300%). O `hidden` só
    no body não segurava no celular — dava pra arrastar a página pro lado. Com

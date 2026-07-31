@@ -145,7 +145,7 @@ export default function Hero() {
             ref={anaMobileRef}
             src="https://teacherana.com.br/wp-content/uploads/Rise/workshops/PHT2026/ANA3.png"
             alt="Teacher Ana"
-            className="w-[118vw] max-w-[550px] h-auto object-contain opacity-0 drop-shadow-2xl -mt-10"
+            className="hero-ana w-[118vw] max-w-[550px] h-auto object-contain opacity-0 drop-shadow-2xl -mt-10"
           />
           {/* Sombra base da Ana no Mobile para fundir com a caixa de blur */}
           <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black via-black/80 to-transparent" />
@@ -157,7 +157,7 @@ export default function Hero() {
       {/* ============================================================== */}
       <div
         ref={blurBoxRef}
-        className="relative z-30 w-[94%] md:w-[85%] max-w-2xl mx-auto backdrop-blur-md bg-white/5 border border-white/10 rounded-[2rem] md:rounded-[3rem] px-4 py-6 md:px-10 md:py-12 text-center shadow-[0_0_80px_rgba(0,0,0,0.6)] flex flex-col items-center opacity-0 -mt-20 md:mt-0"
+        className="hero-card relative z-30 w-[94%] md:w-[85%] max-w-2xl mx-auto backdrop-blur-md bg-white/5 border border-white/10 rounded-[2rem] md:rounded-[3rem] px-4 py-6 md:px-10 md:py-12 text-center shadow-[0_0_80px_rgba(0,0,0,0.6)] flex flex-col items-center opacity-0 -mt-20 md:mt-0"
       >
         {/* Glow interno superior para dar volume na caixa */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
@@ -167,17 +167,17 @@ export default function Hero() {
         <img
           src="https://teacherana.com.br/wp-content/uploads/Rise/workshops/PHT2026/PHT.svg"
           alt="PHT Workshop Logo"
-          className="h-20 md:h-64 w-auto object-contain mb-4 md:mb-1 drop-shadow-lg"
+          className="hero-logo h-20 md:h-64 w-auto object-contain mb-4 md:mb-1 drop-shadow-lg"
         />
 
-        <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl lg:text-[4.5rem] leading-[1.05] tracking-tight mb-3 md:mb-8 drop-shadow-2xl">
+        <h1 className="hero-title font-serif text-4xl sm:text-5xl md:text-7xl lg:text-[4.5rem] leading-[1.05] tracking-tight mb-3 md:mb-8 drop-shadow-2xl">
           <span className="block text-white">COMO COBRAR MAIS</span>
           <span className="block font-bold text-transparent bg-clip-text bg-gradient-to-r from-gold-300 via-gold-400 to-gold-600 italic pr-2 md:pr-4 pb-1">
             SEM PERDER ALUNOS
           </span>
         </h1>
 
-        <p className="text-zinc-300 text-sm sm:text-base md:text-xl font-light max-w-2xl mb-5 md:mb-10 text-balance leading-relaxed">
+        <p className="hero-sub text-zinc-300 text-sm sm:text-base md:text-xl font-light max-w-2xl mb-5 md:mb-10 text-balance leading-relaxed">
           Aprenda a se posicionar como um professor premium, atrair alunos que valorizam o seu trabalho e cobrar R$100, R$150 ou mais por aula sem medo de perder alunos.
         </p>
 
