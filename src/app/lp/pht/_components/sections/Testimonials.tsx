@@ -38,19 +38,33 @@ export default function Testimonials() {
     const alvo = areaRef.current;
     if (!alvo || montar) return;
 
-    // rootMargin generoso: começa a carregar uma tela antes de aparecer,
-    // então a galeria já está pronta quando o visitante chega nela.
-    const obs = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          setMontar(true);
-          obs.disconnect();
-        }
-      },
-      { rootMargin: "300px 0px" },
-    );
-    obs.observe(alvo);
-    return () => obs.disconnect();
+    const ativar = () => setMontar(true);
+
+    // Caminho normal: rootMargin generoso começa a carregar uma tela antes
+    // da seção aparecer, então a galeria já está pronta quando o visitante
+    // chega nela.
+    let obs: IntersectionObserver | undefined;
+    if (typeof IntersectionObserver !== "undefined") {
+      obs = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((e) => e.isIntersecting)) ativar();
+        },
+        { rootMargin: "300px 0px" },
+      );
+      obs.observe(alvo);
+    }
+
+    // Rede de segurança: em ambiente onde o observer não entrega o callback
+    // (navegador antigo, extensão, webview), o primeiro scroll monta assim
+    // mesmo. Sem isto, uma falha do observer deixaria a seção vazia pra
+    // sempre — e é melhor pagar o custo do que sumir com os depoimentos.
+    const noPrimeiroScroll = () => ativar();
+    window.addEventListener("scroll", noPrimeiroScroll, { once: true, passive: true });
+
+    return () => {
+      obs?.disconnect();
+      window.removeEventListener("scroll", noPrimeiroScroll);
+    };
   }, [montar]);
 
   return (
