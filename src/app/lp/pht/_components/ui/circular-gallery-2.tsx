@@ -461,6 +461,9 @@ class App {
   mediasImages!: GalleryItem[];
   medias!: Media[];
   isDown: boolean = false;
+  /** Seção visível na tela? Controlado pelo IntersectionObserver em start(). */
+  visivel: boolean = true;
+  observer?: IntersectionObserver;
   start: number = 0;
   screen!: { width: number; height: number };
   viewport!: { width: number; height: number };
@@ -630,6 +633,13 @@ class App {
   }
 
   update() {
+    // Fora da tela (ou aba em segundo plano) não há o que animar: pular o
+    // render economiza CPU/bateria e libera a thread principal. O loop
+    // continua agendado, então volta sozinho quando a seção reaparece.
+    if (!this.visivel) {
+      this.raf = window.requestAnimationFrame(this.update);
+      return;
+    }
     if (!this.isDown) {
       this.scroll.target += 0.015;
     }
@@ -665,10 +675,18 @@ class App {
     this.container.addEventListener("touchstart", this.boundOnTouchDown);
     window.addEventListener("touchmove", this.boundOnTouchMove);
     window.addEventListener("touchend", this.boundOnTouchUp);
+
+    // Renderiza só enquanto a galeria estiver na tela
+    this.observer = new IntersectionObserver(
+      (entries) => { this.visivel = entries.some((e) => e.isIntersecting); },
+      { rootMargin: "100px 0px" },
+    );
+    this.observer.observe(this.container);
   }
 
   destroy() {
     window.cancelAnimationFrame(this.raf);
+    this.observer?.disconnect();
     window.removeEventListener("resize", this.boundOnResize);
     window.removeEventListener("mousewheel", this.boundOnWheel as EventListener);
     window.removeEventListener("wheel", this.boundOnWheel);
