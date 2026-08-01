@@ -41,9 +41,12 @@ export default function About() {
         className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center opacity-0"
       >
         <div className="relative aspect-[4/5] rounded-3xl overflow-hidden grayscale-0 hover:grayscale transition-all duration-700 bg-ink-900 border border-white/10">
-          <img 
-            src="https://teacherana.com.br/wp-content/uploads/Rise/workshops/PHT2026/ana.jpg" 
-            alt="Teacher Ana" 
+          {/* Última seção da página: só carrega quando o visitante chega perto */}
+          <img
+            src="https://teacherana.com.br/wp-content/uploads/Rise/workshops/PHT2026/ana.jpg"
+            alt="Teacher Ana"
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover object-top"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />

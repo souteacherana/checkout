@@ -7,6 +7,15 @@ import { Calendar, Clock, Video } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
 
+const ASSETS = "https://teacherana.com.br/wp-content/uploads/Rise/workshops/PHT2026";
+
+// GIF transparente de 1px. Serve de `src` nas imagens que só existem em um
+// breakpoint: o <source media> abaixo entrega a imagem real quando a tela
+// casa, e quando não casa o navegador baixa só estes 43 bytes. `display:none`
+// no CSS não evitaria o download — o celular baixava as fotos de desktop e o
+// desktop baixava a do celular.
+const PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+
 // Componente para a textura de anéis (SVG)
 const PatternTexture = () => (
   <div className="absolute inset-0 z-0 pointer-events-none flex items-center justify-center overflow-hidden opacity-[0.05]">
@@ -108,8 +117,9 @@ export default function Hero() {
       <div className="absolute inset-0 z-0">
         <img
           ref={bgRef}
-          src="https://teacherana.com.br/wp-content/uploads/Rise/workshops/PHT2026/FUNDO.png"
-          alt="Theatre Background"
+          src={`${ASSETS}/assets/fundo.jpg`}
+          alt=""
+          fetchPriority="high"
           className="w-full h-full object-cover opacity-0"
         />
         <div className="absolute inset-0 bg-black/30" />
@@ -122,31 +132,40 @@ export default function Hero() {
       {/* IMAGEM DA ANA */}
       {/* ============================================================== */}
 
-      {/* DESKTOP: ANA1 na esquerda, ANA2 na direita */}
+      {/* DESKTOP: ANA1 na esquerda, ANA2 na direita (não baixam no celular) */}
       <div className="hidden md:block absolute inset-0 w-full h-full z-20 pointer-events-none">
-        <img
-          ref={anaDesktopLeftRef}
-          src="https://teacherana.com.br/wp-content/uploads/Rise/workshops/PHT2026/ANA1.png"
-          alt="Teacher Ana"
-          className="absolute bottom-0 left-0 h-[85%] lg:h-[95%] w-auto object-contain translate-x-[5%] opacity-0 drop-shadow-2xl"
-        />
-        <img
-          ref={anaDesktopRightRef}
-          src="https://teacherana.com.br/wp-content/uploads/Rise/workshops/PHT2026/ANA2.png"
-          alt="Teacher Ana"
-          className="absolute bottom-0 right-0 h-[80%] lg:h-[90%] w-auto object-contain -translate-x-[5%] opacity-0 drop-shadow-2xl"
-        />
+        <picture className="contents">
+          <source media="(min-width: 768px)" srcSet={`${ASSETS}/assets/ANA1.webp`} />
+          <img
+            ref={anaDesktopLeftRef}
+            src={PIXEL}
+            alt="Teacher Ana"
+            className="absolute bottom-0 left-0 h-[85%] lg:h-[95%] w-auto object-contain translate-x-[5%] opacity-0 drop-shadow-2xl"
+          />
+        </picture>
+        <picture className="contents">
+          <source media="(min-width: 768px)" srcSet={`${ASSETS}/assets/ANA2.webp`} />
+          <img
+            ref={anaDesktopRightRef}
+            src={PIXEL}
+            alt="Teacher Ana"
+            className="absolute bottom-0 right-0 h-[80%] lg:h-[90%] w-auto object-contain -translate-x-[5%] opacity-0 drop-shadow-2xl"
+          />
+        </picture>
       </div>
 
-      {/* MOBILE: ANA3 unificada no topo */}
+      {/* MOBILE: ANA3 unificada no topo (não baixa no desktop) */}
       <div className="md:hidden relative w-full flex justify-center z-20 pointer-events-none mt-1">
         <div className="relative">
-          <img
-            ref={anaMobileRef}
-            src="https://teacherana.com.br/wp-content/uploads/Rise/workshops/PHT2026/ANA3.png"
-            alt="Teacher Ana"
-            className="hero-ana w-[118vw] max-w-[550px] h-auto object-contain opacity-0 drop-shadow-2xl -mt-10"
-          />
+          <picture className="contents">
+            <source media="(max-width: 767px)" srcSet={`${ASSETS}/assets/ANA3.png`} />
+            <img
+              ref={anaMobileRef}
+              src={PIXEL}
+              alt="Teacher Ana"
+              className="hero-ana w-[118vw] max-w-[550px] h-auto object-contain opacity-0 drop-shadow-2xl -mt-10"
+            />
+          </picture>
           {/* Sombra base da Ana no Mobile para fundir com a caixa de blur */}
           <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black via-black/80 to-transparent" />
         </div>
@@ -165,7 +184,7 @@ export default function Hero() {
 
         {/* Logo do Workshop */}
         <img
-          src="https://teacherana.com.br/wp-content/uploads/Rise/workshops/PHT2026/PHT.svg"
+          src={`${ASSETS}/PHT.svg`}
           alt="PHT Workshop Logo"
           className="hero-logo h-20 md:h-64 w-auto object-contain mb-4 md:mb-1 drop-shadow-lg"
         />
