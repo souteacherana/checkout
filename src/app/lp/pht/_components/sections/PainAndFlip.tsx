@@ -1,8 +1,7 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import { useGsapAoAproximar } from "../useGsapAoAproximar";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -11,7 +10,8 @@ export default function PainAndFlip() {
   const container = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLHeadingElement>(null);
 
-  useGsapAoAproximar(container, () => {
+  useEffect(() => {
+    const ctx = gsap.context(() => {
       gsap.fromTo(
         textRef.current,
         { opacity: 0, scale: 0.9 },
@@ -28,7 +28,10 @@ export default function PainAndFlip() {
           }
         }
       );
-  });
+    }, container);
+
+    return () => ctx.revert();
+  }, []);
 
   return (
     <section 

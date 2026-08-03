@@ -1,8 +1,7 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import { useGsapAoAproximar } from "../useGsapAoAproximar";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Calendar, Clock, Video, CheckCircle2, ShieldCheck, BookOpen } from "lucide-react";
 import BorderGlow from "../ui/BorderGlow";
@@ -18,7 +17,8 @@ export default function Offer() {
   // As UTMs continuam sendo repassadas ao destino de qualquer forma.
   const checkoutHref = useCheckoutHref("https://sun.eduzz.com/Q9N2O4GB01");
 
-  useGsapAoAproximar(container, () => {
+  useEffect(() => {
+    const ctx = gsap.context(() => {
       // Animação de entrada dos elementos (texto e card) sem clip-path
       gsap.fromTo(
         ".offer-stagger",
@@ -39,7 +39,10 @@ export default function Offer() {
           }
         }
       );
-  });
+    }, container);
+
+    return () => ctx.revert();
+  }, []);
 
   return (
     <section 
