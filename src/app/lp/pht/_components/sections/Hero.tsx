@@ -60,7 +60,10 @@ export default function Hero() {
       const { isDesktop } = context.conditions as { isDesktop: boolean, isMobile: boolean };
 
       // Animações comuns a ambos
-      gsap.fromTo(bgRef.current, { scale: 1.1, opacity: 0 }, { scale: 1, opacity: 0.5, duration: 2, ease: "power2.out" });
+      // O fundo e a foto da Ana (elemento LCP) já nascem visíveis no HTML:
+      // animar a opacidade deles aqui adiava o LCP em mais de 1s, porque a
+      // maior imagem da tela só aparecia depois do JS baixar e hidratar.
+      gsap.fromTo(bgRef.current, { scale: 1.06 }, { scale: 1, duration: 2, ease: "power2.out" });
       gsap.fromTo(blurBoxRef.current, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 1.5, ease: "power3.out", delay: 0.5 });
 
       if (isDesktop) {
@@ -85,7 +88,7 @@ export default function Hero() {
           .to(anaDesktopRightRef.current, { x: 50, y: -80, opacity: 0, duration: 1 }, 0);
       } else {
         // Animação inicial mobile
-        gsap.fromTo(anaMobileRef.current, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 1.5, ease: "power3.out", delay: 0.2 });
+        gsap.fromTo(anaMobileRef.current, { y: 24 }, { y: 0, duration: 1.2, ease: "power3.out" });
 
         // Parallax scroll mobile
         const tl = gsap.timeline({
@@ -119,8 +122,10 @@ export default function Hero() {
           ref={bgRef}
           src={`${ASSETS}/assets/fundo.jpg`}
           alt=""
+          width={1920}
+          height={1080}
           fetchPriority="high"
-          className="w-full h-full object-cover opacity-0"
+          className="w-full h-full object-cover opacity-50"
         />
         <div className="absolute inset-0 bg-black/30" />
       </div>
@@ -140,6 +145,8 @@ export default function Hero() {
             ref={anaDesktopLeftRef}
             src={PIXEL}
             alt="Teacher Ana"
+            width={1920}
+            height={1080}
             className="absolute bottom-0 left-0 h-[85%] lg:h-[95%] w-auto object-contain translate-x-[5%] opacity-0 drop-shadow-2xl"
           />
         </picture>
@@ -149,6 +156,8 @@ export default function Hero() {
             ref={anaDesktopRightRef}
             src={PIXEL}
             alt="Teacher Ana"
+            width={1920}
+            height={1080}
             className="absolute bottom-0 right-0 h-[80%] lg:h-[90%] w-auto object-contain -translate-x-[5%] opacity-0 drop-shadow-2xl"
           />
         </picture>
@@ -163,7 +172,9 @@ export default function Hero() {
               ref={anaMobileRef}
               src={PIXEL}
               alt="Teacher Ana"
-              className="hero-ana w-[118vw] max-w-[550px] h-auto object-contain opacity-0 drop-shadow-2xl -mt-10"
+              width={460}
+              height={259}
+              className="hero-ana w-[118vw] max-w-[550px] h-auto object-contain drop-shadow-2xl -mt-10"
             />
           </picture>
           {/* Sombra base da Ana no Mobile para fundir com a caixa de blur */}
@@ -186,6 +197,8 @@ export default function Hero() {
         <img
           src={`${ASSETS}/PHT.svg`}
           alt="PHT Workshop Logo"
+          width={300}
+          height={117}
           className="hero-logo h-20 md:h-64 w-auto object-contain mb-4 md:mb-1 drop-shadow-lg"
         />
 

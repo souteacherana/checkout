@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import gsap from "gsap";
+import { useGsapAoAproximar } from "../useGsapAoAproximar";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { CheckCircle2 } from "lucide-react";
 
@@ -21,8 +22,7 @@ export default function TargetAudience() {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
-  useEffect(() => {
-    const ctx = gsap.context(() => {
+  useGsapAoAproximar(container, () => {
       // Title animation
       gsap.fromTo(
         titleRef.current,
@@ -58,10 +58,7 @@ export default function TargetAudience() {
           }
         );
       }
-    }, container);
-
-    return () => ctx.revert();
-  }, []);
+  });
 
   return (
     <section 

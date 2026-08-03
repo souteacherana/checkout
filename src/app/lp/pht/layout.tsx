@@ -26,12 +26,39 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://www.riseeducacao.com.br/pht" },
 };
 
+const ASSETS = "https://teacherana.com.br/wp-content/uploads/Rise/workshops/PHT2026/assets";
+
 export default function PhtLandingLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className={`lp-pht ${inter.variable} ${instrumentSerif.variable}`}>
-      {children}
-    </div>
+    <>
+      {/* As imagens da hero vêm de outro domínio: abrir a conexão desde já
+          evita pagar DNS + TLS só quando o CSS revelar as URLs. */}
+      <link rel="preconnect" href="https://teacherana.com.br" />
+      <link rel="dns-prefetch" href="https://teacherana.com.br" />
+
+      {/* Elemento de LCP em cada breakpoint. Sem o preload o navegador só
+          descobre estas imagens depois de baixar e processar o CSS — o
+          "atraso na descoberta" que o PageSpeed aponta. */}
+      <link
+        rel="preload"
+        as="image"
+        href={`${ASSETS}/ANA3.png`}
+        media="(max-width: 767px)"
+        fetchPriority="high"
+      />
+      <link
+        rel="preload"
+        as="image"
+        href={`${ASSETS}/fundo.jpg`}
+        media="(min-width: 768px)"
+        fetchPriority="high"
+      />
+
+      <div className={`lp-pht ${inter.variable} ${instrumentSerif.variable}`}>
+        {children}
+      </div>
+    </>
   );
 }

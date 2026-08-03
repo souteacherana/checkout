@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import gsap from "gsap";
+import { useGsapAoAproximar } from "../useGsapAoAproximar";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -21,8 +22,7 @@ export default function Presentation() {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const ctx = gsap.context(() => {
+  useGsapAoAproximar(container, () => {
       gsap.fromTo(
         titleRef.current,
         { y: 30, opacity: 0 },
@@ -56,10 +56,7 @@ export default function Presentation() {
           }
         );
       }
-    }, container);
-
-    return () => ctx.revert();
-  }, []);
+  });
 
   return (
     <section 
