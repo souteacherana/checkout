@@ -64,7 +64,12 @@ export default function Hero() {
       // animar a opacidade deles aqui adiava o LCP em mais de 1s, porque a
       // maior imagem da tela só aparecia depois do JS baixar e hidratar.
       gsap.fromTo(bgRef.current, { scale: 1.06 }, { scale: 1, duration: 2, ease: "power2.out" });
-      gsap.fromTo(blurBoxRef.current, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 1.5, ease: "power3.out", delay: 0.5 });
+      // O card (título + CTA "Garantir Meu Ingresso") também nasce visível:
+      // ele animava a partir de opacity-0, então qualquer falha no GSAP —
+      // script bloqueado, erro em outro ponto do bundle, alguma peculiaridade
+      // do navegador interno do Instagram — deixava o botão principal
+      // invisível pra sempre, sem fallback. Agora só a posição é animada.
+      gsap.fromTo(blurBoxRef.current, { y: 30 }, { y: 0, duration: 1.5, ease: "power3.out", delay: 0.5 });
 
       if (isDesktop) {
         // Animação inicial desktop
@@ -187,7 +192,7 @@ export default function Hero() {
       {/* ============================================================== */}
       <div
         ref={blurBoxRef}
-        className="hero-card relative z-30 w-[94%] md:w-[85%] max-w-2xl mx-auto backdrop-blur-md bg-white/5 border border-white/10 rounded-[2rem] md:rounded-[3rem] px-4 py-6 md:px-10 md:py-12 text-center shadow-[0_0_80px_rgba(0,0,0,0.6)] flex flex-col items-center opacity-0 -mt-20 md:mt-0"
+        className="hero-card relative z-30 w-[94%] md:w-[85%] max-w-2xl mx-auto backdrop-blur-md bg-white/5 border border-white/10 rounded-[2rem] md:rounded-[3rem] px-4 py-6 md:px-10 md:py-12 text-center shadow-[0_0_80px_rgba(0,0,0,0.6)] flex flex-col items-center -mt-20 md:mt-0"
       >
         {/* Glow interno superior para dar volume na caixa */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
