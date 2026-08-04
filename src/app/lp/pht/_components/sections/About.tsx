@@ -40,7 +40,7 @@ export default function About() {
         ref={contentRef}
         className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center opacity-0"
       >
-        <div className="relative aspect-[4/5] rounded-3xl overflow-hidden grayscale-0 hover:grayscale transition-all duration-700 bg-ink-900 border border-white/10">
+        <div className="relative aspect-[4/5] rounded-3xl overflow-hidden bg-ink-900 border border-white/10">
           {/* Última seção da página: só carrega quando o visitante chega perto */}
           <img
             src="https://teacherana.com.br/wp-content/uploads/Rise/workshops/PHT2026/ana.jpg"

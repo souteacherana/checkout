@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Calendar, Clock, Video, CheckCircle2, ShieldCheck, BookOpen } from "lucide-react";
-import BorderGlow from "../ui/BorderGlow";
 import { useCheckoutHref } from "@/lib/landing";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -100,17 +99,10 @@ export default function Offer() {
 
         {/* LADO DIREITO: Card de Pagamento */}
         <div className="offer-stagger relative">
-          <BorderGlow
-            edgeSensitivity={40}
-            glowColor="43 85% 60%" // Tom dourado aproximado do tailwind gold-500
-            backgroundColor="#ffffff" // Fundo branco
-            borderRadius={24}
-            glowRadius={50}
-            glowIntensity={1.5}
-            coneSpread={30}
-            animated={true}
-            colors={['#f59e0b', '#fbbf24', '#fcd34d']} // Tons dourados (amber)
-          >
+          {/* Card simples: o efeito de brilho na borda que existia aqui só
+              reagia ao mouse, então não aparecia pra maioria (celular), e
+              custava um componente de animação inteiro no bundle. */}
+          <div className="rounded-3xl bg-white border border-gold-500/30 shadow-[0_20px_60px_-20px_rgba(187,156,76,0.35)] overflow-hidden">
             <div className="p-8 md:p-12 flex flex-col items-center text-center relative overflow-hidden">
               
               {/* Brilho de fundo no card */}
@@ -151,7 +143,7 @@ export default function Offer() {
               </div>
               
             </div>
-          </BorderGlow>
+          </div>
         </div>
 
       </div>

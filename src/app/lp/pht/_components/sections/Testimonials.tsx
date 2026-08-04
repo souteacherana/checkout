@@ -1,95 +1,55 @@
-"use client";
-
-import { useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
-import type { GalleryItem } from "../ui/circular-gallery-2";
-
-// A galeria é WebGL (ogl): monta 8 texturas, compila shaders e roda um
-// requestAnimationFrame contínuo. Carregando junto com a página, isso
-// bloqueava a thread principal por vários segundos num celular modesto —
-// mesmo estando lá embaixo, fora da tela. Agora o código só é baixado
-// quando o visitante se aproxima da seção.
-const CircularGallery = dynamic(
-  () => import("../ui/circular-gallery-2").then((m) => m.CircularGallery),
-  { ssr: false },
-);
-
-const testimonialImages = [
-  "/lp/pht/images/depo/didio.jpg",
-  "/lp/pht/images/depo/junara.jpg",
-  "/lp/pht/images/depo/matlima.jpg",
-  "/lp/pht/images/depo/miura.jpg",
-  "/lp/pht/images/depo/natfranco.jpg",
-  "/lp/pht/images/depo/paula.jpg",
-  "/lp/pht/images/depo/tereza.jpg",
-  "/lp/pht/images/depo/youshine.jpg",
+const depoimentos = [
+  "didio",
+  "junara",
+  "matlima",
+  "miura",
+  "natfranco",
+  "paula",
+  "tereza",
+  "youshine",
 ];
 
-const galleryItems: GalleryItem[] = testimonialImages.map((imageUrl) => ({
-  image: imageUrl,
-  text: "",
-}));
-
+/**
+ * Prova social em grade masonry (CSS `columns`).
+ *
+ * Antes isto era uma galeria 3D em WebGL que só avançava arrastando — gesto
+ * que a maioria não descobre, deixando os depoimentos invisíveis na prática.
+ * A grade mostra todos de uma vez, sem interação nenhuma, e é HTML estático:
+ * nada aqui depende de JavaScript pra aparecer.
+ */
 export default function Testimonials() {
-  const areaRef = useRef<HTMLDivElement>(null);
-  const [montar, setMontar] = useState(false);
-
-  useEffect(() => {
-    const alvo = areaRef.current;
-    if (!alvo || montar) return;
-
-    const ativar = () => setMontar(true);
-
-    // Caminho normal: rootMargin generoso começa a carregar uma tela antes
-    // da seção aparecer, então a galeria já está pronta quando o visitante
-    // chega nela.
-    let obs: IntersectionObserver | undefined;
-    if (typeof IntersectionObserver !== "undefined") {
-      obs = new IntersectionObserver(
-        (entries) => {
-          if (entries.some((e) => e.isIntersecting)) ativar();
-        },
-        { rootMargin: "300px 0px" },
-      );
-      obs.observe(alvo);
-    }
-
-    // Rede de segurança: em ambiente onde o observer não entrega o callback
-    // (navegador antigo, extensão, webview), o primeiro scroll monta assim
-    // mesmo. Sem isto, uma falha do observer deixaria a seção vazia pra
-    // sempre — e é melhor pagar o custo do que sumir com os depoimentos.
-    const noPrimeiroScroll = () => ativar();
-    window.addEventListener("scroll", noPrimeiroScroll, { once: true, passive: true });
-
-    return () => {
-      obs?.disconnect();
-      window.removeEventListener("scroll", noPrimeiroScroll);
-    };
-  }, [montar]);
-
   return (
-    <section id="depoimentos" className="relative py-16 md:py-24 bg-transparent z-10 overflow-hidden">
-      <div className="max-w-6xl mx-auto px-6 text-center mb-8">
+    <section id="depoimentos" className="relative py-16 md:py-24 bg-transparent z-10">
+      <div className="max-w-6xl mx-auto px-6 text-center mb-10 md:mb-14">
         <h2 className="font-serif text-4xl sm:text-5xl md:text-5xl lg:text-6xl text-white leading-tight">
-          Depoimentos de teachers que <br className="hidden md:block" /> já <span className="text-gold-500 italic">transformaram seus negócios!</span>
+          Depoimentos de teachers que <br className="hidden md:block" /> já{" "}
+          <span className="text-gold-500 italic">transformaram seus negócios!</span>
         </h2>
         <p className="mt-4 text-zinc-400 text-base md:text-lg font-light max-w-2xl mx-auto">
-          Arraste a galeria 3D para navegar pelas histórias reais de quem aplicou o método PHT.
+          Histórias reais de quem aplicou o método e mudou o próprio patamar.
         </p>
       </div>
 
-      {/* Galeria 3D Circular WebGL — a altura fica reservada desde o início,
-          então montar depois não empurra o conteúdo (mantém o CLS em zero) */}
-      <div ref={areaRef} className="relative h-[420px] md:h-[680px] w-full">
-        {montar && (
-          <CircularGallery
-            items={galleryItems}
-            bend={3}
-            borderRadius={0.05}
-            scrollSpeed={2}
-            scrollEase={0.05}
-          />
-        )}
+      {/* `columns` faz o masonry nativo do navegador: as colunas se equilibram
+          sozinhas e cada print mantém sua altura original, sem corte. */}
+      <div className="max-w-6xl mx-auto px-4 md:px-6 columns-2 lg:columns-3 gap-3 md:gap-4">
+        {depoimentos.map((nome, i) => (
+          <div
+            key={nome}
+            className="mb-3 md:mb-4 break-inside-avoid overflow-hidden rounded-xl border border-white/10 bg-white/5"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`/lp/pht/images/depo/${nome}.jpg`}
+              alt={`Depoimento de aluna da Teacher Ana (${i + 1} de ${depoimentos.length})`}
+              // Os dois primeiros costumam entrar na tela junto com a seção;
+              // o resto só carrega conforme a pessoa rola.
+              loading={i < 2 ? "eager" : "lazy"}
+              decoding="async"
+              className="w-full h-auto block"
+            />
+          </div>
+        ))}
       </div>
     </section>
   );
