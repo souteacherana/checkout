@@ -10,12 +10,17 @@ const depoimentos = [
 ];
 
 /**
- * Prova social em grade masonry (CSS `columns`).
+ * Prova social em grade.
  *
  * Antes isto era uma galeria 3D em WebGL que só avançava arrastando — gesto
  * que a maioria não descobre, deixando os depoimentos invisíveis na prática.
- * A grade mostra todos de uma vez, sem interação nenhuma, e é HTML estático:
- * nada aqui depende de JavaScript pra aparecer.
+ * Agora são HTML estático: aparecem todos de uma vez, sem interação e sem
+ * depender de JavaScript.
+ *
+ * Grade (e não `columns`): os oito prints são 800x1000, mesma proporção, então
+ * uma grade uniforme é mais previsível. O `aspect-[4/5]` reserva o espaço de
+ * cada card antes da imagem chegar — sem isso a seção crescia ~600px enquanto
+ * as fotos carregavam, empurrando o conteúdo sob o dedo de quem rolava.
  */
 export default function Testimonials() {
   return (
@@ -30,23 +35,22 @@ export default function Testimonials() {
         </p>
       </div>
 
-      {/* `columns` faz o masonry nativo do navegador: as colunas se equilibram
-          sozinhas e cada print mantém sua altura original, sem corte. */}
-      <div className="max-w-6xl mx-auto px-4 md:px-6 columns-2 lg:columns-3 gap-3 md:gap-4">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {depoimentos.map((nome, i) => (
           <div
             key={nome}
-            className="mb-3 md:mb-4 break-inside-avoid overflow-hidden rounded-xl border border-white/10 bg-white/5"
+            className="aspect-[4/5] overflow-hidden rounded-xl border border-white/10 bg-white/5"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={`/lp/pht/images/depo/${nome}.jpg`}
               alt={`Depoimento de aluna da Teacher Ana (${i + 1} de ${depoimentos.length})`}
-              // Os dois primeiros costumam entrar na tela junto com a seção;
-              // o resto só carrega conforme a pessoa rola.
+              width={800}
+              height={1000}
+              // Os primeiros entram na tela junto com a seção; o resto espera
               loading={i < 2 ? "eager" : "lazy"}
               decoding="async"
-              className="w-full h-auto block"
+              className="w-full h-full object-cover"
             />
           </div>
         ))}
