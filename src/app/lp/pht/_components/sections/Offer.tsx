@@ -96,7 +96,7 @@ export default function Offer() {
                 href={checkoutHref}
                 className="group relative inline-flex items-center justify-center gap-3 w-full px-8 py-5 bg-gold-500 text-black font-bold text-lg rounded-full overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_15px_30px_-10px_rgba(187,156,76,0.5)] relative z-10 mb-6"
               >
-                <span className="relative z-10 uppercase tracking-widest">Garantir Meu Ingresso</span>
+                <span className="relative z-10 uppercase tracking-widest">Quero cobrar o que eu valho — R$49,90</span>
                 <div className="absolute inset-0 bg-gold-400 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300 ease-in-out z-0"></div>
               </a>
 
