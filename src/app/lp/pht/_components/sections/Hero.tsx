@@ -130,11 +130,11 @@ export default function Hero() {
         </h1>
 
         <p className="hero-sub text-zinc-300 text-sm sm:text-base md:text-xl font-light max-w-2xl mb-3 md:mb-5 text-balance leading-relaxed">
-          O que define o seu preço não é o quanto você ensina bem — é o quanto você sabe comunicar valor.
+          O que define o seu preço não é o quanto você ensina bem é o quanto você sabe comunicar valor.
         </p>
 
         <p className="text-zinc-400 text-xs sm:text-sm md:text-lg font-light max-w-2xl mb-5 md:mb-10 text-balance leading-relaxed">
-          No dia 22/08, um workshop de 3 horas sobre posicionamento, nicho, precificação e as respostas certas para &ldquo;achei caro&rdquo; — sem dar desconto.
+          No dia 22/08, um workshop de 3 horas sobre posicionamento, nicho, precificação e as respostas certas para &ldquo;achei caro&rdquo;,sem dar desconto.
         </p>
 
         {/* Informações do Evento */}
