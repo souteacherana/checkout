@@ -79,6 +79,14 @@ html:has(.lp-pht) body {
   overflow-x: clip;
   max-width: 100%;
 }
+
+/* Rolagem suave dos links âncora sem JavaScript (era um onClick antes).
+   Respeita quem configurou o sistema pra reduzir movimento. */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.lp-pht) {
+    scroll-behavior: smooth;
+  }
+}
 html:has(.lp-pht) ::-webkit-scrollbar {
   width: 8px;
 }

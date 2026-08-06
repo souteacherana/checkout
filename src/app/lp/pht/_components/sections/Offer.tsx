@@ -1,56 +1,20 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Calendar, Clock, Video, CheckCircle2, ShieldCheck, BookOpen } from "lucide-react";
 import { useCheckoutHref } from "@/lib/landing";
 
-gsap.registerPlugin(ScrollTrigger);
-
 export default function Offer() {
-  const container = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
   // TESTE DE PLATAFORMA: o CTA desta landing aponta pra Eduzz em vez do nosso
   // checkout. Pra voltar ao normal, troque a URL abaixo por "pht".
   // As UTMs continuam sendo repassadas ao destino de qualquer forma.
   const checkoutHref = useCheckoutHref("https://sun.eduzz.com/Q9N2O4GB01");
 
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      // Animação de entrada dos elementos (texto e card) sem clip-path
-      gsap.fromTo(
-        ".offer-stagger",
-        { 
-          y: 60, 
-          opacity: 0 
-        },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 1.2,
-          stagger: 0.15,
-          ease: "expo.out",
-          scrollTrigger: {
-            trigger: container.current,
-            start: "top 75%", // Inicia quando o topo da seção atinge 75% da tela
-            toggleActions: "play none none none" // Toca apenas uma vez para não ficar cortando/piscando no scroll reverso
-          }
-        }
-      );
-    }, container);
-
-    return () => ctx.revert();
-  }, []);
-
   return (
     <section 
-      ref={container}
       id="oferta"
       className="relative py-24 md:py-32 px-4 md:px-6 z-20 flex justify-center bg-zinc-50 w-full"
     >
       <div 
-        ref={contentRef}
         className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center"
       >
         {/* LADO ESQUERDO: Entregáveis */}
