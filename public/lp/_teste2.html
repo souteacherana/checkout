@@ -82,7 +82,12 @@
 .lp-pht a:hover { text-decoration: none; }
 .lp-pht button, .lp-pht summary { font-family: inherit; }
 
-/* FAQ em <details>: abre e fecha sem JavaScript. */
+/* FAQ em <details>: abre e fecha sem JavaScript.
+   O mostra/esconde e' declarado aqui em vez de depender do comportamento
+   padrao do <details>, que alguns navegadores embutidos (webview de app,
+   por exemplo) tratam de forma diferente. */
+.lp-pht details.faq-item > div { display: none; }
+.lp-pht details.faq-item[open] > div { display: block; }
 .lp-pht details.faq-item summary { cursor: pointer; list-style: none; }
 .lp-pht details.faq-item summary::-webkit-details-marker { display: none; }
 .lp-pht details.faq-item summary::marker { content: ''; }
