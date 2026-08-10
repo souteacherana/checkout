@@ -1,12 +1,12 @@
 
 const discoveries = [
-  "Por que você ainda cobra menos do que vale (e como parar com isso urgente)",
+  "Como precificar e organizar seus valores de forma a te valorizar e sendo vendável",
+  "Como nunca mais dar desconto",
+  "Como divulgar sua aula atraindo alunos que pagam bem",
+  "O que mudar na sua comunicação e posicionamento para ser visto como premium",
   "Como sair do ciclo de “aula barata e agenda cheia” e virar referência",
   "A fórmula simples pra cobrar R$100, R$150 ou mais por aula sem culpa",
-  "Como mostrar valor antes mesmo do aluno perguntar o preço",
-  "O que muda na sua comunicação, posicionamento e atendimento pra ser visto como premium",
-  "Como deixar de ser o plano B de quem não pode pagar escola e virar o plano A de quem quer resultado",
-  "Como montar um serviço que te valorize e que o aluno sinta orgulho de pagar"
+  "Como mostrar valor antes mesmo do aluno perguntar o preço"
 ];
 
 export default function Presentation() {

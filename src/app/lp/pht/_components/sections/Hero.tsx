@@ -123,14 +123,14 @@ export default function Hero() {
         />
 
         <h1 className="hero-title font-serif text-4xl sm:text-5xl md:text-7xl lg:text-[4.5rem] leading-[1.05] tracking-tight mb-3 md:mb-8 drop-shadow-2xl">
-          <span className="block text-white">COBRE ATÉ R$200 A HORA-AULA</span>
+          <span className="block text-white">APRENDA A PRECIFICAR, DIVULGAR E VENDER SUAS AULAS</span>
           <span className="block font-bold text-transparent bg-clip-text bg-gradient-to-r from-gold-300 via-gold-400 to-gold-600 italic pr-2 md:pr-4 pb-1">
-            SEM PERDER OS ALUNOS QUE VOCÊ JÁ TEM
+            POR UM PREÇO JUSTO QUE VALORIZE O SEU TRABALHO
           </span>
         </h1>
 
         <p className="hero-sub text-zinc-300 text-sm sm:text-base md:text-xl font-light max-w-2xl mb-3 md:mb-5 text-balance leading-relaxed">
-          O que define o seu preço não é o quanto você ensina bem, é o quanto você sabe comunicar valor.
+          Em três horas de imersão, você vai entender como se posicionar de forma a captar e atrair alunos que pagam mais pelas suas aulas sem pedir desconto.
         </p>
 
         <p className="text-zinc-400 text-xs sm:text-sm md:text-lg font-light max-w-2xl mb-5 md:mb-10 text-balance leading-relaxed">
