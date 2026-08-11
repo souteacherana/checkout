@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Instrument_Serif } from "next/font/google";
+import Script from "next/script";
 import "./pht.css";
 
 // Fontes da landing declaradas AQUI (não no layout raiz): só carregam pra
@@ -33,6 +34,14 @@ export default function PhtLandingLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <>
+      {/* Heatmap/gravação de sessão (Contentsquare) — só nesta landing, de
+          propósito: no checkout ele gravaria dados de pagamento. */}
+      <Script
+        id="contentsquare"
+        src="https://t.contentsquare.net/uxa/5b651f7f96b38.js"
+        strategy="afterInteractive"
+      />
+
       {/* As imagens da hero vêm de outro domínio: abrir a conexão desde já
           evita pagar DNS + TLS só quando o CSS revelar as URLs. */}
       <link rel="preconnect" href="https://teacherana.com.br" />
