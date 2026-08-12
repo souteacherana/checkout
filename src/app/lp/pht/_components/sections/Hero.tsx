@@ -123,9 +123,9 @@ export default function Hero() {
         />
 
         <h1 className="hero-title font-serif text-4xl sm:text-5xl md:text-7xl lg:text-[4.5rem] leading-[1.05] tracking-tight mb-3 md:mb-8 drop-shadow-2xl">
-          <span className="block text-white">APRENDA A PRECIFICAR, DIVULGAR E VENDER SUAS AULAS</span>
+          <span className="block text-white">APRENDA A CAPTAR, DIVULGAR E VENDER</span>
           <span className="block font-bold text-transparent bg-clip-text bg-gradient-to-r from-gold-300 via-gold-400 to-gold-600 italic pr-2 md:pr-4 pb-1">
-            POR UM PREÇO JUSTO QUE VALORIZE O SEU TRABALHO
+            SUAS AULAS SEM DESCONTO!
           </span>
         </h1>
 
