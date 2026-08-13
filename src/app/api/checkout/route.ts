@@ -122,6 +122,21 @@ export async function POST(request: Request) {
     } 
     
     if (paymentMethod === 'CREDIT_CARD') {
+      // Endereço de cobrança do titular. O formulário passou a coletar, mas a
+      // ausência não pode barrar a venda: uma aba aberta desde antes do deploy
+      // ainda envia o payload antigo. Nesses casos cai no endereço genérico
+      // (comportamento anterior) e registra, pra dar pra confirmar que o campo
+      // realmente chega antes de tornar obrigatório.
+      const cepEnviado = String(customerData.postalCode || '').replace(/\D/g, '');
+      const numeroEnviado = String(customerData.addressNumber || '').trim();
+      const cepTitular = cepEnviado.length === 8 ? cepEnviado : '01310100';
+      const numeroTitular = numeroEnviado || '1000';
+
+      if (cepEnviado.length !== 8 || !numeroEnviado) {
+        Sentry.captureMessage('Checkout de cartão sem endereço de cobrança — usando fallback genérico', 'warning');
+        console.warn('Checkout de cartão sem CEP/número do titular; usando fallback.');
+      }
+
       // Cria a cobrança já processando o cartão
       // Para testes no sandbox Asaas, certifique-se de usar cartões válidos do sandbox
       const payment = await asaasService.createCreditCardPayment({
@@ -133,9 +148,11 @@ export async function POST(request: Request) {
           name: customerData.name,
           email: customerData.email,
           cpfCnpj: customerData.cpfCnpj,
-          postalCode: '01310-100', // Mock de CEP (Asaas exige na API antiga, mas para v3 com cartão as vezes é opcional. Preenchendo com mock ou exigir do usuario)
-          addressNumber: '1000',
-          phone: customerData.phone, // Telefone real do cliente
+          postalCode: cepTitular,
+          addressNumber: numeroTitular,
+          // Sem o prefixo internacional: o Asaas espera o número nacional, e
+          // "+55…" chegava como dígito a mais na análise do emissor.
+          phone: String(customerData.phone || '').replace(/\D/g, '').replace(/^55(?=\d{10,11}$)/, ''),
         },
         installmentCount: paymentData.installments,
       });

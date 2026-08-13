@@ -18,6 +18,11 @@ const formatCpfCnpj = (value: string) => {
   }
 };
 
+const formatCep = (value: string) => {
+  const v = value.replace(/\D/g, "").slice(0, 8);
+  return v.length > 5 ? `${v.slice(0, 5)}-${v.slice(5)}` : v;
+};
+
 const formatPhone = (value: string) => {
   const v = value.replace(/\D/g, "");
   if (v.length <= 10) {
@@ -135,6 +140,11 @@ export default function CheckoutForm({ price, productName, productKey }: { price
   const [card, setCard] = useState({ number: "", holderName: "", expiryMonth: "", expiryYear: "", ccv: "" });
   const [installments, setInstallments] = useState(1);
 
+  // Endereço de cobrança do titular. O antifraude do Asaas e a própria
+  // bandeira usam esses dados na decisão de aprovar; até aqui iam valores
+  // fixos, o que derrubava a taxa de aprovação sem deixar rastro.
+  const [endereco, setEndereco] = useState({ cep: "", numero: "" });
+
   // Tratamento da Data de Validade (MM/YY ou MM/YYYY)
   const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(/\D/g, "");
@@ -188,6 +198,18 @@ export default function CheckoutForm({ price, productName, productKey }: { price
       return;
     }
 
+    // Endereço de cobrança: obrigatório só no cartão (o Pix não usa)
+    if (method === "CREDIT_CARD") {
+      if (endereco.cep.replace(/\D/g, "").length !== 8) {
+        alert("Informe um CEP válido, com 8 dígitos.");
+        return;
+      }
+      if (!endereco.numero.trim()) {
+        alert("Informe o número do endereço de cobrança do cartão.");
+        return;
+      }
+    }
+
     // Captura as UTMs da URL
     const utms = {
       source: searchParams?.get('utm_source') || "",
@@ -206,6 +228,8 @@ export default function CheckoutForm({ price, productName, productKey }: { price
         customerData: {
           ...customer,
           phone: `${countryCode}${customer.phone.replace(/\D/g, "")}`,
+          postalCode: endereco.cep.replace(/\D/g, ""),
+          addressNumber: endereco.numero.trim(),
           fbp: getCookie('_fbp') || searchParams?.get('fbp') || null,
           fbc: getCookie('_fbc') || searchParams?.get('fbc') || null
         },
@@ -454,6 +478,23 @@ export default function CheckoutForm({ price, productName, productKey }: { price
                 <input required type="text" maxLength={4} className="input-field text-center tracking-widest font-mono" placeholder="123" value={card.ccv} onChange={e => setCard({ ...card, ccv: e.target.value.replace(/\D/g, '') })} />
               </div>
             </div>
+
+            {/* Endereço de cobrança — o banco emissor confere estes dados na
+                autorização. Só CEP e número: é o que o Asaas exige, e cada
+                campo a mais aqui derruba conversão. */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="col-span-2">
+                <label className="label-text">CEP de cobrança</label>
+                <input required type="text" inputMode="numeric" maxLength={9} className="input-field font-mono" placeholder="00000-000" value={endereco.cep} onChange={e => setEndereco({ ...endereco, cep: formatCep(e.target.value) })} />
+              </div>
+              <div>
+                <label className="label-text">Número</label>
+                <input required type="text" maxLength={10} className="input-field" placeholder="123" value={endereco.numero} onChange={e => setEndereco({ ...endereco, numero: e.target.value })} />
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 -mt-2">
+              É o endereço da fatura do cartão. Ajuda o banco a aprovar a compra.
+            </p>
 
             <div>
               <label className="label-text">Opções de Parcelamento</label>
