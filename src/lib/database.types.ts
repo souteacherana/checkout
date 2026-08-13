@@ -34,6 +34,7 @@ export type CheckoutRow = {
   asaas_payload: Json | null;
   deleted_at: string | null;
   recovery_contacted_at: string | null;
+  zoom_email_sent_at: string | null;
 };
 
 export type EduzzSaleRow = {
@@ -76,6 +77,8 @@ export type ProductRow = {
   fb_capi_token: string | null;
   landing_url: string | null;
   archived_at: string | null;
+  zoom_link: string | null;
+  zoom_datetime: string | null;
 };
 
 // A PESSOA. Dados de contato + resumo financeiro bruto do Asaas.

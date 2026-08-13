@@ -25,11 +25,22 @@ type Product = {
   fb_capi_token: string | null;
   landing_url: string | null;
   archived_at?: string | null;
+  zoom_link: string | null;
+  zoom_datetime: string | null;
 };
 
 const emptyProduct: Product = {
   slug: "", title: "", price: "", accent_color: "#10b981", accent_color_hover: "#059669",
-  image_src: "", fb_pixel_id: "", fb_capi_token: "", landing_url: "", archived_at: null
+  image_src: "", fb_pixel_id: "", fb_capi_token: "", landing_url: "", archived_at: null,
+  zoom_link: "", zoom_datetime: ""
+};
+
+/** ISO completo (com timezone) -> "YYYY-MM-DDTHH:mm" no fuso local, formato exigido por <input type="datetime-local">. */
+const toDatetimeLocal = (iso: string | null) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
 type ProductStats = { produto_slug: string | null; vendas: number; receita: number };
@@ -105,6 +116,8 @@ export default function ProdutosPage() {
       fb_pixel_id: editing.fb_pixel_id || null,
       fb_capi_token: editing.fb_capi_token || null,
       landing_url: landing || null,
+      zoom_link: editing.zoom_link,
+      zoom_datetime: editing.zoom_datetime ? new Date(editing.zoom_datetime).toISOString() : null,
     };
 
     const { error } = editing.id
@@ -229,6 +242,14 @@ export default function ProdutosPage() {
                   <input type="color" value={editing.accent_color_hover || "#059669"} onChange={e => setEditing({ ...editing, accent_color_hover: e.target.value })} className="w-10 h-10 rounded cursor-pointer border border-gray-200" />
                   <input type="text" value={editing.accent_color_hover || ""} onChange={e => setEditing({ ...editing, accent_color_hover: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 uppercase focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="#059669" />
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Link da Sala do Zoom</label>
+                <input required type="url" value={editing.zoom_link || ""} onChange={e => setEditing({ ...editing, zoom_link: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="https://zoom.us/j/..." />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Data e Hora da Aula</label>
+                <input required type="datetime-local" value={toDatetimeLocal(editing.zoom_datetime)} onChange={e => setEditing({ ...editing, zoom_datetime: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-700 mb-1">URL da Landing Page <span className="font-normal text-gray-400">(opcional — os links da equipe apontam pra ela; sem ela, vão direto pro checkout)</span></label>

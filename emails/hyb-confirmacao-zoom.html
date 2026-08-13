@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Impede Gmail/Outlook de auto-inverter as cores no modo escuro e destruir o layout -->
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <title>Seu acesso ao workshop</title>
+  <style>
+    /* Clientes que suportam <style> ganham o ajuste mobile.
+       Quem não suporta (Outlook) cai no layout de tabela, que já funciona. */
+    @media only screen and (max-width: 620px) {
+      .container { width: 100% !important; }
+      .pad-side  { padding-left: 24px !important; padding-right: 24px !important; }
+      .h1        { font-size: 24px !important; }
+      .btn a     { display: block !important; }
+    }
+    /* Evita que o iOS transforme datas e horários em links azuis */
+    a[x-apple-data-detectors] {
+      color: inherit !important; text-decoration: none !important;
+      font-size: inherit !important; font-weight: inherit !important;
+    }
+  </style>
+</head>
+
+<body style="margin:0; padding:0; background-color:#f8fafc; -webkit-font-smoothing:antialiased;">
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc;">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+
+      <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px;">
+
+        <!-- ============ BANNER DO PRODUTO ============ -->
+        <tr>
+          <td style="padding-bottom:20px;">
+            <img src="https://teacherana.com.br/wp-content/uploads/Rise/CHECKOUT/HYB.jpg"
+                 alt="Turmas Híbridas"
+                 width="600"
+                 style="display:block; width:100%; max-width:600px; height:auto; border:0; border-radius:16px;">
+          </td>
+        </tr>
+
+        <!-- ============ CARD PRINCIPAL ============ -->
+        <tr>
+          <td style="background-color:#ffffff; border:1px solid #f1f5f9; border-radius:16px;">
+
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+
+              <!-- Selo de confirmação -->
+              <tr>
+                <td class="pad-side" align="center" style="padding:40px 40px 0 40px;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td style="background-color:#e6f7f2; border-radius:999px; padding:8px 18px;
+                                 font-family:Arial,Helvetica,sans-serif; font-size:13px; font-weight:bold;
+                                 color:#015e4c; letter-spacing:0.5px; text-transform:uppercase;">
+                        Inscrição confirmada
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <!-- Título + saudação -->
+              <tr>
+                <td class="pad-side" align="center" mc:edit="abertura" style="padding:24px 40px 0 40px;">
+                  <h1 class="h1" style="margin:0 0 16px 0; font-family:Arial,Helvetica,sans-serif;
+                             font-size:28px; line-height:1.25; font-weight:bold; color:#0f172a;">
+                    Oi, *|FNAME|*! Está tudo certo.
+                  </h1>
+                  <p style="margin:0; font-family:Arial,Helvetica,sans-serif; font-size:16px;
+                            line-height:1.6; color:#475569;">
+                    Sua vaga no <strong style="color:#0f172a;">*|PRODUCT|*</strong> está garantida.
+                    Já pode anotar na agenda:
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Quadro com data e local -->
+              <tr>
+                <td class="pad-side" style="padding:28px 40px 0 40px;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                         style="background-color:#f8fafc; border:1px solid #f1f5f9; border-radius:12px;">
+                    <tr>
+                      <td align="center" style="padding:24px;">
+                        <p style="margin:0 0 6px 0; font-family:Arial,Helvetica,sans-serif; font-size:12px;
+                                  font-weight:bold; color:#94a3b8; letter-spacing:1px; text-transform:uppercase;">
+                          Data e horário
+                        </p>
+                        <p style="margin:0 0 20px 0; font-family:Arial,Helvetica,sans-serif; font-size:24px;
+                                  font-weight:bold; color:#0f172a;">
+                          *|ZOOMDATE|*
+                        </p>
+                        <p style="margin:0 0 6px 0; font-family:Arial,Helvetica,sans-serif; font-size:12px;
+                                  font-weight:bold; color:#94a3b8; letter-spacing:1px; text-transform:uppercase;">
+                          Onde
+                        </p>
+                        <p style="margin:0; font-family:Arial,Helvetica,sans-serif; font-size:16px;
+                                  color:#0f172a;">
+                          Ao vivo no Zoom
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <!-- Botão principal -->
+              <tr>
+                <td class="btn pad-side" align="center" style="padding:28px 40px 0 40px;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
+                    <tr>
+                      <td align="center" bgcolor="#02a27a" style="border-radius:12px;">
+                        <a href="*|ZOOMLINK|*" target="_blank"
+                           style="display:inline-block; padding:18px 44px; border-radius:12px;
+                                  font-family:Arial,Helvetica,sans-serif; font-size:17px; font-weight:bold;
+                                  color:#ffffff; text-decoration:none;">
+                          Entrar na sala do Zoom
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                  <p style="margin:14px 0 0 0; font-family:Arial,Helvetica,sans-serif; font-size:13px;
+                            color:#94a3b8;">
+                    O mesmo link vale no dia da aula.
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Orientação prática -->
+              <tr>
+                <td class="pad-side" mc:edit="recado" style="padding:32px 40px 0 40px;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td style="border-left:3px solid #02a27a; padding:4px 0 4px 16px;">
+                        <p style="margin:0; font-family:Arial,Helvetica,sans-serif; font-size:15px;
+                                  line-height:1.6; color:#475569;">
+                          <strong style="color:#0f172a;">Guarde este e-mail.</strong>
+                          É por aqui que você entra no dia. Recomendamos abrir a sala uns
+                          10 minutos antes para testar áudio e vídeo com calma.
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <!-- Assinatura -->
+              <tr>
+                <td class="pad-side" style="padding:32px 40px 40px 40px;">
+                  <p style="margin:0; font-family:Arial,Helvetica,sans-serif; font-size:16px;
+                            line-height:1.6; color:#475569;">
+                    Até lá!<br>
+                    <strong style="color:#0f172a;">Equipe Rise Educação</strong>
+                  </p>
+                </td>
+              </tr>
+
+            </table>
+          </td>
+        </tr>
+
+        <!-- ============ RODAPÉ ============ -->
+        <!-- *|UNSUB|* e o bloco de endereço são exigidos pelo Mailchimp e pela
+             legislação antispam. Não remova. -->
+        <tr>
+          <td align="center" style="padding:28px 24px 8px 24px;">
+            <p style="margin:0 0 10px 0; font-family:Arial,Helvetica,sans-serif; font-size:12px;
+                      line-height:1.6; color:#94a3b8;">
+              Você recebeu este e-mail porque se inscreveu no *|PRODUCT|*.
+            </p>
+            <p style="margin:0; font-family:Arial,Helvetica,sans-serif; font-size:12px;
+                      line-height:1.6; color:#94a3b8;">
+              <a href="*|UNSUB|*" style="color:#94a3b8; text-decoration:underline;">Descadastrar</a>
+            </p>
+            <div style="margin-top:12px; font-family:Arial,Helvetica,sans-serif; font-size:12px;
+                        line-height:1.6; color:#cbd5e1;">
+              *|HTML:LIST_ADDRESS_HTML|*
+            </div>
+          </td>
+        </tr>
+
+      </table>
+
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>

@@ -3,10 +3,15 @@ import * as Sentry from '@sentry/nextjs';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { astronService } from '@/lib/astron';
 import { sendCapiEvent } from '@/lib/capi';
+import { notifyZoomConfirmation } from '@/lib/mailchimp';
 import { detectMentoria, syncMentoradoFromAsaas } from '@/lib/mentorados';
 import { asaasService } from '@/lib/asaas';
 
 const PAGO_STATUSES = ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH', 'DUNNING_RECEIVED'];
+
+// Folga após o horário da aula em que ainda faz sentido mandar o link da sala.
+// O workshop dura ~3h e é normal alguém comprar com ele já rolando.
+const HORAS_TOLERANCIA_POS_AULA = 6;
 
 /**
  * Atualiza o status de uma venda de mentoria (/m/{codigo}) a partir do
@@ -170,14 +175,53 @@ export async function POST(req: Request) {
         console.log(`Produto (${checkout.product_key}) não requer integração com Astron.`);
       }
 
+      // O produto alimenta duas automações abaixo: o CAPI (só PIX, já que o
+      // cartão dispara no checkout) e o e-mail com a sala do Zoom (ambos).
+      const { data: productDB } = checkout.product_key
+        ? await supabaseAdmin
+            .from('products')
+            .select('title, fb_pixel_id, fb_capi_token, zoom_link, zoom_datetime')
+            .eq('slug', checkout.product_key.toLowerCase())
+            .single()
+        : { data: null };
+
+      // E-mail de confirmação com a sala do Zoom, via Mailchimp.
+      // O Asaas manda DOIS eventos por pagamento (PAYMENT_CONFIRMED e
+      // PAYMENT_RECEIVED) e reentrega em caso de falha, então a trava precisa
+      // ser atômica: o update condicionado a zoom_email_sent_at nulo só afeta
+      // linha em UMA das execuções concorrentes — quem não recebe linha de
+      // volta perdeu a corrida e não envia.
+      //
+      // A janela existe porque no cartão o PAYMENT_RECEIVED só chega quando a
+      // compensação cai (~30 dias depois do PAYMENT_CONFIRMED). Sem ela, quem
+      // comprou no cartão receberia o link da sala um mês após a aula. A folga
+      // cobre quem compra com a aula já rolando, que é comum.
+      const aulaNoPrazo = productDB?.zoom_datetime
+        ? Date.now() < new Date(productDB.zoom_datetime).getTime() + HORAS_TOLERANCIA_POS_AULA * 60 * 60 * 1000
+        : false;
+
+      if (productDB?.zoom_link && aulaNoPrazo && checkout.customer_email) {
+        const { data: travou } = await supabaseAdmin
+          .from('checkouts')
+          .update({ zoom_email_sent_at: new Date().toISOString() })
+          .eq('id', checkout.id)
+          .is('zoom_email_sent_at', null)
+          .select('id');
+
+        if (travou && travou.length > 0) {
+          await notifyZoomConfirmation({
+            email: checkout.customer_email,
+            name: checkout.customer_name || '',
+            productSlug: checkout.product_key!.toLowerCase(),
+            productTitle: productDB.title || checkout.product_name || 'Workshop',
+            zoomLink: productDB.zoom_link,
+            zoomDatetime: productDB.zoom_datetime!,
+          });
+        }
+      }
+
       // Se foi pago via PIX, envia o evento de Purchase pro CAPI (já que não foi enviado no checkout)
       if (checkout.payment_method === 'PIX' && checkout.product_key) {
-        const { data: productDB } = await supabaseAdmin
-          .from('products')
-          .select('fb_pixel_id, fb_capi_token')
-          .eq('slug', checkout.product_key.toLowerCase())
-          .single();
-
         if (productDB?.fb_pixel_id && productDB?.fb_capi_token) {
           console.log("Enviando CAPI Purchase para PIX pago...");
           await sendCapiEvent(
