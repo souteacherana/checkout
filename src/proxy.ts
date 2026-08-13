@@ -21,14 +21,21 @@ const MAIN_DOMAIN_PATHS: string[] = [];
 // riseeducacao.com.br/{slug} serve a landing sem mudar a URL; slug que não
 // estiver aqui mantém o comportamento antigo (redirect pro checkout).
 // Ao adicionar uma landing nova, inclua o slug nesta lista.
-const LANDINGS = ['pht'];
+//
+// Vazia desde a virada de campanha PHT → HYB: a landing do HYB é externa ao
+// projeto, e a do PHT saiu do ar. O código dela segue em src/app/lp/pht/,
+// só não é mais roteado — serve de referência pra próxima.
+const LANDINGS: string[] = [];
 
 // Landing servida na RAIZ do domínio principal (riseeducacao.com.br/).
-// Antes a raiz redirecionava pro checkout genérico; enquanto a homepage
-// institucional não existe, ela abre a landing do workshop em campanha.
-// Trocar de campanha = trocar o slug aqui. `null` devolve o comportamento
-// antigo (raiz → checkout).
-const LANDING_RAIZ: string | null = 'pht';
+// Use quando a landing da campanha vive DENTRO do projeto.
+const LANDING_RAIZ: string | null = null;
+
+// Produto pra onde a raiz do domínio principal manda quando não há landing
+// interna: riseeducacao.com.br/ → checkout.riseeducacao.com.br/{slug}.
+// Como a landing do HYB é externa, a raiz vai direto pro checkout dele.
+// A query string é repassada, então as UTMs sobrevivem ao salto.
+const CHECKOUT_RAIZ: string | null = 'hyb';
 
 /** '/pht' e '/pht/' → 'pht'; '/' → '' */
 const slugDe = (pathname: string) => pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
@@ -75,6 +82,13 @@ export function proxy(request: NextRequest) {
     // endereços não gera conteúdo duplicado pro Google.)
     if (slug === '' && LANDING_RAIZ) {
       return NextResponse.rewrite(new URL(`/lp/${LANDING_RAIZ}${search}`, request.url));
+    }
+
+    // Sem landing interna: a raiz manda direto pro checkout do produto em
+    // campanha, em vez de cair no redirect genérico (que levaria pra raiz do
+    // subdomínio de checkout, onde não existe página de produto).
+    if (slug === '' && CHECKOUT_RAIZ) {
+      return NextResponse.redirect(`https://${CHECKOUT_HOST}/${CHECKOUT_RAIZ}${search}`);
     }
 
     // APIs continuam servidas nos dois hosts (o painel usa fetch relativo)
