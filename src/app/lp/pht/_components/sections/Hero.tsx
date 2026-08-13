@@ -123,9 +123,9 @@ export default function Hero() {
         />
 
         <h1 className="hero-title font-serif text-4xl sm:text-5xl md:text-7xl lg:text-[4.5rem] leading-[1.05] tracking-tight mb-3 md:mb-8 drop-shadow-2xl">
-          <span className="block text-white">APRENDA A PRECIFICAR, DIVULGAR E VENDER SUAS AULAS</span>
+          <span className="block text-white">APRENDA A CAPTAR, DIVULGAR E VENDER</span>
           <span className="block font-bold text-transparent bg-clip-text bg-gradient-to-r from-gold-300 via-gold-400 to-gold-600 italic pr-2 md:pr-4 pb-1">
-            POR UM PREÇO JUSTO QUE VALORIZE O SEU TRABALHO
+            SUAS AULAS SEM DESCONTO!
           </span>
         </h1>
 
@@ -160,7 +160,7 @@ export default function Hero() {
             href="#oferta"
             className="group relative inline-flex items-center justify-center gap-2 md:gap-3 w-full sm:w-auto px-6 md:px-12 py-3.5 md:py-5 bg-gold-500 text-black font-bold text-sm md:text-base lg:text-lg rounded-full overflow-hidden transition-all hover:scale-[1.05] active:scale-95 shadow-[0_0_40px_rgba(187,156,76,0.2)]"
           >
-            <span className="relative z-10 uppercase tracking-widest">Quero cobrar o que eu valho — R$49,90</span>
+            <span className="relative z-10 uppercase tracking-widest">Quero cobrar o que eu valho</span>
             <div className="absolute inset-0 bg-white translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300 ease-out z-0"></div>
             <span className="relative z-10 group-hover:text-black transition-colors duration-300">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:translate-x-1 transition-transform">
