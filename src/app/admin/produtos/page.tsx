@@ -35,13 +35,32 @@ const emptyProduct: Product = {
   zoom_link: "", zoom_datetime: ""
 };
 
-/** ISO completo (com timezone) -> "YYYY-MM-DDTHH:mm" no fuso local, formato exigido por <input type="datetime-local">. */
-const toDatetimeLocal = (iso: string | null) => {
+// A aula é sempre anunciada em horário de Brasília, mas <input type="datetime-local">
+// interpreta o que se digita no fuso DA MÁQUINA de quem preenche. Alguém em
+// Cuiabá (UTC-4) digitando 15:00 gravava 16h00 de Brasília, e o aluno recebia
+// o horário errado. As duas funções abaixo prendem o campo a Brasília,
+// independente de onde a pessoa da equipe estiver.
+//
+// Offset fixo porque o Brasil não tem horário de verão desde 2019. Se algum dia
+// voltar, isto aqui precisa virar conversão por fuso nomeado.
+const OFFSET_BRASILIA = "-03:00";
+
+/** ISO (UTC) -> "YYYY-MM-DDTHH:mm" em Brasília, formato do input. */
+const isoParaCampoBrasilia = (iso: string | null) => {
   if (!iso) return "";
   const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const data = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric", month: "2-digit", day: "2-digit", timeZone: "America/Sao_Paulo",
+  }).format(d);
+  const hora = new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo", hourCycle: "h23",
+  }).format(d);
+  return `${data}T${hora}`;
 };
+
+/** "YYYY-MM-DDTHH:mm" digitado como horário de Brasília -> ISO UTC. */
+const campoBrasiliaParaIso = (valor: string | null) =>
+  valor ? new Date(`${valor}:00${OFFSET_BRASILIA}`).toISOString() : null;
 
 type ProductStats = { produto_slug: string | null; vendas: number; receita: number };
 
@@ -97,6 +116,11 @@ export default function ProdutosPage() {
     return map;
   }, [statsRows]);
 
+  // O formulário trabalha com o horário de Brasília como texto; o banco guarda
+  // UTC. A conversão acontece ao abrir (aqui) e ao salvar (em handleSave).
+  const abrirEdicao = (p: Product) =>
+    setEditing({ ...p, zoom_datetime: isoParaCampoBrasilia(p.zoom_datetime) });
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editing) return;
@@ -117,7 +141,8 @@ export default function ProdutosPage() {
       fb_capi_token: editing.fb_capi_token || null,
       landing_url: landing || null,
       zoom_link: editing.zoom_link,
-      zoom_datetime: editing.zoom_datetime ? new Date(editing.zoom_datetime).toISOString() : null,
+      // O state guarda o horário de Brasília digitado; converte pra UTC ao salvar.
+      zoom_datetime: campoBrasiliaParaIso(editing.zoom_datetime),
     };
 
     const { error } = editing.id
@@ -248,8 +273,8 @@ export default function ProdutosPage() {
                 <input required type="url" value={editing.zoom_link || ""} onChange={e => setEditing({ ...editing, zoom_link: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="https://zoom.us/j/..." />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Data e Hora da Aula</label>
-                <input required type="datetime-local" value={toDatetimeLocal(editing.zoom_datetime)} onChange={e => setEditing({ ...editing, zoom_datetime: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Data e Hora da Aula <span className="font-normal text-gray-400">(horário de Brasília)</span></label>
+                <input required type="datetime-local" value={editing.zoom_datetime || ""} onChange={e => setEditing({ ...editing, zoom_datetime: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-700 mb-1">URL da Landing Page <span className="font-normal text-gray-400">(opcional — os links da equipe apontam pra ela; sem ela, vão direto pro checkout)</span></label>
@@ -334,7 +359,7 @@ export default function ProdutosPage() {
                       Ver Painel
                     </Link>
                     {isAdmin && !archived && (
-                      <button onClick={() => setEditing(p)} title="Editar página de checkout" className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                      <button onClick={() => abrirEdicao(p)} title="Editar página de checkout" className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                         <Edit2 size={16} />
                       </button>
                     )}
