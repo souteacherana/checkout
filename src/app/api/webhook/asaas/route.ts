@@ -136,12 +136,29 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true, message: 'Checkout not found locally, ignored.' }, { status: 200 });
       }
 
-      // Validação Anti-Fraude: Confere se o valor pago bate com o valor da intenção de compra
-      if (Number(payment.value) !== Number(checkout.amount)) {
-        console.error(`🚨 ALERTA DE FRAUDE/ERRO: Valor pago (${payment.value}) é diferente do valor do checkout (${checkout.amount}) para o pagamento ${paymentId}`);
-        // Atualizamos o banco como FRAUD_ATTEMPT ou PENDING REVIEW, mas não liberamos
+      // Validação Anti-Fraude: confere se o valor pago bate com a intenção de compra.
+      //
+      // Parcelamento muda a base da comparação: o Asaas cria UMA cobrança por
+      // parcela, e o webhook chega com o valor da parcela — não com o total.
+      // Comparar a parcela contra o total marcava toda venda parcelada como
+      // fraude. `payment.installment` é o id do parcelamento no Asaas, presente
+      // só quando a cobrança faz parte de um.
+      const parcelas = Number(checkout.installments) || 1;
+      const ehParcelado = !!payment.installment || parcelas > 1;
+      const valorEsperado = ehParcelado ? Number(checkout.amount) / parcelas : Number(checkout.amount);
+
+      // Tolerância de centavos: o valor da parcela é arredondado na criação da
+      // cobrança, então a divisão nem sempre fecha exata. Fraude real erra em
+      // reais, não em centavos.
+      if (Math.abs(Number(payment.value) - valorEsperado) > 0.02) {
+        console.error(`🚨 ALERTA DE FRAUDE/ERRO: Valor pago (${payment.value}) diverge do esperado (${valorEsperado.toFixed(2)}) para o pagamento ${paymentId}. Checkout: total ${checkout.amount} em ${parcelas}x.`);
+        Sentry.captureMessage(`Divergência de valor no pagamento ${paymentId}: pago ${payment.value}, esperado ${valorEsperado.toFixed(2)}`, 'warning');
         await supabaseAdmin.from('checkouts').update({ status: 'PAYMENT_MISMATCH_REVIEW' }).eq('id', checkout.id);
-        return NextResponse.json({ error: 'Payment value mismatch' }, { status: 400 });
+        // 200 de propósito: a venda já está marcada pra revisão manual, e
+        // reentregar não muda nada. Com 400 o Asaas reenviaria em loop e
+        // acabaria suspendendo a fila — derrubando a confirmação de TODOS os
+        // outros pagamentos, inclusive Pix.
+        return NextResponse.json({ success: true, message: 'Payment value mismatch, flagged for review' }, { status: 200 });
       }
 
       // Atualizar o status do checkout para PAID e salvar os metadados TIER S

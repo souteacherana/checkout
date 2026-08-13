@@ -163,7 +163,6 @@ export const asaasService = {
       const payload: any = {
         customer: data.customer,
         billingType: 'CREDIT_CARD',
-        value: data.value,
         dueDate: new Date().toISOString().split('T')[0],
         description: data.description,
         creditCard: data.creditCard,
@@ -171,9 +170,16 @@ export const asaasService = {
         externalReference: data.externalReference,
       };
 
+      // `value` e `installmentValue` juntos são campos conflitantes: o Asaas
+      // pode ler `value` como valor DA PARCELA e multiplicar a cobrança pelo
+      // número de parcelas. Manda-se um ou outro, nunca os dois — mesmo
+      // padrão de createBoletoPayment acima, que é o caminho já validado em
+      // produção pelas vendas de mentoria.
       if (data.installmentCount && data.installmentCount > 1) {
         payload.installmentCount = data.installmentCount;
         payload.installmentValue = Number((data.value / data.installmentCount).toFixed(2));
+      } else {
+        payload.value = data.value;
       }
 
       const response = await asaasApi.post('/payments', payload);
