@@ -1,6 +1,21 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: {
+    // Fotos de depoimento, da instrutora e do ticket da landing do TNP moram
+    // no Vercel Blob (ver src/app/lp/tnp/_lib/assets.ts). O next/image recusa
+    // otimizar host que não esteja declarado aqui — sem esta liberação, TODA
+    // imagem da landing que passa pelo next/image volta 400, e sobra só o
+    // hero, que é background-image no CSS.
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "dtfnsnlwyzhalvu7.public.blob.vercel-storage.com",
+        pathname: "/**",
+      },
+    ],
+  },
+
   async headers() {
     return [
       {

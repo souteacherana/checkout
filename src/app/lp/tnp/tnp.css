@@ -10,6 +10,13 @@
  * usa :has(.lp-tnp) pra valer só quando a landing está na página — a mesma
  * solução do pht.css, aqui do lado.
  *
+ * As regras de elemento usam :where(.lp-tnp), e não .lp-tnp: o seletor de
+ * classe somaria (0,1,0) à especificidade, e regras genéricas como
+ * `section` passariam a vencer as regras de classe da própria landing — foi
+ * o que aconteceu na primeira tentativa (o .hero perdeu o padding-top de
+ * 250px e o CTA perdeu a cor do texto). :where() tem especificidade zero:
+ * escopa sem mexer no peso de nada.
+ *
  * O @import "tailwindcss" saiu: o globals.css do checkout já importa, e
  * importar duas vezes duplica todas as utilities no bundle.
  *
@@ -77,10 +84,10 @@
 }
 
 /* ============ RESET & BASE SETUP ============ */
-.lp-tnp,
-.lp-tnp *,
-.lp-tnp *::before,
-.lp-tnp *::after {
+:where(.lp-tnp),
+:where(.lp-tnp) *,
+:where(.lp-tnp) *::before,
+:where(.lp-tnp) *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -114,19 +121,19 @@ html:has(.lp-tnp) {
   letter-spacing: -0.01em;
 }
 
-.lp-tnp a {
+:where(.lp-tnp) a {
   color: inherit;
   text-decoration: none;
 }
 
-.lp-tnp img,
-.lp-tnp svg {
+:where(.lp-tnp) img,
+:where(.lp-tnp) svg {
   display: block;
   max-width: 100%;
   height: auto;
 }
 
-.lp-tnp button {
+:where(.lp-tnp) button {
   font-family: inherit;
   cursor: pointer;
   border: none;
@@ -134,13 +141,13 @@ html:has(.lp-tnp) {
   color: inherit;
 }
 
-.lp-tnp :focus-visible {
+:where(.lp-tnp) :focus-visible {
   outline: 2px solid var(--c-amber-ink);
   outline-offset: 3px;
   border-radius: 4px;
 }
 
-.lp-tnp ::selection {
+:where(.lp-tnp) ::selection {
   background: var(--c-amber);
   color: #0b0c14;
 }
@@ -640,7 +647,7 @@ html:has(.lp-tnp) {
 }
 
 /* ============ SECTIONS COMMON ============ */
-.lp-tnp section {
+:where(.lp-tnp) section {
   padding: var(--section-pad-y) 0;
   position: relative;
 }
@@ -1494,7 +1501,7 @@ details.faq-item[open] .faq-icon-toggle {
 }
 
 /* ============ FOOTER ============ */
-.lp-tnp footer {
+:where(.lp-tnp) footer {
   border-top: 1px solid rgba(43, 45, 66, 0.07);
   background: var(--bg-canvas);
   padding: 38px 0;
