@@ -43,3 +43,13 @@ next-env.d.ts
 
 # graphify (grafo derivado do código — regenerado a cada commit)
 /graphify-out/
+
+# Contentsquare wizard (generated)
+.cs-wizard/
+
+# Arquivos-fonte de design (Photoshop). São binários enormes e mudam por
+# inteiro a cada save: o "CHECKOUT FOTO.psd" já tinha ido a 165MB, acima do
+# limite de 100MB por arquivo do GitHub — um commit dele travaria o push num
+# momento em que talvez fosse urgente publicar.
+*.psd
+*.psb
