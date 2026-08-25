@@ -1,0 +1,29 @@
+import Header from "./_components/Header";
+import Hero from "./_components/Hero";
+import Marquee from "./_components/Marquee";
+import ProblemSolution from "./_components/ProblemSolution";
+import Modules from "./_components/Modules";
+import MasonryGallery from "./_components/MasonryGallery";
+import OfferTicket from "./_components/OfferTicket";
+import Faq from "./_components/Faq";
+import Instructor from "./_components/Instructor";
+import FinalCta from "./_components/FinalCta";
+import Footer from "./_components/Footer";
+
+export default function Home() {
+  return (
+    <main className="relative w-full">
+      <Header />
+      <Hero />
+      <Marquee />
+      <ProblemSolution />
+      <Modules />
+      <MasonryGallery />
+      <OfferTicket />
+      <Faq />
+      <Instructor />
+      <FinalCta />
+      <Footer />
+    </main>
+  );
+}

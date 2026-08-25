@@ -27,10 +27,10 @@ const MAIN_DOMAIN_PATHS: string[] = ['/'];
 // estiver aqui mantém o comportamento antigo (redirect pro checkout).
 // Ao adicionar uma landing nova, inclua o slug nesta lista.
 //
-// Vazia desde a virada de campanha PHT → HYB: a landing do HYB é externa ao
-// projeto, e a do PHT saiu do ar. O código dela segue em src/app/lp/pht/,
-// só não é mais roteado — serve de referência pra próxima.
-const LANDINGS: string[] = [];
+// O código do PHT segue em src/app/lp/pht/, só não é mais roteado — foi a
+// referência usada pra trazer o TNP, que veio de um projeto Next separado
+// (WORKSHOPS/TNP 2026/LP) e teve o CSS escopado em .lp-tnp na migração.
+const LANDINGS: string[] = ['tnp'];
 
 // Landing servida na RAIZ do domínio principal (riseeducacao.com.br/).
 // Use quando a landing da campanha vive DENTRO do projeto.
