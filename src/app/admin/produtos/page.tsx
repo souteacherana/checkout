@@ -8,7 +8,7 @@ import Link from "next/link";
 import { getUserRole } from "../actions";
 import {
   Package, Plus, Edit2, Trash2, ExternalLink, LinkIcon,
-  TrendingUp, CheckCircle, X, Archive, ArchiveRestore
+  TrendingUp, CheckCircle, X, Archive, ArchiveRestore, Target
 } from "lucide-react";
 
 const CHECKOUT_BASE_URL = "https://checkout.riseeducacao.com.br";
@@ -23,8 +23,12 @@ type Product = {
   image_src: string | null;
   fb_pixel_id: string | null;
   fb_capi_token: string | null;
+  google_ads_conversion_id: string | null;
+  google_ads_conversion_label: string | null;
   landing_url: string | null;
   archived_at?: string | null;
+  destino_padrao?: boolean;
+  tem_aula_ao_vivo: boolean;
   zoom_link: string | null;
   zoom_datetime: string | null;
 };
@@ -32,7 +36,9 @@ type Product = {
 const emptyProduct: Product = {
   slug: "", title: "", price: "", accent_color: "#10b981", accent_color_hover: "#059669",
   image_src: "", fb_pixel_id: "", fb_capi_token: "", landing_url: "", archived_at: null,
-  zoom_link: "", zoom_datetime: ""
+  google_ads_conversion_id: "", google_ads_conversion_label: "",
+  // Workshop é o caso comum; desmarcar é a exceção.
+  destino_padrao: false, tem_aula_ao_vivo: true, zoom_link: "", zoom_datetime: ""
 };
 
 // A aula é sempre anunciada em horário de Brasília, mas <input type="datetime-local">
@@ -118,8 +124,15 @@ export default function ProdutosPage() {
 
   // O formulário trabalha com o horário de Brasília como texto; o banco guarda
   // UTC. A conversão acontece ao abrir (aqui) e ao salvar (em handleSave).
+  // O `?? true` cobre a janela entre subir este código e rodar a migração 023:
+  // sem a coluna, o toggle viria indefinido e o formulário abriria dizendo que
+  // um workshop não é workshop.
   const abrirEdicao = (p: Product) =>
-    setEditing({ ...p, zoom_datetime: isoParaCampoBrasilia(p.zoom_datetime) });
+    setEditing({
+      ...p,
+      tem_aula_ao_vivo: p.tem_aula_ao_vivo ?? true,
+      zoom_datetime: isoParaCampoBrasilia(p.zoom_datetime),
+    });
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,10 +152,17 @@ export default function ProdutosPage() {
       image_src: editing.image_src,
       fb_pixel_id: editing.fb_pixel_id || null,
       fb_capi_token: editing.fb_capi_token || null,
+      google_ads_conversion_id: editing.google_ads_conversion_id?.trim() || null,
+      google_ads_conversion_label: editing.google_ads_conversion_label?.trim() || null,
       landing_url: landing || null,
-      zoom_link: editing.zoom_link,
+      tem_aula_ao_vivo: editing.tem_aula_ao_vivo,
+      // Desmarcar "aula ao vivo" limpa os campos do Zoom em vez de deixá-los
+      // parados no banco: quem decide mandar o e-mail da sala é o webhook do
+      // Asaas, olhando o zoom_link. Um link esquecido aqui viraria e-mail de
+      // sala numa compra que não tem aula.
+      zoom_link: editing.tem_aula_ao_vivo ? editing.zoom_link : null,
       // O state guarda o horário de Brasília digitado; converte pra UTC ao salvar.
-      zoom_datetime: campoBrasiliaParaIso(editing.zoom_datetime),
+      zoom_datetime: editing.tem_aula_ao_vivo ? campoBrasiliaParaIso(editing.zoom_datetime) : null,
     };
 
     const { error } = editing.id
@@ -166,14 +186,60 @@ export default function ProdutosPage() {
     fetchAll();
   };
 
+  /**
+   * Marca (ou desmarca) o produto como destino padrão do site.
+   *
+   * O banco tem índice único: dois produtos marcados ao mesmo tempo é recusado
+   * lá, não só aqui. Por isso limpa o anterior ANTES de marcar o novo — se
+   * marcasse primeiro, o update esbarraria no índice e não aconteceria nada.
+   */
+  const definirDestinoPadrao = async (p: Product) => {
+    if (!p.id) return;
+    const ativando = !p.destino_padrao;
+
+    if (!ativando && !confirm(`Tirar "${p.title}" de destino padrão?\n\nSem nenhum produto marcado, a raiz do site e os links quebrados voltam a mostrar "nenhuma turma aberta" em vez de levar pra uma página de venda.`)) return;
+
+    const { error: erroLimpar } = await supabase
+      .from("products")
+      .update({ destino_padrao: false })
+      .eq("destino_padrao", true);
+
+    if (erroLimpar) {
+      alert("Erro ao trocar o destino padrão: " + erroLimpar.message);
+      return;
+    }
+
+    if (ativando) {
+      const { error } = await supabase
+        .from("products")
+        .update({ destino_padrao: true })
+        .eq("id", p.id);
+
+      if (error) {
+        alert("Erro ao definir o destino padrão: " + error.message);
+        fetchAll(); // o anterior já foi limpo — recarrega pra tela não mentir
+        return;
+      }
+    }
+
+    fetchAll();
+  };
+
   const toggleArchive = async (p: Product) => {
     if (!p.id) return;
     const archiving = !p.archived_at;
-    if (archiving && !confirm(`Ocultar "${p.title}"?\n\nA página de checkout sai do ar e ele some dos links da equipe e da sidebar. O histórico de vendas e o painel continuam acessíveis, e dá pra reativar quando quiser.`)) return;
+    // Arquivar o destino padrão foi exatamente o que derrubou a raiz do site
+    // quando o HYB saiu do ar: o produto sumiu, o destino continuou apontando
+    // pra ele. Agora a marca sai junto — e o aviso diz isso antes.
+    const eraDestino = archiving && !!p.destino_padrao;
+    if (archiving && !confirm(`Ocultar "${p.title}"?\n\nA página de checkout sai do ar e ele some dos links da equipe e da sidebar. O histórico de vendas e o painel continuam acessíveis, e dá pra reativar quando quiser.${eraDestino ? '\n\nATENÇÃO: ele é o destino padrão do site. Ao ocultar, o site fica sem destino definido até você marcar outro produto.' : ''}`)) return;
 
     const { error } = await supabase
       .from("products")
-      .update({ archived_at: archiving ? new Date().toISOString() : null })
+      .update({
+        archived_at: archiving ? new Date().toISOString() : null,
+        ...(eraDestino ? { destino_padrao: false } : {}),
+      })
       .eq("id", p.id);
 
     if (error) alert("Erro ao " + (archiving ? "ocultar" : "reativar") + ": " + error.message);
@@ -268,14 +334,48 @@ export default function ProdutosPage() {
                   <input type="text" value={editing.accent_color_hover || ""} onChange={e => setEditing({ ...editing, accent_color_hover: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 uppercase focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="#059669" />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Link da Sala do Zoom</label>
-                <input required type="url" value={editing.zoom_link || ""} onChange={e => setEditing({ ...editing, zoom_link: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="https://zoom.us/j/..." />
+              {/* Workshop com aula ao vivo? É isto que liga a obrigatoriedade do
+                  Zoom — e o e-mail automático com a sala depois do pagamento.
+                  Produto que não é aula ao vivo não precisa mais de link
+                  inventado só pra passar na validação. */}
+              <div className="md:col-span-2 flex items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={editing.tem_aula_ao_vivo}
+                  onClick={() => setEditing({ ...editing, tem_aula_ao_vivo: !editing.tem_aula_ao_vivo })}
+                  className={`mt-0.5 relative inline-flex h-6 w-11 flex-shrink-0 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
+                    editing.tem_aula_ao_vivo ? "bg-emerald-600" : "bg-gray-300"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform mt-0.5 ${
+                      editing.tem_aula_ao_vivo ? "translate-x-[22px]" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+                <div className="text-sm">
+                  <p className="font-semibold text-gray-800">É um workshop com aula ao vivo</p>
+                  <p className="text-gray-500 mt-0.5">
+                    {editing.tem_aula_ao_vivo
+                      ? "O link e o horário da sala são obrigatórios, e o aluno recebe o e-mail com a sala assim que o pagamento é confirmado."
+                      : "Sem aula ao vivo: nenhum campo de Zoom é pedido e nenhum e-mail de sala é enviado após a compra."}
+                  </p>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Data e Hora da Aula <span className="font-normal text-gray-400">(horário de Brasília)</span></label>
-                <input required type="datetime-local" value={editing.zoom_datetime || ""} onChange={e => setEditing({ ...editing, zoom_datetime: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
-              </div>
+
+              {editing.tem_aula_ao_vivo && (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Link da Sala do Zoom</label>
+                    <input required type="url" value={editing.zoom_link || ""} onChange={e => setEditing({ ...editing, zoom_link: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="https://zoom.us/j/..." />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Data e Hora da Aula <span className="font-normal text-gray-400">(horário de Brasília)</span></label>
+                    <input required type="datetime-local" value={editing.zoom_datetime || ""} onChange={e => setEditing({ ...editing, zoom_datetime: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                  </div>
+                </>
+              )}
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-700 mb-1">URL da Landing Page <span className="font-normal text-gray-400">(opcional — os links da equipe apontam pra ela; sem ela, vão direto pro checkout)</span></label>
                 <input type="text" value={editing.landing_url || ""} onChange={e => setEditing({ ...editing, landing_url: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="https://riseeducacao.com.br/tft" />
@@ -288,6 +388,18 @@ export default function ProdutosPage() {
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Token CAPI <span className="font-normal text-gray-400">(opcional)</span></label>
                 <input type="password" value={editing.fb_capi_token || ""} onChange={e => setEditing({ ...editing, fb_capi_token: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="EAAx..." />
               </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">ID de Conversão do Google Ads <span className="font-normal text-gray-400">(opcional)</span></label>
+                <input type="text" value={editing.google_ads_conversion_id || ""} onChange={e => setEditing({ ...editing, google_ads_conversion_id: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="AW-17580476040" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Rótulo de Conversão do Google Ads <span className="font-normal text-gray-400">(opcional)</span></label>
+                <input type="text" value={editing.google_ads_conversion_label || ""} onChange={e => setEditing({ ...editing, google_ads_conversion_label: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="OwCmCPjiseMcEIiNg79B" />
+              </div>
+              <p className="md:col-span-2 -mt-2 text-xs text-gray-400">
+                Os dois campos do Google Ads andam juntos: o rótulo pertence a uma conta específica.
+                Preenchendo só um deles, o produto usa a conversão de Compra padrão da conta.
+              </p>
 
               <div className="md:col-span-2 flex items-center gap-3 pt-2">
                 <button type="submit" disabled={saving} className="px-5 py-2 bg-emerald-600 text-white rounded-lg font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors">
@@ -311,6 +423,7 @@ export default function ProdutosPage() {
           {products.filter(p => showArchived || !p.archived_at).map(p => {
             const s = stats.get(p.slug) || { paid: 0, revenue: 0 };
             const archived = !!p.archived_at;
+            const ehDestino = !!p.destino_padrao;
             return (
               <div key={p.slug} className={`bg-white rounded-xl shadow-sm border overflow-hidden flex flex-col transition-shadow ${archived ? "border-gray-200 opacity-75" : "border-gray-200 hover:shadow-md"}`}>
                 {/* Banner */}
@@ -318,6 +431,14 @@ export default function ProdutosPage() {
                   {archived && (
                     <span className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-gray-800/90 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md">
                       <Archive size={11} /> Arquivado
+                    </span>
+                  )}
+                  {ehDestino && !archived && (
+                    <span
+                      className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md shadow-sm"
+                      title="A raiz do site e os links quebrados levam pra este produto"
+                    >
+                      <Target size={11} /> Destino padrão
                     </span>
                   )}
                   {p.image_src ? (
@@ -358,6 +479,19 @@ export default function ProdutosPage() {
                     >
                       Ver Painel
                     </Link>
+                    {isAdmin && !archived && (
+                      <button
+                        onClick={() => definirDestinoPadrao(p)}
+                        title={ehDestino
+                          ? "É o destino padrão do site — clique pra tirar"
+                          : "Definir como destino padrão do site (a raiz e os links quebrados passam a levar pra cá)"}
+                        className={`p-2 rounded-lg transition-colors ${ehDestino
+                          ? "text-indigo-600 bg-indigo-50 hover:bg-indigo-100"
+                          : "text-gray-400 hover:text-indigo-600 hover:bg-indigo-50"}`}
+                      >
+                        <Target size={16} />
+                      </button>
+                    )}
                     {isAdmin && !archived && (
                       <button onClick={() => abrirEdicao(p)} title="Editar página de checkout" className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                         <Edit2 size={16} />

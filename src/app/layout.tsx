@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Fraunces } from "next/font/google";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { Contentsquare } from "./contentsquare";
+import { GoogleTag } from "./google-tag";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -55,6 +56,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <Contentsquare />
+        <GoogleTag />
         {children}
         <Analytics />
       </body>

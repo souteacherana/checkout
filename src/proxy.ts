@@ -14,8 +14,13 @@ const CHECKOUT_HOST = (process.env.CHECKOUT_DOMAIN || '').toLowerCase();
 const ADMIN_HOST = (process.env.ADMIN_DOMAIN || '').toLowerCase();
 
 // Rotas que pertencem ao domínio principal, além de /admin e /api.
-// Quando a homepage for construída, adicione as rotas dela aqui (ex: '/', '/sobre').
-const MAIN_DOMAIN_PATHS: string[] = [];
+// Quando a homepage for construída, adicione as rotas dela aqui (ex: '/sobre').
+//
+// A raiz entra aqui pra ser SERVIDA no domínio principal em vez de rebatida
+// pro checkout: quem resolve pra onde ela leva é src/app/page.tsx, lendo o
+// destino padrão do banco. Passando pelo redirect genérico, o visitante daria
+// um salto a mais no caminho.
+const MAIN_DOMAIN_PATHS: string[] = ['/'];
 
 // Workshops cuja landing page vive no projeto (src/app/lp/{slug}).
 // riseeducacao.com.br/{slug} serve a landing sem mudar a URL; slug que não
@@ -31,11 +36,11 @@ const LANDINGS: string[] = [];
 // Use quando a landing da campanha vive DENTRO do projeto.
 const LANDING_RAIZ: string | null = null;
 
-// Produto pra onde a raiz do domínio principal manda quando não há landing
-// interna: riseeducacao.com.br/ → checkout.riseeducacao.com.br/{slug}.
-// Como a landing do HYB é externa, a raiz vai direto pro checkout dele.
-// A query string é repassada, então as UTMs sobrevivem ao salto.
-const CHECKOUT_RAIZ: string | null = 'hyb';
+// (Aqui existia CHECKOUT_RAIZ: o produto pra onde a raiz do domínio principal
+// mandava, fixo no código. Saiu na migração 022 — quando o HYB foi arquivado,
+// a constante continuou apontando pra ele e a raiz do site caiu em 404. Quem
+// decide o destino agora é o painel, em Produtos → "Destino padrão", lido em
+// src/lib/destino-padrao.ts.)
 
 /** '/pht' e '/pht/' → 'pht'; '/' → '' */
 const slugDe = (pathname: string) => pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
@@ -84,12 +89,8 @@ export function proxy(request: NextRequest) {
       return NextResponse.rewrite(new URL(`/lp/${LANDING_RAIZ}${search}`, request.url));
     }
 
-    // Sem landing interna: a raiz manda direto pro checkout do produto em
-    // campanha, em vez de cair no redirect genérico (que levaria pra raiz do
-    // subdomínio de checkout, onde não existe página de produto).
-    if (slug === '' && CHECKOUT_RAIZ) {
-      return NextResponse.redirect(`https://${CHECKOUT_HOST}/${CHECKOUT_RAIZ}${search}`);
-    }
+    // Sem landing interna, a raiz é servida aqui mesmo (está em
+    // MAIN_DOMAIN_PATHS) e src/app/page.tsx manda pro destino padrão.
 
     // APIs continuam servidas nos dois hosts (o painel usa fetch relativo)
     if (!isAdminPath && !isApiPath && !MAIN_DOMAIN_PATHS.includes(pathname)) {

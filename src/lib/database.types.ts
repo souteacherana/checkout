@@ -75,8 +75,15 @@ export type ProductRow = {
   image_src: string | null;
   fb_pixel_id: string | null;
   fb_capi_token: string | null;
+  /** Conversão de Compra no Google Ads: conta ("AW-000…") + rótulo. */
+  google_ads_conversion_id: string | null;
+  google_ads_conversion_label: string | null;
   landing_url: string | null;
   archived_at: string | null;
+  /** Destino de quem cai num link morto ou abre a raiz do site. Só um produto. */
+  destino_padrao: boolean;
+  /** Workshop com aula ao vivo: é o que torna os campos do Zoom obrigatórios. */
+  tem_aula_ao_vivo: boolean;
   zoom_link: string | null;
   zoom_datetime: string | null;
 };

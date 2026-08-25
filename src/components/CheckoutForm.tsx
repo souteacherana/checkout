@@ -7,6 +7,8 @@ import { useSearchParams } from "next/navigation";
 import { CreditCard, QrCode, User, Mail, CreditCard as IdCard, Loader2, CheckCircle, XCircle, Timer } from "lucide-react";
 import axios from "axios";
 import { countries } from "@/lib/countries";
+import { calculateTotalValue } from "@/lib/products";
+import { conversaoDeCompra, gtag, rastrearCompra } from "@/lib/gtag";
 
 // Máscaras
 const formatCpfCnpj = (value: string) => {
@@ -58,7 +60,21 @@ const getCookie = (name: string) => {
 
 type PaymentMethod = "CREDIT_CARD" | "PIX";
 
-export default function CheckoutForm({ price, productName, productKey }: { price: number; productName: string; productKey: string }) {
+export default function CheckoutForm({
+  price,
+  productName,
+  productKey,
+  // "AW-000000/RÓTULO" da conversão de Compra deste produto no Google Ads.
+  // Quem não informa (as telas legadas / e /low, que não vêm do banco) cai na
+  // conversão padrão da conta — elas também vendem, e sem isso a venda não
+  // chegaria no Ads.
+  conversaoGoogle = conversaoDeCompra(),
+}: {
+  price: number;
+  productName: string;
+  productKey: string;
+  conversaoGoogle?: string | null;
+}) {
   const searchParams = useSearchParams();
   const [method, setMethod] = useState<PaymentMethod>("CREDIT_CARD");
   const [loading, setLoading] = useState(false);
@@ -75,16 +91,24 @@ export default function CheckoutForm({ price, productName, productKey }: { price
   useEffect(() => {
     try {
       if (typeof window !== "undefined" && (window as any).fbq) {
-        (window as any).fbq('track', 'InitiateCheckout', { 
-          value: price, 
-          currency: 'BRL', 
-          content_name: productName 
+        (window as any).fbq('track', 'InitiateCheckout', {
+          value: price,
+          currency: 'BRL',
+          content_name: productName
         });
       }
     } catch (e) {
       console.warn("Erro ao disparar Pixel (provável AdBlock):", e);
     }
-  }, [price, productName]);
+
+    // O mesmo momento, no GA4. Não checa se o gtag.js já carregou: o helper
+    // enfileira o evento e o Google processa a fila quando o script chega.
+    gtag("event", "begin_checkout", {
+      value: price,
+      currency: "BRL",
+      items: [{ item_id: productKey, item_name: productName, price, quantity: 1 }],
+    });
+  }, [price, productName, productKey]);
 
   // Timer e Polling para PIX
   useEffect(() => {
@@ -144,6 +168,47 @@ export default function CheckoutForm({ price, productName, productKey }: { price
   // bandeira usam esses dados na decisão de aprovar; até aqui iam valores
   // fixos, o que derrubava a taxa de aprovação sem deixar rastro.
   const [endereco, setEndereco] = useState({ cep: "", numero: "" });
+
+  // O que vai ser cobrado de fato — mesmo critério que api/checkout usa pra
+  // criar a cobrança: no cartão, o total com juros do parcelamento escolhido;
+  // no Pix, sempre o preço à vista.
+  //
+  // Fica num lugar só de propósito. O parcelamento continua selecionado ao
+  // trocar pro Pix (o <select> apenas some da tela), e enquanto o botão fazia
+  // essa conta por fora ele anunciava o total parcelado numa compra que ia ser
+  // cobrada à vista.
+  const valorCobrado = method === "CREDIT_CARD" ? calculateTotalValue(price, installments) : price;
+
+  // Compra confirmada → Google (GA4 + Ads).
+  //
+  // Cobre de uma vez os três caminhos que chegam em isSuccess (cartão
+  // aprovado, polling do Pix e o "já realizei o pagamento"), em vez de
+  // repetir o disparo em cada um deles.
+  //
+  // Pix apenas GERADO fica de fora de propósito: o lance automático do Google
+  // Ads é calibrado por este sinal, e ensiná-lo com Pix que nunca foi pago
+  // encarece a campanha. O Meta segue contando na geração — as duas contagens
+  // divergem por decisão, não por esquecimento.
+  useEffect(() => {
+    if (!isSuccess || !paymentId) return;
+    try {
+      // Um F5 na tela de sucesso não repete a conversão.
+      const chave = `google_purchase_${paymentId}`;
+      if (sessionStorage.getItem(chave)) return;
+      sessionStorage.setItem(chave, "true");
+    } catch {
+      // Navegador sem sessionStorage: dispara mesmo assim — o transaction_id
+      // ainda deduplica do lado do Google.
+    }
+
+    rastrearCompra({
+      paymentId,
+      valor: valorCobrado,
+      productKey,
+      productName,
+      conversao: conversaoGoogle,
+    });
+  }, [isSuccess, paymentId, valorCobrado, productKey, productName, conversaoGoogle]);
 
   // Tratamento da Data de Validade (MM/YY ou MM/YYYY)
   const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -505,15 +570,11 @@ export default function CheckoutForm({ price, productName, productKey }: { price
                 onChange={e => setInstallments(Number(e.target.value))}
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => {
-                  let val = price;
-                  let total = price;
-
-                  if (num > 1) {
-                    const i = 0.0249; // Taxa de juros de 2.49% a.m.
-                    const n = num;
-                    val = price * ((i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1));
-                    total = val * num;
-                  }
+                  // Mesma conta que o servidor faz ao criar a cobrança
+                  // (lib/products): o total exibido é o total cobrado — e é
+                  // ele que vai como `value` da conversão do Google.
+                  const total = calculateTotalValue(price, num);
+                  const val = total / num;
 
                   return (
                     <option key={num} value={num}>
@@ -533,11 +594,7 @@ export default function CheckoutForm({ price, productName, productKey }: { price
           <><Loader2 className="animate-spin mr-2" /> Processando...</>
         ) : (
           <>
-            Finalizar Compra - {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-              installments === 1
-                ? price
-                : (price * ((0.0249 * Math.pow(1 + 0.0249, installments)) / (Math.pow(1 + 0.0249, installments) - 1))) * installments
-            )}
+            Finalizar Compra - {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorCobrado)}
           </>
         )}
       </button>

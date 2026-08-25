@@ -3,8 +3,10 @@ import { Suspense } from "react";
 import CheckoutForm from "@/components/CheckoutForm";
 import Script from "next/script";
 import { ShieldCheck } from "lucide-react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { buscarDestinoPadrao, comQueryDaVisita } from "@/lib/destino-padrao";
+import { GOOGLE_ADS_ID, conversaoDeCompra, normalizarContaAds } from "@/lib/gtag";
 
 export const dynamic = 'force-dynamic';
 
@@ -12,9 +14,10 @@ interface PageProps {
   params: {
     produto: string;
   };
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default async function ProdutoCheckout({ params }: PageProps) {
+export default async function ProdutoCheckout({ params, searchParams }: PageProps) {
   // Await params to avoid Next.js 15 dynamic routing errors, and fallback gracefully
   const resolvedParams = await Promise.resolve(params);
   
@@ -28,10 +31,29 @@ export default async function ProdutoCheckout({ params }: PageProps) {
     .eq('slug', slug)
     .single();
 
-  // Se não existir o produto configurado no Banco (ou estiver arquivado), mostra 404
+  // Produto que não existe ou saiu do ar (arquivado, link velho num anúncio,
+  // slug digitado errado): em vez de perder a visita num 404, manda pro
+  // destino padrão definido no painel.
+  //
+  // A comparação de slug evita redirecionar o destino pra ele mesmo — o que
+  // só aconteceria com o banco em estado torto, mas o preço do engano seria
+  // um loop de redirect na cara do visitante.
   if (!workshopConfig || workshopConfig.archived_at) {
+    const destino = await buscarDestinoPadrao();
+    // Anúncio apontando pro produto antigo ainda traz UTM: ela segue junto.
+    if (destino && destino.slug !== slug) {
+      redirect(comQueryDaVisita(destino.url, await searchParams));
+    }
     notFound();
   }
+
+  // Google Ads do produto (cai na conversão padrão da conta quando o produto
+  // não tem a própria cadastrada no painel).
+  const contaAdsProduto = normalizarContaAds(workshopConfig.google_ads_conversion_id);
+  const conversaoCompra = conversaoDeCompra(
+    workshopConfig.google_ads_conversion_id,
+    workshopConfig.google_ads_conversion_label
+  );
 
   return (
     <main
@@ -69,6 +91,20 @@ export default async function ProdutoCheckout({ params }: PageProps) {
           </Script>
         )}
 
+        {/* Conta do Google Ads do produto, quando não é a padrão (essa já foi
+            configurada no tag base do layout raiz). O trecho refaz a fila do
+            gtag em vez de assumir que o tag base já rodou: os dois carregam
+            como afterInteractive e a ordem entre eles não é garantida. */}
+        {contaAdsProduto && contaAdsProduto !== GOOGLE_ADS_ID && (
+          <Script id={`google-ads-${contaAdsProduto}`} strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('config', '${contaAdsProduto}');
+            `}
+          </Script>
+        )}
+
         {/* Banner do Workshop */}
         {workshopConfig.image_src && (
           <div className="w-full h-32 sm:h-36 mb-6 rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex-shrink-0">
@@ -97,7 +133,7 @@ export default async function ProdutoCheckout({ params }: PageProps) {
         {/* Formulário de Checkout */}
         <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 p-6 sm:p-8">
           <Suspense fallback={<div className="text-center py-4 text-gray-500">Carregando formulário...</div>}>
-            <CheckoutForm price={workshopConfig.price} productName={workshopConfig.title} productKey={slug.toUpperCase()} />
+            <CheckoutForm price={workshopConfig.price} productName={workshopConfig.title} productKey={slug.toUpperCase()} conversaoGoogle={conversaoCompra} />
           </Suspense>
         </div>
 
