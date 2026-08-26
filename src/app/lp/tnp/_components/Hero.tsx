@@ -1,4 +1,3 @@
-import CheckoutLink from "./CheckoutLink";
 import UrgencyClock from "./UrgencyClock";
 import { ZOOM_SVG } from "../_lib/assets";
 
@@ -48,9 +47,17 @@ export default function Hero() {
             </div>
 
             <div className="cta-action-wrap">
-              <CheckoutLink className="btn-cta-primary" id="hero-main-cta" location="hero">
+              {/* Leva pra dobra de oferta, não direto pro checkout: quem está
+                  no topo ainda não viu preço nem o que está incluso.
+                  De propósito NÃO é o CheckoutLink: rolar a página não é
+                  iniciar compra, e disparar InitiateCheckout aqui encheria o
+                  evento de quem nunca chegou no ticket — o número que o
+                  tráfego usa pra medir intenção real perderia o sentido.
+                  A rolagem suave e a folga da navbar já vêm do tnp.css
+                  (scroll-behavior e scroll-padding-top no html). */}
+              <a className="btn-cta-primary" id="hero-main-cta" href="#oferta">
                 Quero Participar do Workshop <span className="btn-arrow" aria-hidden="true">→</span>
-              </CheckoutLink>
+              </a>
             </div>
 
             <div className="hero-meta-grid">
