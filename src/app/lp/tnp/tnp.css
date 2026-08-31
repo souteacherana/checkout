@@ -28,7 +28,8 @@
    TURMAS NA PRÁTICA: PLANEJAMENTO E PEDAGÓGICO
    Design System: Editorial Light Glass, Warm Authority & Human Authenticity
    Paleta: #FFFFFF (White), #FAF7F3 (Warm Cream), #F4EEE6 (Sand),
-           #FF9F1C (Amber Orange), #A85400 (Burnt Amber), #2B2D42 (Dark Indigo)
+           #A34D66 (Vinho — acento), #883E55 (Vinho escuro — texto),
+           #CE8DA0 (Rosé claro — texto sobre escuro), #2B2D42 (Dark Indigo)
    ========================================================================== */
 
 /* ============ DESIGN TOKENS ============ */
@@ -40,6 +41,8 @@
   --c-sand-muted: #6b6459;
   --c-rose: #edd4db;
   --c-rose-soft: rgba(237, 212, 219, 0.35);
+  /* Canais do rosé, pros lavados e bordas que antes eram pêssego. */
+  --c-rose-rgb: 237, 212, 219;
   /* Vinho da marca, amostrado do fundo do hero (HERO-DESK-VERM): matiz 342,
      saturação ~37%, variando só a luminosidade ao longo da imagem.
      --c-red é o tom do topo direito; --c-red-hover, o do meio. */
@@ -62,8 +65,8 @@
   --c-red-light: #ce8da0;
 
   /* CTA — vale pra TODO botão de ação: navbar, hero, dobras de conteúdo,
-     ticket e fechamento. O resto da paleta segue âmbar de propósito; o que
-     mudou aqui foi o botão, não o tema da página. */
+     ticket e fechamento. Fica verde de propósito, fora da família da marca:
+     é o contraste que separa "onde clicar" do resto da página. */
   --grad-cta: linear-gradient(128.9deg, #1ce565 4.26%, #1fae2b 95.74%);
   /* Só os canais, pra montar o brilho com opacidades diferentes em rgba().
      É o tom do fim do gradiente (#1fae2b), pro halo acompanhar a base do
@@ -182,7 +185,7 @@ html:has(.lp-tnp) {
   z-index: 0;
   background:
     radial-gradient(1000px 600px at 80% 10%, rgba(var(--c-red-rgb), 0.1), transparent 70%),
-    radial-gradient(800px 500px at 15% 45%, rgba(255, 216, 168, 0.22), transparent 60%),
+    radial-gradient(800px 500px at 15% 45%, rgba(var(--c-rose-rgb), 0.22), transparent 60%),
     radial-gradient(900px 600px at 75% 80%, rgba(var(--c-red-rgb), 0.07), transparent 70%);
 }
 
@@ -759,7 +762,7 @@ html:has(.lp-tnp) {
 .pivot-feature-card {
   margin-top: 28px;
   padding: 36px 26px;
-  background: linear-gradient(135deg, #ffffff 0%, rgba(255, 216, 168, 0.45) 100%);
+  background: linear-gradient(135deg, #ffffff 0%, rgba(var(--c-rose-rgb), 0.45) 100%);
   border: 1px solid rgba(var(--c-red-rgb), 0.4);
   border-top: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: var(--radius-lg);
@@ -987,7 +990,7 @@ html:has(.lp-tnp) {
 }
 
 .t-benefit-item:hover {
-  background: #fffcf8;
+  background: #fffbfc;
   border-color: rgba(var(--c-red-rgb), 0.3);
   box-shadow: 0 8px 16px rgba(var(--c-red-rgb), 0.08);
   transform: translateX(4px);
@@ -1052,7 +1055,7 @@ html:has(.lp-tnp) {
   align-items: stretch;
   height: 120px;
   position: relative;
-  border-bottom: 1px solid rgba(255, 216, 168, 0.15);
+  border-bottom: 1px solid rgba(var(--c-rose-rgb), 0.15);
 }
 
 .ticket-logo-wrap {
@@ -1371,7 +1374,7 @@ details.faq-item[open] .faq-icon-toggle {
   padding: 14px 18px;
   background: rgba(11, 12, 20, 0.85);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 216, 168, 0.18);
+  border: 1px solid rgba(var(--c-rose-rgb), 0.18);
   border-top: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: var(--radius-md);
 }
