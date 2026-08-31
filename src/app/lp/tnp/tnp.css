@@ -38,15 +38,28 @@
   --c-sand: #f7f1e6;
   --c-sand-soft: #eae3d5;
   --c-sand-muted: #6b6459;
-  --c-peach: #ffd8a8;
-  --c-peach-soft: rgba(255, 216, 168, 0.35);
-  --c-amber: #ff9f1c;
-  --c-amber-hover: #f08e08;
-  --c-amber-glow: rgba(255, 159, 28, 0.28);
-  --c-amber-dim: rgba(255, 159, 28, 0.12);
-  /* Âmbar rebaixado para uso como TEXTO sobre fundo claro.
-     #ff9f1c sobre branco dá 2,1:1 e reprova; este dá 5,2:1 (AA). */
-  --c-amber-ink: #a85400;
+  --c-rose: #edd4db;
+  --c-rose-soft: rgba(237, 212, 219, 0.35);
+  /* Vinho da marca, amostrado do fundo do hero (HERO-DESK-VERM): matiz 342,
+     saturação ~37%, variando só a luminosidade ao longo da imagem.
+     --c-red é o tom do topo direito; --c-red-hover, o do meio. */
+  --c-red: #a34d66;
+  --c-red-hover: #883e55;
+  /* Canais soltos, pros rgba() de borda e brilho espalhados pelo arquivo. */
+  --c-red-rgb: 163, 77, 102;
+  --c-red-glow: rgba(163, 77, 102, 0.28);
+  --c-red-dim: rgba(163, 77, 102, 0.12);
+  /* Texto sobre fundo claro. O vinho já passa AA como acento (5,5:1 sobre
+     branco, ao contrário do âmbar, que dava 2,1:1), mas texto pequeno usa o
+     tom mais escuro: 7,3:1. */
+  --c-red-ink: #883e55;
+  /* Texto sobre fundo ESCURO (topo do ticket, crachá da foto da Ana). O âmbar
+     era claro e funcionava nesses lugares; o vinho é escuro e reprovaria —
+     dava 3,2:1. Este tom, na mesma família, dá 6,6:1 sobre o azul do ticket e
+     5,1:1 sobre o cinza do crachá (que compõe pra #2e2e34, não pro preto
+     puro — medido na página, não no valor declarado). Só para superfície
+     escura: sobre branco cai pra 2,6:1. */
+  --c-red-light: #ce8da0;
 
   /* CTA — vale pra TODO botão de ação: navbar, hero, dobras de conteúdo,
      ticket e fechamento. O resto da paleta segue âmbar de propósito; o que
@@ -74,7 +87,7 @@
   /* Light Glass Frosted Borders */
   --glass-border: rgba(43, 45, 66, 0.12);
   --glass-border-top: rgba(255, 255, 255, 0.9);
-  --glass-border-hover: rgba(255, 159, 28, 0.55);
+  --glass-border-hover: rgba(var(--c-red-rgb), 0.55);
 
   /* Shadows & Depth — sombras suaves e quentes, não pretas */
   --glass-shadow: 0 12px 32px -14px rgba(43, 45, 66, 0.22), 0 0 0 1px rgba(43, 45, 66, 0.04);
@@ -151,14 +164,14 @@ html:has(.lp-tnp) {
 }
 
 :where(.lp-tnp) :focus-visible {
-  outline: 2px solid var(--c-amber-ink);
+  outline: 2px solid var(--c-red-ink);
   outline-offset: 3px;
   border-radius: 4px;
 }
 
 :where(.lp-tnp) ::selection {
-  background: var(--c-amber);
-  color: #0b0c14;
+  background: var(--c-red);
+  color: #ffffff;
 }
 
 /* ============ AMBIENT BACKGROUND LIGHT MESH ============ */
@@ -168,9 +181,9 @@ html:has(.lp-tnp) {
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(1000px 600px at 80% 10%, rgba(255, 159, 28, 0.1), transparent 70%),
+    radial-gradient(1000px 600px at 80% 10%, rgba(var(--c-red-rgb), 0.1), transparent 70%),
     radial-gradient(800px 500px at 15% 45%, rgba(255, 216, 168, 0.22), transparent 60%),
-    radial-gradient(900px 600px at 75% 80%, rgba(255, 159, 28, 0.07), transparent 70%);
+    radial-gradient(900px 600px at 75% 80%, rgba(var(--c-red-rgb), 0.07), transparent 70%);
 }
 
 /* ============ ESSENTIAL GLASSMORPHISM PANELS ============ */
@@ -192,7 +205,7 @@ html:has(.lp-tnp) {
   border-color: var(--glass-border-hover);
   border-top-color: #ffffff;
   transform: translateY(-4px);
-  box-shadow: 0 20px 40px -16px rgba(43, 45, 66, 0.28), 0 0 24px -8px var(--c-amber-glow), var(--glass-inset);
+  box-shadow: 0 20px 40px -16px rgba(43, 45, 66, 0.28), 0 0 24px -8px var(--c-red-glow), var(--glass-inset);
 }
 
 .glass-panel-static {
@@ -224,11 +237,11 @@ html:has(.lp-tnp) {
 }
 
 .text-amber {
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
 }
 
 .text-peach {
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
 }
 
 .text-white {
@@ -251,10 +264,10 @@ html:has(.lp-tnp) {
   padding: 6px 14px;
   border-radius: var(--radius-pill);
   /* Pílula opaca: com 11px em âmbar, um fundo translúcido faria o contraste
-     depender do que estiver na foto atrás. Opaco, ela é sempre 5,2:1. */
+     depender do que estiver na foto atrás. Opaco, ela é sempre 7,3:1. */
   background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(255, 159, 28, 0.38);
-  color: var(--c-amber-ink);
+  border: 1px solid rgba(var(--c-red-rgb), 0.38);
+  color: var(--c-red-ink);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   font-weight: 700;
@@ -266,8 +279,8 @@ html:has(.lp-tnp) {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--c-amber);
-  box-shadow: 0 0 0 0 rgba(255, 159, 28, 0.7);
+  background: var(--c-red);
+  box-shadow: 0 0 0 0 rgba(var(--c-red-rgb), 0.7);
   animation: pulseGlow 1.8s infinite;
 }
 
@@ -320,8 +333,11 @@ html:has(.lp-tnp) {
 .urgency-bar {
   position: relative;
   z-index: 100;
-  background: linear-gradient(90deg, #ff9f1c 0%, #ffaa2b 100%);
-  color: #0b0c14;
+  /* O claro do gradiente para em #ad5370: com branco em cima dá 4,94:1, e o
+     texto desta barra tem 10–13px, então precisa de 4,5:1. Um passo a mais
+     de luminosidade (#b85a75) cairia pra 4,41:1 e reprovaria. */
+  background: linear-gradient(90deg, #a34d66 0%, #ad5370 100%);
+  color: #ffffff;
   box-shadow: 0 4px 16px rgba(43, 45, 66, 0.14);
   overflow: hidden;
 }
@@ -441,7 +457,7 @@ html:has(.lp-tnp) {
 }
 
 .brand-text span {
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
 }
 
 .nav-links {
@@ -458,7 +474,7 @@ html:has(.lp-tnp) {
 }
 
 .nav-links a:hover {
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
 }
 
 .nav-cta-btn {
@@ -489,15 +505,18 @@ html:has(.lp-tnp) {
      desktop  x 8%–55%   y 13%–91%
      mobile   x 5%–95%   y 14%–94%
    Essa faixa precisa ficar tão clara quanto #F2EFEA na imagem, senão o
-   texto (#2B2D42 / #3D3F52 / #A85400) perde contraste AA. */
+   texto (#2B2D42 / #3D3F52 / #883E55) perde contraste AA. */
 .hero {
   position: relative;
-  /* 250px porque na arte mobile a Ana ocupa até y=268: abaixo disso o
-     headline cairia em cima dela. Se a arte mudar, remedir esse limite. */
-  padding: 250px 0 64px;
+  /* 300px porque na arte mobile (HERO-MOB-VERM) a figura da Ana vai até
+     y=312: abaixo disso o headline cairia em cima dela. O rosa continua como
+     degradê leve até y=386, mas texto escuro em cima dele passa tranquilo.
+     Era 250px na arte laranja, em que a figura terminava em y=268.
+     Se a arte mudar de novo, remedir esse limite. */
+  padding: 300px 0 64px;
   overflow: hidden;
   background-color: var(--bg-canvas);
-  background-image: url("/lp/tnp/HERO-MOB2.webp");
+  background-image: url("/lp/tnp/HERO-MOB-VERM.webp");
   background-size: cover;
   background-position: center top;
 }
@@ -537,7 +556,7 @@ html:has(.lp-tnp) {
 }
 
 .hero-headline .highlight-accent {
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
   display: inline-block;
 }
 
@@ -570,7 +589,7 @@ html:has(.lp-tnp) {
 }
 
 .hero-event-immersion b {
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
 }
 
 .cta-action-wrap {
@@ -652,7 +671,7 @@ html:has(.lp-tnp) {
 }
 
 .ticker-item .t-symbol {
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
 }
 
 /* ============ SECTIONS COMMON ============ */
@@ -679,7 +698,7 @@ html:has(.lp-tnp) {
 
 .section-title em {
   font-style: normal;
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
 }
 
 .section-subtitle {
@@ -712,14 +731,14 @@ html:has(.lp-tnp) {
   width: 40px;
   height: 40px;
   border-radius: var(--radius-sm);
-  background: rgba(255, 159, 28, 0.12);
-  border: 1px solid rgba(255, 159, 28, 0.3);
+  background: rgba(var(--c-red-rgb), 0.12);
+  border: 1px solid rgba(var(--c-red-rgb), 0.3);
   display: grid;
   place-items: center;
   font-family: 'JetBrains Mono', monospace;
   font-size: 14px;
   font-weight: 700;
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
 }
 
 .problem-card h3 {
@@ -741,7 +760,7 @@ html:has(.lp-tnp) {
   margin-top: 28px;
   padding: 36px 26px;
   background: linear-gradient(135deg, #ffffff 0%, rgba(255, 216, 168, 0.45) 100%);
-  border: 1px solid rgba(255, 159, 28, 0.4);
+  border: 1px solid rgba(var(--c-red-rgb), 0.4);
   border-top: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: var(--radius-lg);
   box-shadow: 0 20px 44px -18px rgba(43, 45, 66, 0.26), var(--glass-inset);
@@ -759,7 +778,7 @@ html:has(.lp-tnp) {
   left: 0;
   width: 5px;
   height: 100%;
-  background: linear-gradient(180deg, var(--c-amber), #e68500);
+  background: linear-gradient(180deg, var(--c-red), #6d3143);
 }
 
 .pivot-tag {
@@ -770,8 +789,8 @@ html:has(.lp-tnp) {
   letter-spacing: 0.12em;
   padding: 4px 12px;
   border-radius: var(--radius-pill);
-  background: var(--c-amber);
-  color: #0b0c14;
+  background: var(--c-red);
+  color: #ffffff;
   font-weight: 800;
 }
 
@@ -785,7 +804,7 @@ html:has(.lp-tnp) {
 
 .pivot-feature-card h3 em {
   font-style: normal;
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
 }
 
 .pivot-feature-card p {
@@ -825,7 +844,7 @@ html:has(.lp-tnp) {
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   font-weight: 700;
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
   letter-spacing: 0.1em;
 }
 
@@ -875,7 +894,7 @@ html:has(.lp-tnp) {
 }
 
 .learn-impact-box h3 b {
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
 }
 
 /* ============ 4ª DOBRA: PROVA SOCIAL & DEPOIMENTOS ============ */
@@ -903,7 +922,7 @@ html:has(.lp-tnp) {
 
 .masonry-gallery img:hover {
   transform: translateY(-4px);
-  box-shadow: 0 18px 36px -12px rgba(43, 45, 66, 0.3), 0 0 0 2px rgba(255, 159, 28, 0.5);
+  box-shadow: 0 18px 36px -12px rgba(43, 45, 66, 0.3), 0 0 0 2px rgba(var(--c-red-rgb), 0.5);
 }
 
 /* Responsividade da Galeria Masonry */
@@ -922,8 +941,8 @@ html:has(.lp-tnp) {
 /* ============ DOBRA DE OFERTA / INVESTIMENTO (TICKET) ============ */
 .offer-section {
   background-color: var(--bg-surface);
-  background-image: radial-gradient(circle at 50% 50%, rgba(255, 159, 28, 0.15) 0%, transparent 70%);
-  border-top: 1px solid rgba(255, 159, 28, 0.2);
+  background-image: radial-gradient(circle at 50% 50%, rgba(var(--c-red-rgb), 0.15) 0%, transparent 70%);
+  border-top: 1px solid rgba(var(--c-red-rgb), 0.2);
   padding: 80px 0;
 }
 
@@ -944,7 +963,7 @@ html:has(.lp-tnp) {
   color: var(--ink-title);
 }
 .offer-ticket-left .display-title em {
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
 }
 
 .ticket-benefits-list {
@@ -969,13 +988,13 @@ html:has(.lp-tnp) {
 
 .t-benefit-item:hover {
   background: #fffcf8;
-  border-color: rgba(255, 159, 28, 0.3);
-  box-shadow: 0 8px 16px rgba(255, 159, 28, 0.08);
+  border-color: rgba(var(--c-red-rgb), 0.3);
+  box-shadow: 0 8px 16px rgba(var(--c-red-rgb), 0.08);
   transform: translateX(4px);
 }
 
 .t-benefit-item svg {
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
   flex-shrink: 0;
 }
 
@@ -1048,7 +1067,8 @@ html:has(.lp-tnp) {
   font-family: 'Outfit', sans-serif;
   font-size: 14px;
   font-weight: 700;
-  color: var(--c-amber);
+  /* Fica sobre o topo escuro do ticket: tom claro da família. */
+  color: var(--c-red-light);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -1072,7 +1092,7 @@ html:has(.lp-tnp) {
 
 /* Divisor do Ticket (Picote) */
 .ticket-divider {
-  background: var(--c-amber);
+  background: var(--c-red);
   height: 36px;
   position: relative;
   display: flex;
@@ -1081,7 +1101,7 @@ html:has(.lp-tnp) {
   padding: 0 30px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: #0b0c14;
+  color: #ffffff;
   font-weight: 800;
   letter-spacing: 0.1em;
 }
@@ -1095,11 +1115,11 @@ html:has(.lp-tnp) {
   border-radius: 50%;
   transform: translateY(-50%);
   z-index: 2;
-  box-shadow: inset 1px 0 0 rgba(255, 159, 28, 0.2);
+  box-shadow: inset 1px 0 0 rgba(var(--c-red-rgb), 0.2);
 }
 
-.cutout-left { left: -10px; box-shadow: inset -1px 0 0 rgba(255, 159, 28, 0.2); }
-.cutout-right { right: -10px; box-shadow: inset 1px 0 0 rgba(255, 159, 28, 0.2); }
+.cutout-left { left: -10px; box-shadow: inset -1px 0 0 rgba(var(--c-red-rgb), 0.2); }
+.cutout-right { right: -10px; box-shadow: inset 1px 0 0 rgba(var(--c-red-rgb), 0.2); }
 
 .divider-line {
   width: 100%;
@@ -1155,7 +1175,7 @@ html:has(.lp-tnp) {
 }
 
 .t-blue {
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
 }
 
 .ticket-price-box {
@@ -1288,7 +1308,7 @@ details.faq-item summary::-webkit-details-marker {
   background: rgba(43, 45, 66, 0.04);
   display: grid;
   place-items: center;
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
   flex-shrink: 0;
   font-size: 18px;
   font-weight: 600;
@@ -1297,9 +1317,9 @@ details.faq-item summary::-webkit-details-marker {
 
 details.faq-item[open] .faq-icon-toggle {
   transform: rotate(45deg);
-  background: var(--c-amber);
-  color: #0b0c14;
-  border-color: var(--c-amber-ink);
+  background: var(--c-red);
+  color: #ffffff;
+  border-color: var(--c-red-ink);
 }
 
 .faq-answer {
@@ -1366,7 +1386,8 @@ details.faq-item[open] .faq-icon-toggle {
 .instructor-photo-badge .badge-role {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: var(--c-amber);
+  /* Crachá sobre a foto, fundo quase preto: tom claro da família. */
+  color: var(--c-red-light);
   text-transform: uppercase;
 }
 
@@ -1386,7 +1407,7 @@ details.faq-item[open] .faq-icon-toggle {
 
 .instructor-bio h2 em {
   font-style: normal;
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
 }
 
 .instructor-bio p {
@@ -1421,14 +1442,14 @@ details.faq-item[open] .faq-icon-toggle {
 }
 
 .inst-highlight-item .hi-icon {
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
   font-size: 17px;
   font-weight: 700;
 }
 
 /* ============ FINAL CTA & COUNTDOWN ============ */
 .final-cta-section {
-  background: radial-gradient(circle at 50% 0%, rgba(255, 159, 28, 0.18) 0%, var(--bg-deep) 72%);
+  background: radial-gradient(circle at 50% 0%, rgba(var(--c-red-rgb), 0.18) 0%, var(--bg-deep) 72%);
   border-top: 1px solid rgba(43, 45, 66, 0.08);
   text-align: center;
   padding: 90px 0;
@@ -1453,7 +1474,7 @@ details.faq-item[open] .faq-icon-toggle {
 
 .final-cta-inner h2 em {
   font-style: normal;
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
 }
 
 .final-cta-inner p {
@@ -1497,7 +1518,7 @@ details.faq-item[open] .faq-icon-toggle {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
   margin-top: 4px;
 }
 
@@ -1536,19 +1557,19 @@ details.faq-item[open] .faq-icon-toggle {
 }
 
 .footer-links a:hover {
-  color: var(--c-amber-ink);
+  color: var(--c-red-ink);
 }
 
 /* ============ KEYFRAME ANIMATIONS ============ */
 @keyframes pulseGlow {
   0% {
-    box-shadow: 0 0 0 0 rgba(255, 159, 28, 0.7);
+    box-shadow: 0 0 0 0 rgba(var(--c-red-rgb), 0.7);
   }
   70% {
-    box-shadow: 0 0 0 8px rgba(255, 159, 28, 0);
+    box-shadow: 0 0 0 8px rgba(var(--c-red-rgb), 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(255, 159, 28, 0);
+    box-shadow: 0 0 0 0 rgba(var(--c-red-rgb), 0);
   }
 }
 
@@ -1584,12 +1605,12 @@ details.faq-item[open] .faq-icon-toggle {
   }
 
   .hero {
-    background-image: url("/lp/tnp/HERO-DESK-3.jpg");
+    background-image: url("/lp/tnp/HERO-DESK-VERM.webp");
     /* Ancorado à ESQUERDA, não à direita. A arte tem 1905px e a área clara
-       ocupa só o terço esquerdo; ancorando à direita, telas menores que 1905
-       cortam justamente essa área e jogam o texto em cima da Ana.
-       Ancorando à esquerda, o corte come o lado direito da imagem e a área
-       clara fica sempre sob o texto. */
+       ocupa a metade esquerda (medido na arte nova: acaba em x=960);
+       ancorando à direita, telas menores que 1905 cortam justamente essa área
+       e jogam o texto em cima da Ana. Ancorando à esquerda, o corte come o
+       lado direito da imagem e a área clara fica sempre sob o texto. */
     background-position: left center;
     padding: 130px 0 90px;
   }
