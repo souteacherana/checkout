@@ -18,11 +18,12 @@ export default function Header() {
         </Link>
 
         <nav className="nav-links" aria-label="Navegação do site">
+          {/* Na ordem em que as seções aparecem na página. */}
+          <Link href="#faq">Dúvidas</Link>
+          <Link href="#oferta">Inscrição</Link>
+          <Link href="#depoimentos">Resultados</Link>
           <Link href="#problema">O Desafio</Link>
           <Link href="#conteudo">O Que Vai Aprender</Link>
-          <Link href="#depoimentos">Resultados</Link>
-          <Link href="#oferta">Inscrição</Link>
-          <Link href="#faq">Dúvidas</Link>
           <Link href="#sobre-ana">Sobre a Ana</Link>
         </nav>
 
