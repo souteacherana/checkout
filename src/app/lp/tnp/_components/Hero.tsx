@@ -32,7 +32,7 @@ export default function Hero() {
             </div>
 
             <h1 className="hero-headline display-title">
-              Aprenda faturar acima de <span className="highlight-accent">R$15k e menos de 15h/semana</span>
+              Aprenda faturar acima <br></br>de <span className="highlight-accent">R$15k e menos de 15h/semana</span>
               com turmas que funcionam de verdade!
             </h1>
 
