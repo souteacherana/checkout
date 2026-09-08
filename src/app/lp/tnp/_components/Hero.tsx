@@ -32,18 +32,14 @@ export default function Hero() {
             </div>
 
             <h1 className="hero-headline display-title">
-              Sua turma não precisa apenas encher. <span className="highlight-accent">Ela precisa funcionar.</span>
+              Aprenda faturar acima de <span className="highlight-accent">R$15k e menos de 15h/semana</span>
+              com turmas que funcionam de verdade!
             </h1>
 
-            <p className="hero-subheadline">
-              Aprenda a estruturar turmas lucrativas, organizadas e pedagogicamente fortes, capazes de entregar resultado
-              para o aluno e retenção para o seu negócio.
-            </p>
-
             <div className="hero-event-immersion">
-              No dia <b>19 de setembro, às 15h</b>, você vai participar de uma <b>imersão prática de 3 horas</b> para
-              aprender a estruturar suas turmas de forma completa: do planejamento pedagógico à organização das aulas, da
-              experiência do aluno à construção de uma entrega que faça a turma permanecer, evoluir e gerar lucro.
+              Em uma imersão prática de 3 horas, você, teacher, vai aprender a estruturar turmas pedagogicamente fortes,
+              que entreguem resultados de verdade para você e o seu aluno, aumentando sua RETENÇÃO e te fazendo faturar
+              acima de R$ 15k com uma carga horária menor que 15h/semana.
             </div>
 
             <div className="cta-action-wrap">
