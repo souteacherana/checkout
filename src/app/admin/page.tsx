@@ -309,10 +309,9 @@ export default function AdminDashboard() {
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mr-1">Período</span>
             <PeriodFilter defaultDays={0} onChange={setRange} />
           </div>
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="flex flex-1 gap-4 w-full md:w-auto flex-wrap md:flex-nowrap">
+          <div className="flex flex-wrap items-center gap-3">
               {/* Pesquisa */}
-              <div className="relative flex-1 min-w-[200px]">
+              <div className="relative flex-1 min-w-[220px]">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Search size={16} className="text-gray-400" />
                 </div>
@@ -321,7 +320,7 @@ export default function AdminDashboard() {
                   placeholder="Buscar cliente, e-mail ou telefone..."
                   value={filterSearch}
                   onChange={(e) => setFilterSearch(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-gray-900"
+                  className="w-full h-10 pl-10 pr-8 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-gray-900"
                 />
                 {filterSearch && (
                   <button onClick={() => setFilterSearch('')} className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
@@ -331,7 +330,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* UTM */}
-              <div className="relative w-full md:w-48">
+              <div className="relative w-full sm:w-44">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Filter size={16} className="text-gray-400" />
                 </div>
@@ -340,7 +339,7 @@ export default function AdminDashboard() {
                   placeholder="Filtrar por UTM..."
                   value={filterUtm}
                   onChange={(e) => setFilterUtm(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-gray-900"
+                  className="w-full h-10 pl-10 pr-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-gray-900"
                 />
               </div>
 
@@ -357,7 +356,7 @@ export default function AdminDashboard() {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full md:w-40 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-gray-700 bg-white"
+                className="w-full sm:w-40 h-10 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-gray-700 bg-white"
               >
                 <option value="ALL">Todos os Status</option>
                 <option value="PAID">Pagas</option>
@@ -366,29 +365,26 @@ export default function AdminDashboard() {
                 <option value="REFUNDED">Reembolsadas</option>
                 <option value="CANCELED">Canceladas</option>
               </select>
-            </div>
 
-            {/* Ordenação e Toggle Eduzz */}
-            <div className="flex items-center gap-4 w-full md:w-auto">
               {/* Toggle Eduzz */}
-              <button 
+              <button
                 onClick={() => setShowEduzzData(!showEduzzData)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${showEduzzData ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
+                className={`flex items-center gap-2 h-10 px-3 shrink-0 whitespace-nowrap rounded-lg text-sm font-medium transition-colors border ${showEduzzData ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
                 title={showEduzzData ? "Ocultar dados da Eduzz" : "Mostrar dados da Eduzz"}
               >
-                <div className={`w-8 h-4 rounded-full relative transition-colors ${showEduzzData ? 'bg-indigo-500' : 'bg-gray-300'}`}>
-                  <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${showEduzzData ? 'translate-x-4' : ''}`}></div>
-                </div>
-                <span>Histórico Eduzz</span>
+                <span className={`w-8 h-4 rounded-full relative shrink-0 transition-colors ${showEduzzData ? 'bg-indigo-500' : 'bg-gray-300'}`}>
+                  <span className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${showEduzzData ? 'translate-x-4' : ''}`}></span>
+                </span>
+                Histórico Eduzz
               </button>
 
               {/* Ordenação */}
-              <div className="flex items-center gap-2">
-                <ArrowUpDown size={16} className="text-gray-400" />
+              <div className="flex items-center gap-2 shrink-0">
+                <ArrowUpDown size={16} className="text-gray-400 shrink-0" />
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as VendasOrdem)}
-                  className="w-full md:w-48 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-gray-700 bg-gray-50"
+                  className="w-full sm:w-44 h-10 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-gray-700 bg-gray-50"
                 >
                   <option value="date_desc">Data (Mais recentes)</option>
                   <option value="date_asc">Data (Mais antigas)</option>
@@ -397,7 +393,6 @@ export default function AdminDashboard() {
                   <option value="utm_asc">Agrupar por UTM</option>
                 </select>
               </div>
-            </div>
           </div>
         </div>
 

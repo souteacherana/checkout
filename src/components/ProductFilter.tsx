@@ -44,12 +44,12 @@ export function ProductFilter({ opcoes, selecionados, onChange }: {
     : `${selecionados.length} produtos`;
 
   return (
-    <div className="relative w-full md:w-64" ref={caixa}>
+    <div className="relative w-full sm:w-56" ref={caixa}>
       <button
         type="button"
         onClick={() => setAberto(a => !a)}
         title={selecionados.length > 1 ? selecionados.join("\n") : undefined}
-        className={`w-full flex items-center gap-2 px-3 py-2 border rounded-lg text-sm text-left transition-colors bg-white ${
+        className={`w-full flex items-center gap-2 h-10 px-3 border rounded-lg text-sm text-left transition-colors bg-white ${
           selecionados.length
             ? "border-emerald-500 text-gray-900 ring-2 ring-emerald-500/20"
             : "border-gray-200 text-gray-700 hover:border-gray-300"
