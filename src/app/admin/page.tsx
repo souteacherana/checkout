@@ -6,9 +6,17 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import { vendaToUI, type VendaUI } from "@/lib/vendas";
+import { buscarVendas, type VendaUI } from "@/lib/vendas";
+import {
+  filtrarVendas,
+  filtrosParaQuery,
+  ordenarVendas,
+  type VendasFiltros,
+  type VendasOrdem,
+} from "@/lib/vendas-filtros";
 import { getUserRole } from "./actions";
 import { PeriodFilter, type DateRange } from "@/components/PeriodFilter";
+import { ProductFilter } from "@/components/ProductFilter";
 import { dataBR, horaBR } from "@/lib/datas";
 import { Download, LogOut, CheckCircle, AlertCircle, RefreshCw, Search, Filter, ArrowUpDown, Trash2, TrendingUp, DollarSign, Users, CreditCard, X } from "lucide-react";
 
@@ -16,6 +24,7 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [checkouts, setCheckouts] = useState<VendaUI[]>([]);
   const [visibleCount, setVisibleCount] = useState(100);
   const [role, setRole] = useState<string>("VIEWER");
@@ -24,26 +33,34 @@ export default function AdminDashboard() {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [filterSearch, setFilterSearch] = useState<string>('');
   const [filterUtm, setFilterUtm] = useState<string>('');
-  const [filterProduct, setFilterProduct] = useState<string>('ALL');
-  const [sortBy, setSortBy] = useState<string>('date_desc');
+  const [filterProducts, setFilterProducts] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<VendasOrdem>('date_desc');
   const [showEduzzData, setShowEduzzData] = useState<boolean>(true);
   const [range, setRange] = useState<DateRange>({ from: null, to: null });
   const [eduzzSyncAt, setEduzzSyncAt] = useState<string | null>(null);
   // Congela o "agora" no mount (react-hooks/purity)
   const [now] = useState(() => Date.now());
 
+  // Mesmos filtros que a exportação recebe, para o CSV sair igual à tela
+  const filtros: VendasFiltros = {
+    from: range.from,
+    to: range.to,
+    status: filterStatus,
+    produtos: filterProducts,
+    busca: filterSearch,
+    utm: filterUtm,
+    incluirEduzz: showEduzzData,
+  };
+
   const fetchCheckouts = async () => {
     setLoading(true);
 
     // Fonte única de verdade: a view `vendas` já unifica checkouts + Eduzz
     // com status canônico, produto resolvido e soft-delete filtrado.
-    const { data, error } = await supabase
-      .from('vendas')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setCheckouts(data.map(vendaToUI));
+    try {
+      setCheckouts(await buscarVendas(supabase));
+    } catch (e) {
+      console.error(e);
     }
 
     // Frescor do sync automático da Eduzz (updated_at é tocado a cada upsert)
@@ -137,24 +154,32 @@ export default function AdminDashboard() {
   };
 
   const exportToCSV = async () => {
+    if (processedCheckouts.length === 0) {
+      alert("Nenhuma venda nos filtros atuais. Ajuste o período ou o produto antes de exportar.");
+      return;
+    }
+
     try {
+      setExporting(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const response = await fetch('/api/admin/export', {
+      const response = await fetch(`/api/admin/export?${filtrosParaQuery(filtros, sortBy)}`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
         }
       });
-      
+
       if (!response.ok) throw new Error('Erro ao exportar');
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      
-      a.download = `Vendas_Tier_S_${new Date().getTime()}.csv`;
+
+      // O nome do arquivo já vem montado pela rota a partir dos filtros
+      a.download = /filename="(.+)"/.exec(response.headers.get('Content-Disposition') || '')?.[1]
+        || 'Vendas.csv';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -162,38 +187,13 @@ export default function AdminDashboard() {
     } catch (e) {
       alert("Erro ao exportar CSV. Verifique o console.");
       console.error(e);
+    } finally {
+      setExporting(false);
     }
   };
 
   // Processamento dos dados (Filtros e Sort)
-  const processedCheckouts = [...checkouts]
-    .filter(c => {
-      if (range.from === null && range.to === null) return true;
-      const t = new Date(c.created_at).getTime();
-      return t >= (range.from ?? -Infinity) && t <= (range.to ?? Infinity);
-    })
-    .filter(c => showEduzzData ? true : c.source !== 'Eduzz')
-    .filter(c => filterStatus === 'ALL' || c.status === filterStatus)
-    .filter(c => filterProduct === 'ALL' || c.product_name === filterProduct)
-    .filter(c => filterSearch === '' || 
-      (c.customer_name?.toLowerCase() || '').includes(filterSearch.toLowerCase()) || 
-      (c.customer_email?.toLowerCase() || '').includes(filterSearch.toLowerCase()) ||
-      (c.customer_phone?.toLowerCase() || '').includes(filterSearch.toLowerCase())
-    )
-    .filter(c => filterUtm === '' ||
-      (c.utm_source?.toLowerCase() || '').includes(filterUtm.toLowerCase()) ||
-      (c.utm_campaign?.toLowerCase() || '').includes(filterUtm.toLowerCase()) ||
-      (c.utm_medium?.toLowerCase() || '').includes(filterUtm.toLowerCase()) ||
-      (c.utm_content?.toLowerCase() || '').includes(filterUtm.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (sortBy === 'date_desc') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      if (sortBy === 'date_asc') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      if (sortBy === 'name_asc') return (a.customer_name || '').localeCompare(b.customer_name || '');
-      if (sortBy === 'name_desc') return (b.customer_name || '').localeCompare(a.customer_name || '');
-      if (sortBy === 'utm_asc') return (a.utm_source || '').localeCompare(b.utm_source || '');
-      return 0;
-    });
+  const processedCheckouts = ordenarVendas(filtrarVendas(checkouts, filtros), sortBy);
 
   const isFinanceVisible = ['ANA', 'ADMIN', 'SUPERADMIN'].includes(role);
 
@@ -239,8 +239,14 @@ export default function AdminDashboard() {
                 )}
               </div>
             )}
-            <button onClick={exportToCSV} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-sm transition-all hover:shadow-emerald-600/20 hover:-translate-y-0.5">
-              <Download size={16} /> Exportar CSV
+            <button
+              onClick={exportToCSV}
+              disabled={exporting}
+              title="Exporta exatamente as vendas filtradas na tela"
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-sm transition-all hover:shadow-emerald-600/20 hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0"
+            >
+              <Download size={16} className={exporting ? 'animate-pulse' : ''} />
+              {exporting ? 'Exportando...' : `Exportar CSV (${processedCheckouts.length})`}
             </button>
           </div>
         </div>
@@ -339,16 +345,13 @@ export default function AdminDashboard() {
               </div>
 
               {/* Produto */}
-              <select
-                value={filterProduct}
-                onChange={(e) => setFilterProduct(e.target.value)}
-                className="w-full md:w-48 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-gray-700 bg-white"
-              >
-                <option value="ALL">Todos os Produtos</option>
-                {Array.from(new Set(checkouts.map(c => c.product_name))).filter(Boolean).map(p => (
-                  <option key={String(p)} value={String(p)}>{String(p)}</option>
-                ))}
-              </select>
+              <ProductFilter
+                opcoes={Array.from(new Set(checkouts.map(c => c.product_name)))
+                  .filter((p): p is string => Boolean(p))
+                  .sort((a, b) => a.localeCompare(b))}
+                selecionados={filterProducts}
+                onChange={setFilterProducts}
+              />
 
               {/* Status */}
               <select
@@ -384,7 +387,7 @@ export default function AdminDashboard() {
                 <ArrowUpDown size={16} className="text-gray-400" />
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={(e) => setSortBy(e.target.value as VendasOrdem)}
                   className="w-full md:w-48 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-gray-700 bg-gray-50"
                 >
                   <option value="date_desc">Data (Mais recentes)</option>

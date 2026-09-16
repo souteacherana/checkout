@@ -1,4 +1,5 @@
-import type { VendaRow } from './database.types';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database, VendaRow } from './database.types';
 
 /**
  * Traduz o status canônico da view `vendas` para os códigos
@@ -19,6 +20,7 @@ export type VendaUI = {
   fonte: 'checkout' | 'eduzz';
   id_origem: string;
   created_at: string;
+  payment_date: string | null;
   status: string;        // códigos UI (PAID, PENDING, ...)
   customer_name: string | null;
   customer_email: string | null;
@@ -44,6 +46,7 @@ export function vendaToUI(v: VendaRow): VendaUI {
     fonte: v.fonte,
     id_origem: v.id_origem,
     created_at: v.created_at,
+    payment_date: v.pago_em,
     status: VENDA_STATUS_TO_UI[v.status] || 'PENDING',
     customer_name: v.cliente_nome,
     customer_email: v.cliente_email,
@@ -62,4 +65,31 @@ export function vendaToUI(v: VendaRow): VendaUI {
     recovery_contacted_at: v.recovery_contacted_at,
     source: v.fonte === 'eduzz' ? 'Eduzz' : 'Asaas',
   };
+}
+
+const PAGINA = 1000;
+
+/**
+ * Busca a view `vendas` inteira, em páginas.
+ *
+ * O PostgREST corta a resposta em 1000 linhas: um `select()` solto trazia só
+ * as 1000 vendas mais recentes, então filtrar por um período antigo não achava
+ * nada e os totais do topo saíam menores que a realidade.
+ */
+export async function buscarVendas(client: SupabaseClient<Database>): Promise<VendaUI[]> {
+  const vendas: VendaUI[] = [];
+
+  for (let offset = 0; ; offset += PAGINA) {
+    const { data, error } = await client
+      .from('vendas')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + PAGINA - 1);
+
+    if (error) throw error;
+    vendas.push(...(data || []).map(vendaToUI));
+    if (!data || data.length < PAGINA) break;
+  }
+
+  return vendas;
 }

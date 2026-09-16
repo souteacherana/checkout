@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { dataBR } from '@/lib/datas';
+import { dataBR, dataISOBR, horaBR } from '@/lib/datas';
+import { buscarVendas, type VendaUI } from '@/lib/vendas';
+import { filtrarVendas, filtrosDaQuery, ordenarVendas } from '@/lib/vendas-filtros';
 
 function escapeCSV(field: string | number | null | undefined): string {
   if (field === null || field === undefined) return '';
@@ -11,6 +13,78 @@ function escapeCSV(field: string | number | null | undefined): string {
   return str;
 }
 
+const STATUS_LABEL: Record<string, string> = {
+  PAID: 'Paga',
+  PENDING: 'Abandono',
+  PIX_PENDING: 'Aguardando Pix',
+  PAYMENT_MISMATCH_REVIEW: 'Em Revisão',
+  REFUNDED: 'Reembolsada',
+  CANCELED: 'Cancelada',
+};
+
+const METODO_LABEL: Record<string, string> = {
+  PIX: 'Pix',
+  CREDIT_CARD: 'Cartão de Crédito',
+  BOLETO: 'Boleto',
+};
+
+// Byte order mark: sem ele o Excel abre o arquivo como latin-1 e come os acentos.
+const BOM = String.fromCharCode(0xfeff);
+
+const COLUNAS = [
+  'Data', 'Hora', 'Status', 'Origem', 'Cliente / Nome', 'Cliente / E-mail', 'Cliente / Telefone',
+  'Produto', 'Método de Pagamento', 'Nº Parcelas', 'Valor Bruto', 'Valor Líquido', 'Taxa',
+  'Data de Pagamento', 'UTM Source', 'UTM Campaign', 'UTM Medium', 'UTM Content', 'UTM Term',
+];
+
+// 1234,56 — decimal com vírgula e sem separador de milhar, que é o que o
+// Excel pt-BR lê como número (com milhar ele trataria a célula como texto).
+const valorBR = (val: number | null) =>
+  val === null || val === undefined
+    ? ''
+    : val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false });
+
+function linha(v: VendaUI): string {
+  const bruto = v.amount === null ? null : Number(v.amount);
+  // Líquido vem null quando a view mascara o financeiro (papéis sem acesso);
+  // sem líquido não há taxa a calcular.
+  const liquido = v.net_value === null || v.net_value === undefined ? null : Number(v.net_value);
+  // Só venda paga tem taxa. Em cancelada/reembolsada o líquido é zero, e
+  // bruto - líquido devolveria o valor cheio como se fosse taxa cobrada.
+  const taxa = v.status === 'PAID' && bruto !== null && liquido !== null ? bruto - liquido : null;
+
+  return [
+    dataBR(v.created_at),
+    horaBR(v.created_at),
+    STATUS_LABEL[v.status] || v.status,
+    v.source,
+    v.customer_name || '',
+    v.customer_email || '',
+    v.customer_phone || '',
+    v.product_name || '',
+    v.payment_method ? (METODO_LABEL[v.payment_method] || v.payment_method) : '',
+    v.installments || 1,
+    valorBR(bruto),
+    valorBR(liquido),
+    valorBR(taxa),
+    dataBR(v.payment_date),
+    v.utm_source || '',
+    v.utm_campaign || '',
+    v.utm_medium || '',
+    v.utm_content || '',
+    v.utm_term || '',
+  ].map(escapeCSV).join(';');
+}
+
+/** Nome de arquivo sem acento/espaço e sem nada que quebre o header HTTP. */
+function sanitizar(texto: string): string {
+  return texto
+    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+}
+
 export async function GET(req: Request) {
   try {
     const authHeader = req.headers.get('Authorization');
@@ -18,138 +92,40 @@ export async function GET(req: Request) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    // Criamos um client do Supabase usando o token de sessão do admin para segurança (RLS)
+    // Client com o token do admin: a view `vendas` é security_invoker, então
+    // RLS e o mascaramento do líquido seguem valendo para quem exporta.
     const supabaseClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: checkouts, error } = await supabaseClient
-      .from('checkouts')
-      .select('*')
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false });
+    const { filtros, ordem } = filtrosDaQuery(new URL(req.url).searchParams);
+    const vendas = await buscarVendas(supabaseClient);
+    const selecionadas = ordenarVendas(filtrarVendas(vendas, filtros), ordem);
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    // O BOM do UTF-8 obriga o Excel a reconhecer os acentos, e ';' é o
+    // separador que o Excel pt-BR usa por padrão.
+    const csv = BOM + [
+      COLUNAS.map(escapeCSV).join(';'),
+      ...selecionadas.map(linha),
+    ].join('\n');
 
-    const headers = [
-      "Fatura", "Status", "Método de Pagamento", "Forma de Pagamento", "Nº Parcelas", "Moeda", "Contrato", 
-      "Parcelamento Sem Limites", "Data de Criação", "Data de Vencimento", "Data de Pagamento", "Data de Crédito", 
-      "Data de Solicitação de Reembolso", "Data de Reembolso", "Tipo de Reembolso", "SKU", "ID do Produto", 
-      "Produto", "Quantidade", "Cupom", "Valor do Cupom", "Valor Inicial da Venda", "Valor Total da Venda", 
-      "Valor Faturado Documento Fiscal", "Valor Inicial do Item", "Valor Total do Item", "Valor Reembolsado", 
-      "Valor de Frete", "Liquidação do Parcelamento", "Taxa Eduzz", "Taxa Alumy", "Outros", 
-      "Ganho Liquido", "Tipo Parceiro", "Parceiro", "Recebeu Doc Fiscal", "Cliente / Nome", "Cliente / E-mail", 
-      "Cliente / Fones", "Cliente / Tipo Documento", "Cliente / Documento", "Endereço", "Numero", "Complemento", 
-      "Bairro", "CEP", "Cidade", "IBGE", "UF", "UTM Source", "UTM Campaign", "UTM Medium", "UTM Content", 
-      "UTM Term", "URL Boleto", "Nome da Oferta"
-    ];
+    const partes = ['Vendas'];
+    if (filtros.produtos.length === 1) partes.push(sanitizar(filtros.produtos[0]));
+    else if (filtros.produtos.length > 1) partes.push(`${filtros.produtos.length}-produtos`);
+    if (filtros.from !== null) partes.push(dataISOBR(filtros.from));
+    if (filtros.to !== null) partes.push('a', dataISOBR(filtros.to));
+    const filename = `${partes.join('_')}.csv`;
 
-    const rows = (checkouts || []).map(c => {
-      const isCreditCard = c.payment_method === 'CREDIT_CARD';
-      const isPix = c.payment_method === 'PIX';
-      const methodLabel = isPix ? 'Pix' : (isCreditCard ? 'Cartão de Crédito' : c.payment_method);
-      const isInstallment = (c.installments && c.installments > 1) ? 'Parcelado' : 'À Vista';
-      
-      const amount = Number(c.amount || 0);
-      const netValue = Number(c.net_value || amount);
-      const fee = amount - netValue; // Diferença entre o Bruto e o Líquido é a Taxa do Gateway
-
-      // Datas formato PT-BR
-      // Fuso fixo: a rota roda na Vercel (UTC), então sem timeZone uma venda
-      // das 22h de Brasília sairia no CSV com a data do dia seguinte.
-      const dateToBR = (isoStr: string | null) => dataBR(isoStr);
-      
-      // Formata como 1234,56 (padrão excel pt-BR)
-      const amountToStr = (val: number) => val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-      let docType = '';
-      if (c.customer_cpf) {
-        // Conta apenas dígitos: CPF tem 11, CNPJ tem 14 (com ou sem máscara)
-        docType = c.customer_cpf.replace(/\D/g, '').length > 11 ? 'CNPJ' : 'CPF';
-      }
-
-      const statusMap: Record<string, string> = {
-        'PAID': 'Paga',
-        'PENDING': 'Aguardando Pagamento',
-        'PIX_PENDING': 'Aguardando Pix',
-        'PAYMENT_MISMATCH_REVIEW': 'Em Revisão'
-      };
-
-      return [
-        c.asaas_invoice_number || c.payment_id || c.id, // Fatura
-        statusMap[c.status] || c.status, // Status
-        methodLabel, // Método de Pagamento
-        isInstallment, // Forma de Pagamento
-        c.installments || 1, // Nº Parcelas
-        'BRL', // Moeda
-        '', // Contrato
-        'Não', // Parcelamento Sem Limites
-        dateToBR(c.created_at), // Data de Criação
-        dateToBR(c.payment_date || c.created_at), // Data de Vencimento
-        dateToBR(c.payment_date), // Data de Pagamento
-        dateToBR(c.credit_date), // Data de Crédito
-        '', // Data de Solicitação de Reembolso
-        '', // Data de Reembolso
-        '', // Tipo de Reembolso
-        c.product_key || '', // SKU
-        '', // ID do Produto
-        c.product_name || 'Produto Não Identificado', // Produto
-        '1', // Quantidade
-        '', // Cupom
-        '0,00', // Valor do Cupom
-        amountToStr(amount), // Valor Inicial da Venda
-        amountToStr(amount), // Valor Total da Venda
-        amountToStr(amount), // Valor Faturado Documento Fiscal
-        amountToStr(amount), // Valor Inicial do Item
-        amountToStr(amount), // Valor Total do Item
-        '0,00', // Valor Reembolsado
-        '0,00', // Valor de Frete
-        '', // Liquidação do Parcelamento
-        amountToStr(fee), // Taxa Eduzz (Taxa Asaas simulada)
-        '0,00', // Taxa Alumy
-        '0,00', // Outros
-        amountToStr(netValue), // Ganho Liquido
-        '', // Tipo Parceiro
-        '', // Parceiro
-        'Não', // Recebeu Doc Fiscal
-        c.customer_name || '', // Cliente / Nome
-        c.customer_email || '', // Cliente / E-mail
-        c.customer_phone || '', // Cliente / Fones
-        docType, // Cliente / Tipo Documento
-        c.customer_cpf || '', // Cliente / Documento
-        '', // Endereço
-        '', // Numero
-        '', // Complemento
-        '', // Bairro
-        '', // CEP
-        '', // Cidade
-        '', // IBGE
-        '', // UF
-        c.utm_source || '', // UTM Source
-        c.utm_campaign || '', // UTM Campaign
-        c.utm_medium || '', // UTM Medium
-        c.utm_content || '', // UTM Content
-        c.utm_term || '', // UTM Term
-        c.asaas_invoice_url || '', // URL Boleto
-        c.product_name || '' // Nome da Oferta
-      ].map(escapeCSV).join(';'); // Usando ponto e vírgula para abrir corretamente no Excel pt-br
-    });
-
-    // \uFEFF é o BOM do UTF-8, obriga o Excel a reconhecer acentos
-    const csvContent = "\uFEFF" + headers.map(escapeCSV).join(';') + "\n" + rows.join('\n');
-
-    return new NextResponse(csvContent, {
+    return new NextResponse(csv, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="Relatorio_Vendas_Tier_S_${new Date().getTime()}.csv"`,
+        'Content-Disposition': `attachment; filename="${filename}"`,
       },
     });
   } catch (error: unknown) {
-    console.error("Export CSV Error:", error);
+    console.error('Export CSV Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
