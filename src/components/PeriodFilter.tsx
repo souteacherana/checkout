@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { dataISOBR, fimDoDiaBR, inicioDoDiaBR } from "@/lib/datas";
 
 // Janela de tempo ativa. epoch ms; null = sem limite naquele extremo.
 export type DateRange = { from: number | null; to: number | null };
@@ -20,9 +21,8 @@ export function rangeFromDays(days: number): DateRange {
   return { from: Date.now() - days * DIA, to: null };
 }
 
-const toDateInput = (ms: number) => new Date(ms).toISOString().split("T")[0];
-const startOfDay = (v: string) => new Date(v + "T00:00:00").getTime();
-const endOfDay = (v: string) => new Date(v + "T23:59:59.999").getTime();
+// Datas sempre no fuso de Brasília, igual ao que a tabela exibe.
+const toDateInput = (ms: number) => dataISOBR(ms);
 
 /**
  * Filtro de período reutilizável: presets 7/30/90/Tudo + "Personalizado"
@@ -44,8 +44,8 @@ export function PeriodFilter({ defaultDays = 30, onChange }: {
   const aplicarCustom = (novoDe: string, novoAte: string) => {
     setDe(novoDe); setAte(novoAte);
     onChange({
-      from: novoDe ? startOfDay(novoDe) : null,
-      to: novoAte ? endOfDay(novoAte) : null,
+      from: novoDe ? inicioDoDiaBR(novoDe) : null,
+      to: novoAte ? fimDoDiaBR(novoAte) : null,
     });
   };
 
