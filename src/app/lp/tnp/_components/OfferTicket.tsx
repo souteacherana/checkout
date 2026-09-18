@@ -109,6 +109,14 @@ export default function OfferTicket() {
                 <CheckoutLink className="btn-ticket-cta" location="ticket">
                   COMPRAR MEU INGRESSO &rarr;
                 </CheckoutLink>
+
+                {/* Aviso de reta final. O texto vai em caixa normal porque
+                    quem põe em maiúsculas é o CSS — assim o leitor de tela
+                    não soletra letra por letra. */}
+                <div className="ticket-last-spots">
+                  <span className="pulse-dot" aria-hidden="true"></span>
+                  Últimas vagas
+                </div>
               </div>
 
               <div className="ticket-footer">

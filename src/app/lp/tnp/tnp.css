@@ -73,6 +73,18 @@
      botão em vez de continuar laranja embaixo de um botão verde. */
   --cta-glow-rgb: 31, 174, 43;
 
+  /* ALERTA — vermelho vibrante da campanha, separado do vinho da marca.
+     O vinho fica a 343° com 36% de saturação; este fica a 357° com ~79%.
+     São 14° de matiz, mas a saturação é o que faz ele ler como aviso e não
+     como "o vinho saiu errado". Só para urgência: contador, faixa do ticket,
+     CTA do hero e o aviso de últimas vagas.
+     --c-alert é para PREENCHIMENTO (branco em cima dá 4,83:1);
+     --c-alert-ink é para TEXTO sobre claro (6,2:1 no branco, 5,8:1 no creme).
+     Usar o de preenchimento como texto reprovaria no creme (4,52:1). */
+  --c-alert: #e01b24;
+  --c-alert-ink: #c1121f;
+  --c-alert-rgb: 224, 27, 36;
+
   /* Warm Light Backgrounds */
   --bg-deep: #ffffff;
   --bg-canvas: #faf7f3;
@@ -1758,4 +1770,98 @@ details.faq-item[open] .faq-icon-toggle {
 .lp-tnp {
   width: 100%;
   max-width: 100%;
+}
+
+
+/* ==========================================================================
+   URGÊNCIA DA CAMPANHA — vermelho de alerta
+   --------------------------------------------------------------------------
+   Bloco separado de propósito: é maquiagem de reta final, não identidade da
+   página. Quando a campanha acabar, apagar daqui até o fim do arquivo devolve
+   a landing ao visual de marca, sem caçar regra espalhada.
+   Tudo usa --c-alert / --c-alert-ink, nunca o vinho.
+   ========================================================================== */
+
+/* 1. Relógio da barra do topo. Era uma pastilha escura translúcida sobre o
+      vinho; vira o vermelho chapado, que é o que puxa o olho na primeira
+      dobra. O texto já é branco, herdado da .urgency-bar: 4,83:1. */
+.urgency-bar .urgency-clock {
+  background: var(--c-alert);
+  border-color: rgba(0, 0, 0, 0.18);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22) inset,
+              0 2px 10px -2px rgba(var(--c-alert-rgb), 0.6);
+}
+
+/* 2. CTA do hero. Só ele: a classe .btn-cta-primary é compartilhada com as
+      dobras de conteúdo e o fechamento, que seguem verdes por serem os
+      botões que levam ao checkout. Este aqui rola até a oferta, e em
+      vermelho funciona como chamada de atenção do topo.
+      O verde levava texto quase preto; sobre o vermelho isso daria 3,8:1,
+      então o texto vira branco (4,83:1). */
+#hero-main-cta {
+  /* O gradiente começa no próprio --c-alert e só escurece. Cheguei a abrir
+     num tom mais claro (#ef3a42), mas o branco em cima caía pra 3,92:1 e o
+     texto do botão tem 16px, então precisa de 4,5:1. Partindo do #e01b24 o
+     ponto mais claro já dá 4,83:1. */
+  background: linear-gradient(135deg, var(--c-alert) 0%, #c1121f 100%);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 10px 24px -8px rgba(var(--c-alert-rgb), 0.5),
+              inset 0 1.5px 1.5px rgba(255, 255, 255, 0.4);
+}
+
+#hero-main-cta:hover {
+  box-shadow: 0 16px 36px -6px rgba(var(--c-alert-rgb), 0.65),
+              inset 0 2px 2px rgba(255, 255, 255, 0.45);
+}
+
+/* 3. Faixa do ticket (LOTE 01 / TNP-001). Era vinho; em vermelho o ingresso
+      inteiro passa a ler como "acabando". O texto já é branco. */
+.ticket-divider {
+  background: var(--c-alert);
+}
+
+/* 4. Aviso abaixo do botão de compra. Texto pequeno sobre o fundo claro do
+      ticket, então usa a variante -ink: 6,0:1 ali. */
+.ticket-last-spots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-alert-ink);
+}
+
+/* A classe .pulse-dot não traz tamanho próprio — quem dimensiona é sempre a
+   regra do pai (ver .eyebrow-tag .pulse-dot). Sem isto o ponto nasce 0x0 e
+   não aparece. */
+.ticket-last-spots .pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--c-alert);
+  box-shadow: 0 0 0 0 rgba(var(--c-alert-rgb), 0.7);
+  animation: pulseGlow 1.8s infinite;
+}
+
+/* 5. Contador do fechamento. O número é 32px bold (texto grande, exigiria
+      só 3:1), mas usa a variante -ink mesmo assim, que dá 6,2:1 — não custa
+      nada e o rótulo de 10px ao lado precisa dela de qualquer forma. */
+.countdown-box {
+  border-color: rgba(var(--c-alert-rgb), 0.28);
+  box-shadow: 0 10px 24px -12px rgba(var(--c-alert-rgb), 0.35);
+}
+
+.countdown-box .cd-number {
+  color: var(--c-alert-ink);
+}
+
+.countdown-box .cd-label {
+  color: var(--c-alert-ink);
 }
