@@ -1,4 +1,5 @@
 import UrgencyClock from "./UrgencyClock";
+import UrgencyNote from "./UrgencyNote";
 import { ZOOM_SVG } from "../_lib/assets";
 
 export default function Hero() {
@@ -54,6 +55,7 @@ export default function Hero() {
               <a className="btn-cta-primary" id="hero-main-cta" href="#oferta">
                 Quero Participar do Workshop <span className="btn-arrow" aria-hidden="true">→</span>
               </a>
+              <UrgencyNote />
             </div>
 
             <div className="hero-meta-grid">
