@@ -1500,12 +1500,17 @@ details.faq-item[open] .faq-icon-toggle {
 }
 
 /* Countdown Grid */
+/* 2x2 no celular. Com flex-wrap os quatro blocos somavam ~368px contra 335
+   disponíveis, então "segundos" caía sozinho numa segunda linha, desalinhado
+   dos outros três. As colunas 1fr ainda deixam os quatro do mesmo tamanho —
+   com largura natural, as duas linhas ficavam desiguais, porque o rótulo mais
+   longo é bem maior que "dias". No desktop volta a ser uma linha só. */
 .countdown-grid {
-  display: flex;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  flex-wrap: wrap;
-  margin: 14px 0 18px;
+  max-width: 320px;
+  margin: 14px auto 18px;
 }
 
 .countdown-box {
@@ -1738,6 +1743,13 @@ details.faq-item[open] .faq-icon-toggle {
 
   .instructor-highlights-list {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Cabem os quatro lado a lado: volta pra uma linha. */
+  .countdown-grid {
+    display: flex;
+    justify-content: center;
+    max-width: none;
   }
 
   .countdown-box {
