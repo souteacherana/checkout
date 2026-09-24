@@ -63,9 +63,14 @@
   --lime-display: #976802;
   --accent: var(--lime);
   --accent-ink: var(--lime-ink);
-  --urgent: #d92d20;
+  --urgent: #26757D;
   --urgent-soft: #fff1f0;
   --urgent-ink: #a8160c;
+/* --------------------------------------------------------------------
+  --urgent: #d92d20;
+  --urgent-soft: #359997;
+  --urgent-ink: #359997;
+-------------------------------------------------------------------- */
   --radius: 14px;
   --radius-lg: 22px;
   --maxw: 1240px;
