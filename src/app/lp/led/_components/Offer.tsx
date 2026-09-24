@@ -105,11 +105,11 @@ export default function Offer() {
 
             <div className="sold-bar">
               <div className="sold-bar-head">
-                <span>Vagas quase esgotadas</span>
+                <span>Garanta sua vaga!</span>
                 <b>Encerra {DATA.barraZeroEsquerda}</b>
               </div>
               <div className="sold-bar-track">
-                <div className="sold-bar-fill" style={{ width: "90%" }} />
+                <div className="sold-bar-fill" style={{ width: "10%" }} />
               </div>
               <div className="sold-bar-note">
                 <b>ÚLTIMAS VAGAS</b>
