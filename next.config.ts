@@ -2,11 +2,14 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    // Fotos de depoimento, da instrutora e do ticket da landing do TNP moram
-    // no Vercel Blob (ver src/app/lp/tnp/_lib/assets.ts). O next/image recusa
-    // otimizar host que não esteja declarado aqui — sem esta liberação, TODA
-    // imagem da landing que passa pelo next/image volta 400, e sobra só o
-    // hero, que é background-image no CSS.
+    // Fotos de depoimento, da instrutora e do ticket das landings moram no
+    // Vercel Blob (ver o _lib/assets.ts de cada uma: /lp/tnp e /lp/led). O
+    // next/image recusa otimizar host que não esteja declarado aqui — sem esta
+    // liberação, TODA imagem da landing que passa pelo next/image volta 400, e
+    // sobra só o hero, que é servido da própria origem.
+    //
+    // O pathname "/**" cobre o store inteiro, então uma landing nova que use o
+    // mesmo Blob não precisa mexer aqui — só numa pasta própria lá dentro.
     remotePatterns: [
       {
         protocol: "https",

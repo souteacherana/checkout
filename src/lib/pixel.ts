@@ -1,9 +1,13 @@
 /**
- * Camada de tracking do Meta Pixel.
+ * Camada de tracking do Meta Pixel, compartilhada pelas landing pages.
  *
  * Cada evento é disparado duas vezes — no navegador (Pixel) e no servidor
  * (Conversions API) — compartilhando o mesmo `eventId`. É esse ID que permite
  * à Meta descartar a duplicata e contar a conversão uma única vez.
+ *
+ * Morava em src/app/lp/tnp/_lib/pixel.ts. Subiu pra cá quando o LED virou o
+ * segundo consumidor: o arquivo não tem nada de específico do TNP, e manter
+ * uma cópia por landing garantiria que uma corrigisse um bug e a outra não.
  */
 
 type PixelCustomData = Record<string, string | number | undefined>;

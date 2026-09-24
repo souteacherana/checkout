@@ -30,7 +30,7 @@ const MAIN_DOMAIN_PATHS: string[] = ['/'];
 // O código do PHT segue em src/app/lp/pht/, só não é mais roteado — foi a
 // referência usada pra trazer o TNP, que veio de um projeto Next separado
 // (WORKSHOPS/TNP 2026/LP) e teve o CSS escopado em .lp-tnp na migração.
-const LANDINGS: string[] = ['tnp'];
+const LANDINGS: string[] = ['tnp', 'led'];
 
 // Landing servida na RAIZ do domínio principal (riseeducacao.com.br/).
 // Use quando a landing da campanha vive DENTRO do projeto.
