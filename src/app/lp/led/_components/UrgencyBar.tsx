@@ -19,7 +19,7 @@ export default function UrgencyBar() {
       <div className="urgency-inner">
         <span className="urgency-flag">
           <span className="pulse" aria-hidden="true" />
-          <b>ÚLTIMOS DIAS</b>
+          <b></b>
         </span>
         <span className="urgency-text">AS INSCRIÇÕES ENCERRAM DIA {DATA.barra}</span>
         <span className="urgency-clock" id="urgency-clock" aria-label="Tempo restante">
