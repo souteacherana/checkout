@@ -18,8 +18,8 @@
 /** Página de checkout oficial. Usada por todos os botões de compra. */
 export const CHECKOUT_URL = "https://checkout.riseeducacao.com.br/led";
 
-/** Data e hora do evento: 23 de outubro de 2026, 15h (Horário de Brasília). */
-export const EVENT_DATE_ISO = "2026-10-23T15:00:00-03:00";
+/** Data e hora do evento: 24 de outubro de 2026, 15h (Horário de Brasília). */
+export const EVENT_DATE_ISO = "2026-10-24T15:00:00-03:00";
 
 /** ID do Meta Pixel (Rise Educação). */
 export const META_PIXEL_ID = "1084815880338708";
