@@ -11,12 +11,12 @@ export default function Hero() {
 
       <div className="wrap hero-inner">
         <div>
-/* --------------------------------------------------------------------
+{/*
           <span className="hero-tag is-urgent">
             <span className="dot" aria-hidden="true" />
             ÚLTIMOS DIAS · Encerra {DATA.extenso}
-          </span>
--------------------------------------------------------------------- */
+          </span> */}
+
           <h1 className="hero-h" id="headline">
             Aprenda a faturar{" "}
             <span className="accent">30k por mês sem ocupar sua agenda</span> de aulas com escola
