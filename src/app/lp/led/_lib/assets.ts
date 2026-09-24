@@ -19,7 +19,7 @@
  * dimensão aqui precisa acompanhar.
  */
 
-const BLOB = "https://dtfnsnlwyzhalvu7.public.blob.vercel-storage.com/LP%20-%20LED%202026";
+const BLOB = "https://dtfnsnlwyzhalvu7.public.blob.vercel-storage.com/LP%20-%20LED";
 
 export type Imagem = { src: string; width: number; height: number; alt: string };
 
