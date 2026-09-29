@@ -63,7 +63,7 @@ export default function LowTicketPage() {
         {/* Formulário de Checkout */}
         <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 p-6 sm:p-8">
           <Suspense fallback={<div className="text-center py-4 text-gray-500">Carregando formulário...</div>}>
-            <CheckoutForm price={workshopConfig.price} productName={workshopConfig.title} productKey={themeKey} />
+            <CheckoutForm price={workshopConfig.price} productName={workshopConfig.title} productKey={themeKey} productSlug="low" />
           </Suspense>
         </div>
 

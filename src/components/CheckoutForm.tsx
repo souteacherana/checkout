@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { CreditCard, QrCode, User, Mail, CreditCard as IdCard, Loader2, CheckCircle, XCircle, Timer } from "lucide-react";
 import axios from "axios";
@@ -64,6 +64,7 @@ export default function CheckoutForm({
   price,
   productName,
   productKey,
+  productSlug,
   // "AW-000000/RÓTULO" da conversão de Compra deste produto no Google Ads.
   // Quem não informa (as telas legadas / e /low, que não vêm do banco) cai na
   // conversão padrão da conta — elas também vendem, e sem isso a venda não
@@ -73,6 +74,7 @@ export default function CheckoutForm({
   price: number;
   productName: string;
   productKey: string;
+  productSlug?: string;
   conversaoGoogle?: string | null;
 }) {
   const searchParams = useSearchParams();
@@ -86,6 +88,14 @@ export default function CheckoutForm({
   const [isSuccess, setIsSuccess] = useState(false);
   const [isExpired, setIsExpired] = useState(false);
   const [timeLeft, setTimeLeft] = useState(900); // 15 minutos
+
+  // Redirecionamento pós-compra para /{produto}/obrigado
+  const redirectToThankYou = useCallback((pId?: string | null) => {
+    const slug = (productSlug || productKey).toLowerCase();
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : "");
+    if (pId) params.set("payment_id", pId);
+    window.location.href = `/${slug}/obrigado?${params.toString()}`;
+  }, [productSlug, productKey, searchParams]);
 
   // Rastreio do Facebook: Iniciar Checkout (Dispara assim que a tela abre)
   useEffect(() => {
@@ -131,6 +141,7 @@ export default function CheckoutForm({
             setIsSuccess(true);
             clearInterval(poller);
             clearInterval(timer);
+            redirectToThankYou(paymentId);
           }
         } catch {}
       }, 3000);
@@ -140,7 +151,7 @@ export default function CheckoutForm({
         clearInterval(poller);
       };
     }
-  }, [pixData, isSuccess, isExpired, paymentId]);
+  }, [pixData, isSuccess, isExpired, paymentId, redirectToThankYou]);
 
   const checkPaymentManual = async () => {
     if (!paymentId) return;
@@ -148,6 +159,7 @@ export default function CheckoutForm({
       const res = await axios.get(`/api/checkout/status?paymentId=${paymentId}`);
       if (res.data.status === 'PAID') {
         setIsSuccess(true);
+        redirectToThankYou(paymentId);
       } else {
         alert("Pagamento ainda não identificado. Aguarde alguns segundos e tente novamente.");
       }
@@ -340,6 +352,7 @@ export default function CheckoutForm({
             }
           } catch {}
           setIsSuccess(true);
+          redirectToThankYou(response.data.paymentId);
         }
       }
     } catch (err: unknown) {
@@ -358,10 +371,10 @@ export default function CheckoutForm({
           <CheckCircle size={40} strokeWidth={2.5} />
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Pagamento Aprovado!</h2>
-        <p className="text-gray-600 mb-6 font-medium">Sua compra foi confirmada com sucesso.</p>
-        <div className="bg-gray-50 rounded-xl p-4 text-sm text-left border border-gray-100 mb-6">
-          <p className="font-semibold mb-1">🎉 Acesso Liberado!</p>
-          <p>Enviamos as instruções de acesso para o seu e-mail. Verifique também a caixa de spam.</p>
+        <p className="text-gray-600 mb-4 font-medium">Redirecionando para a confirmação...</p>
+        <div className="flex items-center justify-center gap-2 text-sm text-[var(--theme-accent)]">
+          <Loader2 className="animate-spin" size={18} />
+          <span>Aguarde um instante</span>
         </div>
       </div>
     );
