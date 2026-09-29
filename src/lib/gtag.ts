@@ -19,11 +19,15 @@ declare global {
 }
 
 /**
- * Google tag da conta (GA4). O mesmo tag também é identificado como
- * "GT-K54PN64Q" no painel do Google — são dois formatos do mesmo ID, e o
- * gtag.js é carregado pela forma G-.
+ * IDs do Google configurados:
+ * - GA4: G-WVX3E9E4ME
+ * - Google Ads: GT-K54PN64Q (e conta AW-17580476040)
+ * - Google Tag Manager (GTM): GTM-MPNW6FZ9
  */
-export const GOOGLE_TAG_ID = process.env.NEXT_PUBLIC_GOOGLE_TAG_ID || "G-WVX3E9E4ME";
+export const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID || "G-WVX3E9E4ME";
+export const GOOGLE_TAG_ID = process.env.NEXT_PUBLIC_GOOGLE_TAG_ID || GA4_ID;
+export const GOOGLE_ADS_GT_ID = process.env.NEXT_PUBLIC_GOOGLE_ADS_GT_ID || "GT-K54PN64Q";
+export const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "GTM-MPNW6FZ9";
 
 /**
  * Conta do Google Ads e rótulo da conversão de Compra usados por padrão.
