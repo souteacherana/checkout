@@ -63,14 +63,29 @@
   --lime-display: #976802;
   --accent: var(--lime);
   --accent-ink: var(--lime-ink);
-  --urgent: #26757D;
+  /* --------------------------------------------------------------------
+     URGÊNCIA — vermelho, fora da família teal da marca
+
+     Os três tokens andam JUNTOS. Houve um período em que só --urgent virou
+     teal (#26757D) e os outros dois ficaram vermelhos: o resultado foi o
+     selo do fechamento com borda e ponto teal sobre fundo rosa com texto
+     vermelho. Trocar um só quebra todos os lugares onde eles se encontram.
+
+     --urgent      #d92d20  preenchimento: barra do topo, botões, barra de
+                            vagas. Branco em cima dá 4,83:1.
+                            ATENÇÃO: texto escuro NÃO serve aqui — o --ink
+                            sobre este vermelho dá 3,91:1 e reprova.
+     --urgent-soft #fff1f0  fundo do selo de urgência.
+     --urgent-ink  #a8160c  texto sobre claro (7,54:1 no branco) e hover dos
+                            botões (branco em cima dá 7,54:1).
+
+     O teal (#26757D) segue como cor de MARCA do LED — é o accent_color do
+     produto no painel e continua no fundo do hero, na barra do carrossel e
+     no gradiente das fotos. O vermelho é só urgência.
+     -------------------------------------------------------------------- */
+  --urgent: #d92d20;
   --urgent-soft: #fff1f0;
   --urgent-ink: #a8160c;
-/* --------------------------------------------------------------------
-  --urgent: #d92d20;
-  --urgent-soft: #359997;
-  --urgent-ink: #359997;
--------------------------------------------------------------------- */
   --radius: 14px;
   --radius-lg: 22px;
   --maxw: 1240px;
@@ -334,7 +349,9 @@ html:has(.lp-led) body {
 }
 .lp-led .nav-cta:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 30px -10px color-mix(in oklab, var(--lime) 60%, transparent);
+  /* O halo acompanha a base do botão: estava âmbar (--lime) embaixo de um
+     botão que agora é vermelho. */
+  box-shadow: 0 10px 30px -10px color-mix(in oklab, var(--urgent) 60%, transparent);
 }
 
 
@@ -422,7 +439,9 @@ html:has(.lp-led) body {
 .lp-led .led-cta {
   display: inline-flex; align-items: center; gap: 10px;
   padding: 18px 28px;
-  background: var(--violet); color: var(--ink);
+  /* Vermelho de urgência, não o âmbar: o CTA tem que ler como "falta pouco".
+     Texto branco porque o --ink de antes dá 3,91:1 sobre este vermelho. */
+  background: var(--urgent); color: #fff;
   border-radius: 999px;
   font-weight: 600; font-size: 15.5px; letter-spacing: .01em;
   transition: transform .18s ease, box-shadow .18s ease;
@@ -972,7 +991,9 @@ html:has(.lp-led) body {
 .lp-led .price-cta {
   display: block;
   padding: 18px 24px;
-  background: var(--ink);
+  /* Era preto; virou vermelho pra acompanhar os outros CTAs. O hover logo
+     abaixo escurece pro --urgent-ink, que dá 7,54:1 com branco. */
+  background: var(--urgent);
   color: var(--bg);
   border-radius: 999px;
   font-weight: 600;
