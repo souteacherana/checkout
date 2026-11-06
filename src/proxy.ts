@@ -32,6 +32,11 @@ const MAIN_DOMAIN_PATHS: string[] = ['/'];
 // (WORKSHOPS/TNP 2026/LP) e teve o CSS escopado em .lp-tnp na migração.
 const LANDINGS: string[] = ['tnp', 'led', 'black'];
 
+// Páginas internas de landing. Precisam estar listadas porque qualquer outro
+// /{slug}/... vai pro checkout, onde /{slug}/obrigado é a página de compra e
+// dispara conversão no Google Ads.
+const PAGINAS_DE_LANDING: string[] = ['black/grupo'];
+
 // Landing servida na RAIZ do domínio principal (riseeducacao.com.br/).
 // Use quando a landing da campanha vive DENTRO do projeto.
 const LANDING_RAIZ: string | null = null;
@@ -78,7 +83,7 @@ export function proxy(request: NextRequest) {
     // Landing do workshop: o visitante continua vendo riseeducacao.com.br/pht
     // (rewrite, não redirect) e o conteúdo vem de /lp/pht.
     const slug = slugDe(pathname);
-    if (LANDINGS.includes(slug)) {
+    if (LANDINGS.includes(slug) || PAGINAS_DE_LANDING.includes(slug)) {
       return NextResponse.rewrite(new URL(`/lp/${slug}${search}`, request.url));
     }
 

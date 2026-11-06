@@ -25,7 +25,8 @@ type Estado = "livre" | "enviando" | "ok" | "erro";
  * escuta pra disparar `generate_lead` e `Lead` no GA4.
  *
  * O Lead da Meta só sai depois de o servidor confirmar a gravação, com o mesmo
- * eventId que a rota usa na Conversions API, pra Meta contar uma vez só.
+ * eventId que a rota usa na Conversions API, pra Meta contar uma vez só. Depois
+ * disso, a pessoa segue pra página com o link do grupo.
  */
 export default function LeadForm() {
   const [estado, setEstado] = useState<Estado>("livre");
@@ -67,6 +68,12 @@ export default function LeadForm() {
 
       window.fbq?.("track", "Lead", { content_name: "Black da Teacher" }, { eventID: eventId });
       setEstado("ok");
+
+      // Só chega aqui com a inscrição gravada. O caminho é relativo porque a
+      // página vive em /black no ar e em /lp/black no ambiente local. A folga
+      // deixa o Pixel enviar o Lead antes de o navegador sair da página.
+      const destino = `${window.location.pathname.replace(/\/$/, "")}/grupo${window.location.search}`;
+      setTimeout(() => window.location.assign(destino), 300);
     } catch {
       setEstado("erro");
       setMensagem("Sem conexão. Confira sua internet e tente de novo.");
@@ -76,7 +83,7 @@ export default function LeadForm() {
   if (estado === "ok") {
     return (
       <p className="form-sucesso" role="status">
-        Inscrição confirmada! Fique de olho no seu e-mail.
+        Inscrição confirmada! Levando você para o grupo...
       </p>
     );
   }

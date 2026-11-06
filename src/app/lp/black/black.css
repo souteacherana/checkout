@@ -190,6 +190,35 @@ html:has(.lp-black) {
   text-align: center;
 }
 
+/* ============ PÁGINA DO GRUPO ============ */
+.lp-black .grupo {
+  min-height: 100vh;
+}
+
+.lp-black .grupo-titulo {
+  margin-bottom: 16px;
+  font-family: var(--font-cinzel), Georgia, serif;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.lp-black .grupo-botao {
+  display: block;
+  padding: 15px 30px;
+  border-radius: 11px;
+  background: var(--verde);
+  color: #fff;
+  font-size: 19px;
+  font-weight: 700;
+  text-align: center;
+  transition: background 0.2s ease;
+}
+
+.lp-black .grupo-botao:hover {
+  background: var(--verde-hover);
+}
+
 /* ============ CONTADOR ============ */
 .lp-black .contador {
   display: flex;
@@ -452,6 +481,14 @@ html:has(.lp-black) {
 
   .lp-black .form-lead button {
     padding-inline: 20px;
+  }
+
+  .lp-black .grupo {
+    min-height: 100vh;
+  }
+
+  .lp-black .grupo-titulo {
+    font-size: 30px;
   }
 
   .lp-black .contador {
