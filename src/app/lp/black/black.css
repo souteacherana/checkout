@@ -1,0 +1,561 @@
+/*
+ * Estilos da landing da Black — TUDO escopado em .lp-black, porque o mesmo
+ * layout raiz serve o checkout e o admin.
+ *
+ * Reconstruído à mão com os valores medidos na página do WordPress: o CSS do
+ * Elementor é preso a IDs gerados e não sobrevive fora de lá. Os tamanhos e
+ * alinhamentos vêm do desktop em 1440px e do celular em 375px.
+ *
+ * Dois desvios deliberados, por contraste (medido, WCAG 2.1):
+ *
+ * - Botão: branco sobre o verde original #17c43a dá 2,34:1. --verde dá 3,45:1,
+ *   e por isso o texto do botão tem 19px em negrito (texto grande: mínimo 3:1).
+ * - Vermelho: #e20000 dá 3,98:1 sobre o fundo, que só serve pra texto grande.
+ *   Abaixo disso, .realce usa --vermelho-claro (5,59:1).
+ */
+
+.lp-black {
+  --fundo: #080a12;
+  --vermelho: #e20000;
+  --vermelho-claro: #ff3b3b;
+  --verde: #12a02f;
+  --verde-hover: #0f8f28;
+  --largura: 1140px;
+
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+  background: var(--fundo);
+  color: #fff;
+  font-family: var(--font-montserrat), system-ui, sans-serif;
+}
+
+html:has(.lp-black) {
+  color-scheme: dark;
+}
+
+.lp-black h2 {
+  font-family: var(--font-cinzel), Georgia, serif;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.lp-black .realce {
+  color: var(--vermelho);
+}
+
+.lp-black img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ============ HERO ============ */
+.lp-black .hero {
+  min-height: 990px;
+  padding: 0 10px 42px;
+  background: #000 url("/lp/black/hero-desktop.webp") center / auto no-repeat;
+}
+
+.lp-black .hero-coluna {
+  width: min(100%, 1120px);
+  margin: 0 auto;
+  padding-top: 0;
+}
+
+.lp-black .hero-coluna > * {
+  width: min(100%, 550px);
+}
+
+.lp-black .hero-logo {
+  /* A arte tem folga transparente em cima. */
+  margin-top: -30px;
+  margin-bottom: 24px;
+}
+
+.lp-black .selo-data {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: 44px;
+  margin: 0 auto 24px;
+  padding: 8px 24px;
+  border: 1px solid #fff;
+  border-radius: 10px;
+  background: #000;
+  color: #fff;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 14.4px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.lp-black .selo-data svg {
+  flex-shrink: 0;
+  fill: var(--vermelho);
+}
+
+.lp-black .hero-coluna > .selo-data {
+  width: fit-content;
+  margin-inline: 50px;
+}
+
+.lp-black .hero-texto {
+  margin-bottom: 24px;
+  font-size: 23px;
+  line-height: 1.22;
+  text-align: justify;
+}
+
+.lp-black .hero-chamada {
+  margin-bottom: 24px;
+  font-size: 15px;
+  line-height: 1.22;
+}
+
+.lp-black .hero-chamada .realce {
+  color: var(--vermelho-claro);
+}
+
+/* ============ FORMULÁRIO ============ */
+.lp-black .form-lead {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lp-black .form-lead input {
+  width: 100%;
+  min-height: 40px;
+  padding: 5px 14px;
+  border: 0;
+  border-radius: 3px;
+  background: #fff;
+  color: #000;
+  font: inherit;
+  font-size: 16px;
+}
+
+.lp-black .form-lead input::placeholder {
+  color: #6b6b6b;
+}
+
+/* Fora da tela, e não display:none, que parte dos robôs sabe pular. */
+.lp-black .form-lead .form-isca {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  min-height: 0;
+  height: 1px;
+  padding: 0;
+  opacity: 0;
+}
+
+.lp-black .form-lead button {
+  padding: 15px 30px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--verde);
+  color: #fff;
+  font: inherit;
+  font-size: 19px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.lp-black .form-lead button:hover:not(:disabled) {
+  background: var(--verde-hover);
+}
+
+.lp-black .form-lead button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.lp-black .form-erro {
+  color: var(--vermelho-claro);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.lp-black .form-sucesso {
+  padding: 20px;
+  border: 1px solid #fff;
+  border-radius: 11px;
+  background: #000;
+  font-size: 19px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ============ CONTADOR ============ */
+.lp-black .contador {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  padding: 10px;
+  background: #000;
+}
+
+.lp-black .contador-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 90px;
+}
+
+.lp-black .contador-num {
+  font-size: 48px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.lp-black .contador-rotulo {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+/* ============ BLOCOS DE TEXTO ============ */
+.lp-black .bloco {
+  display: flex;
+  align-items: center;
+  min-height: 480px;
+  padding: 40px 10px;
+}
+
+.lp-black .bloco-textura {
+  background: url("/lp/black/textura.webp") left center / auto no-repeat;
+}
+
+.lp-black .bloco-textura-direita {
+  background-position: right center;
+}
+
+.lp-black .bloco-mentoria {
+  min-height: 380px;
+}
+
+.lp-black .bloco-inner {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 740px);
+  gap: 20px;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, 1120px);
+  margin: 0 auto;
+}
+
+.lp-black .bloco-texto {
+  font-family: var(--font-forum), Georgia, serif;
+  font-size: 27px;
+  line-height: 1.3;
+}
+
+.lp-black .bloco-texto p + p {
+  margin-top: 1em;
+}
+
+.lp-black .titulo-mentoria {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.lp-black .titulo-mentoria span:nth-child(1) {
+  font-size: 48px;
+}
+
+.lp-black .titulo-mentoria span:nth-child(2) {
+  margin-top: -12px;
+  font-size: 72px;
+}
+
+.lp-black .titulo-mentoria span:nth-child(3) {
+  margin-top: -28px;
+  font-size: 160px;
+}
+
+.lp-black .bloco-arte {
+  position: relative;
+}
+
+/* O título fica sobre a folga transparente no topo da arte. */
+.lp-black .titulo-workshops {
+  position: relative;
+  z-index: 1;
+  margin: 8px 0 -64px;
+  font-size: 56px;
+  text-align: center;
+}
+
+/* ============ IMERSÃO RISE ============ */
+.lp-black .imersao {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 950px;
+  padding: 40px 10px;
+  background: var(--arte) center / cover no-repeat;
+  text-align: center;
+}
+
+.lp-black .titulo-imersao {
+  display: flex;
+  flex-direction: column;
+}
+
+.lp-black .titulo-imersao span:nth-child(1) {
+  font-size: 70px;
+}
+
+.lp-black .titulo-imersao span:nth-child(2) {
+  margin-top: 4px;
+  font-size: 79px;
+}
+
+.lp-black .titulo-imersao span:nth-child(3) {
+  margin-top: -14px;
+  font-size: 167px;
+}
+
+.lp-black .imersao-texto {
+  margin-top: 20px;
+  font-family: var(--font-forum), Georgia, serif;
+  font-size: 40px;
+  line-height: 1.1;
+}
+
+/* No desktop, as fotos já fazem parte da arte de fundo. */
+.lp-black .imersao-fotos {
+  display: none;
+}
+
+/* ============ RESULTADOS ============ */
+.lp-black .resultados {
+  padding: 10px 10px 60px;
+  text-align: center;
+}
+
+.lp-black .resultados h2 {
+  margin-bottom: 20px;
+  font-size: 64px;
+}
+
+/* Colunas de CSS em vez do masonry por JS do Elementor. */
+.lp-black .resultados-galeria {
+  width: min(100%, 1040px);
+  margin: 0 auto;
+  columns: 4;
+  column-gap: 16px;
+}
+
+.lp-black .resultados-galeria img {
+  width: 100%;
+  margin-bottom: 16px;
+  break-inside: avoid;
+}
+
+/* ============ SOBRE ============ */
+.lp-black .sobre {
+  padding: 0 10px;
+  background: #000;
+}
+
+.lp-black .sobre-cartao {
+  width: min(100%, 1140px);
+  min-height: 835px;
+  margin: 0 auto;
+  padding: 120px 140px 80px;
+  background: var(--fundo-desktop) center / cover no-repeat;
+}
+
+.lp-black .sobre-texto {
+  width: min(100%, 376px);
+  font-family: var(--font-forum), Georgia, serif;
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.lp-black .sobre-texto h2 {
+  margin-bottom: 20px;
+  font-size: 51px;
+}
+
+.lp-black .sobre-abertura {
+  margin-bottom: 20px;
+  font-size: 32px;
+  line-height: 1.1;
+}
+
+/* ============ RODAPÉ ============ */
+.lp-black .rodape {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 10px 40px;
+  background: #000;
+}
+
+.lp-black .rodape img {
+  width: min(100%, 547px);
+}
+
+.lp-black .rodape .selo-data {
+  margin-bottom: 0;
+}
+
+/* ============ TABLET E CELULAR ============ */
+@media (max-width: 1100px) {
+  .lp-black .hero {
+    background-position: 62% center;
+  }
+
+  .lp-black .bloco-inner {
+    grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+  }
+
+  .lp-black .sobre-cartao {
+    padding-inline: 60px;
+  }
+}
+
+@media (max-width: 700px) {
+  .lp-black .hero {
+    min-height: 0;
+    padding: 140px 20px 64px;
+    background: #000 url("/lp/black/hero-mobile.webp") -15px 0 / contain no-repeat;
+  }
+
+  .lp-black .hero-logo {
+    margin-top: 0;
+    margin-bottom: -8px;
+  }
+
+  .lp-black .hero-coluna > .selo-data {
+    width: 100%;
+    margin-inline: 0;
+    font-size: 12.8px;
+  }
+
+  .lp-black .hero-texto {
+    font-size: 16px;
+    text-align: left;
+  }
+
+  .lp-black .hero-texto .realce {
+    color: var(--vermelho-claro);
+  }
+
+  .lp-black .form-lead button {
+    padding-inline: 20px;
+  }
+
+  .lp-black .contador {
+    gap: 12px;
+  }
+
+  .lp-black .contador-item {
+    min-width: 60px;
+  }
+
+  .lp-black .contador-num {
+    font-size: 28px;
+  }
+
+  .lp-black .contador-rotulo {
+    font-size: 10px;
+  }
+
+  .lp-black .bloco {
+    min-height: 0;
+    padding: 20px 10px;
+  }
+
+  .lp-black .bloco-inner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .lp-black .bloco-texto {
+    padding-inline: 36px;
+    font-size: 24px;
+  }
+
+  .lp-black .titulo-workshops {
+    font-size: 50px;
+  }
+
+  .lp-black .imersao {
+    min-height: 950px;
+  }
+
+  .lp-black .titulo-imersao span:nth-child(1) {
+    font-size: 50px;
+  }
+
+  .lp-black .titulo-imersao span:nth-child(2) {
+    font-size: 57px;
+  }
+
+  .lp-black .titulo-imersao span:nth-child(3) {
+    margin-top: -10px;
+    font-size: 121px;
+  }
+
+  .lp-black .imersao-texto {
+    font-size: 35px;
+  }
+
+  .lp-black .imersao-fotos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  .lp-black .imersao-fotos img {
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+  }
+
+  .lp-black .resultados h2 {
+    font-size: 50px;
+  }
+
+  .lp-black .resultados-galeria {
+    columns: 2;
+    column-gap: 10px;
+  }
+
+  .lp-black .resultados-galeria img {
+    margin-bottom: 10px;
+  }
+
+  .lp-black .sobre-cartao {
+    min-height: 0;
+    padding: 60px 40px 200px;
+    background-image: var(--fundo-mobile);
+  }
+
+  .lp-black .sobre-texto {
+    width: 100%;
+  }
+
+  .lp-black .sobre-texto h2 {
+    font-size: 30px;
+  }
+
+  .lp-black .rodape img {
+    width: 170px;
+  }
+
+  .lp-black .rodape .selo-data {
+    font-size: 11.2px;
+  }
+}

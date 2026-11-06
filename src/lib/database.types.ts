@@ -88,6 +88,25 @@ export type ProductRow = {
   zoom_datetime: string | null;
 };
 
+export type LeadRow = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  campanha: string;
+  nome: string;
+  email: string;
+  telefone: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+  utm_term: string | null;
+  fbclid: string | null;
+  gclid: string | null;
+  mailchimp_ok: boolean | null;
+  deleted_at: string | null;
+};
+
 // A PESSOA. Dados de contato + resumo financeiro bruto do Asaas.
 // (As colunas *_legado seguem no banco como backup pós-migração 012.)
 export type MentoradoRow = {
@@ -254,6 +273,7 @@ export interface Database {
       checkouts: TableDef<CheckoutRow>;
       eduzz_sales: TableDef<EduzzSaleRow>;
       products: TableDef<ProductRow>;
+      leads: TableDef<LeadRow>;
       user_roles: TableDef<UserRoleRow>;
       mentorados: TableDef<MentoradoRow>;
       mentorado_ciclos: TableDef<MentoradoCicloRow>;
