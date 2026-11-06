@@ -22,6 +22,7 @@ type Product = {
   slug: string;
   title: string;
   price: number;
+  tipo?: "venda" | "captacao";
   accent_color: string | null;
   image_src: string | null;
   landing_url: string | null;
@@ -49,7 +50,7 @@ export default function MeusLinksPage() {
       }
       const [profile, { data: prods }] = await Promise.all([
         getUserProfile(session.user?.email || ""),
-        supabase.from("products").select("slug, title, price, accent_color, image_src, landing_url").is("archived_at", null).order("title"),
+        supabase.from("products").select("slug, title, price, accent_color, image_src, landing_url, tipo").is("archived_at", null).order("title"),
       ]);
       setUtmCode(profile.utm_code);
       setRole(profile.role);
@@ -155,7 +156,7 @@ export default function MeusLinksPage() {
                   <div className="min-w-0">
                     <p className="font-bold text-gray-900 text-sm leading-tight truncate">{p.title}</p>
                     <p className="text-xs font-semibold" style={{ color: accent }}>
-                      {brl(Number(p.price || 0))}
+                      {p.tipo === "captacao" ? "Captação" : brl(Number(p.price || 0))}
                       <span className="ml-1.5 text-[9px] font-bold uppercase tracking-wider text-gray-400">{p.landing_url ? "landing" : "checkout"}</span>
                     </p>
                   </div>

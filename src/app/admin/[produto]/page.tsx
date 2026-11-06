@@ -15,12 +15,14 @@ import { vendaToUI, type VendaUI } from "@/lib/vendas";
 import { getUserRole } from "../actions";
 import { PeriodFilter, rangeFromDays, type DateRange } from "@/components/PeriodFilter";
 import { dataBR, horaBR } from "@/lib/datas";
+import PainelLeads from "./PainelLeads";
 
 type Product = {
   slug: string;
   title: string;
   price: number;
   accent_color: string | null;
+  tipo?: "venda" | "captacao";
 };
 
 const brl = (v: number) =>
@@ -86,7 +88,7 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
       const slug = produto.toLowerCase();
       const { data: prod } = await supabase
         .from("products")
-        .select("slug, title, price, accent_color")
+        .select("*")
         .eq("slug", slug)
         .single();
 
@@ -96,6 +98,12 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
         return;
       }
       setProduct(prod);
+
+      // Captação não tem venda pra buscar: quem carrega os dados é o PainelLeads.
+      if (prod.tipo === "captacao") {
+        setLoading(false);
+        return;
+      }
 
       // A view `vendas` já resolve o produto (product_key, nome legado
       // e prefixo de título na Eduzz) e traduz status — uma query só.
@@ -269,6 +277,8 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
   );
 
   const accent = product?.accent_color || "#10b981";
+  if (product?.tipo === "captacao") return <PainelLeads slug={product.slug} titulo={product.title} />;
+
   const isFinanceVisible = ["ANA", "ADMIN", "SUPERADMIN"].includes(role);
 
   return (

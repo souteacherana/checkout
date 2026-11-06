@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     // Nunca confiamos em preço ou nome de produto vindos do navegador.
     const { data: productDB } = await supabaseAdmin
       .from('products')
-      .select('price, title, fb_pixel_id, fb_capi_token, archived_at')
+      .select('*')
       .eq('slug', paymentData.productKey.toLowerCase())
       .single();
 
@@ -35,6 +35,11 @@ export async function POST(request: Request) {
     }
     if (productDB?.archived_at) {
       return NextResponse.json({ error: 'Produto não está mais disponível' }, { status: 410 });
+    }
+
+    // Produto de captação não tem o que cobrar: o preço dele é zero de propósito.
+    if (productDB?.tipo === 'captacao') {
+      return NextResponse.json({ error: 'Este produto não aceita pagamento' }, { status: 400 });
     }
 
     // 1. Criar Cliente no Asaas

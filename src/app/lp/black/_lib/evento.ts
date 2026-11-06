@@ -17,7 +17,7 @@ export const CAMPANHA = "black";
 /** 11 de novembro de 2026, 20h (Horário de Brasília). */
 export const EVENT_DATE_ISO = "2026-11-11T20:00:00-03:00";
 
-/** Grupo de WhatsApp pra onde vai quem se inscreve. */
+/** Reserva do link do grupo, usada se o produto no painel não responder. */
 export const GRUPO_URL = "https://chat.whatsapp.com/HmIyM4XX8BUHsgk5RVxpFt?s=hd&p=i&mlu=4&ilr=4&iam=2";
 
 /** Onde a transmissão acontece. Aparece no selo de data. */

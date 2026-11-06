@@ -86,6 +86,10 @@ export type ProductRow = {
   tem_aula_ao_vivo: boolean;
   zoom_link: string | null;
   zoom_datetime: string | null;
+  /** 'captacao' só coleta lead: painel de leads e nenhuma cobrança. */
+  tipo: 'venda' | 'captacao';
+  /** Grupo de WhatsApp pra onde vai quem se inscreve (captação). */
+  grupo_url: string | null;
 };
 
 export type LeadRow = {

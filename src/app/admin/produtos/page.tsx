@@ -31,6 +31,8 @@ type Product = {
   tem_aula_ao_vivo: boolean;
   zoom_link: string | null;
   zoom_datetime: string | null;
+  tipo: "venda" | "captacao";
+  grupo_url: string | null;
 };
 
 const emptyProduct: Product = {
@@ -38,7 +40,8 @@ const emptyProduct: Product = {
   image_src: "", fb_pixel_id: "", fb_capi_token: "", landing_url: "", archived_at: null,
   google_ads_conversion_id: "", google_ads_conversion_label: "",
   // Workshop é o caso comum; desmarcar é a exceção.
-  destino_padrao: false, tem_aula_ao_vivo: true, zoom_link: "", zoom_datetime: ""
+  destino_padrao: false, tem_aula_ao_vivo: true, zoom_link: "", zoom_datetime: "",
+  tipo: "venda", grupo_url: ""
 };
 
 // A aula é sempre anunciada em horário de Brasília, mas <input type="datetime-local">
@@ -131,6 +134,7 @@ export default function ProdutosPage() {
     setEditing({
       ...p,
       tem_aula_ao_vivo: p.tem_aula_ao_vivo ?? true,
+      tipo: p.tipo ?? "venda",
       zoom_datetime: isoParaCampoBrasilia(p.zoom_datetime),
     });
 
@@ -143,26 +147,32 @@ export default function ProdutosPage() {
     let landing = (editing.landing_url || "").trim();
     if (landing && !/^https?:\/\//i.test(landing)) landing = `https://${landing}`;
 
+    // Captação não cobra nem tem aula: nada de venda fica parado no banco.
+    const captacao = editing.tipo === "captacao";
+    const temAula = !captacao && editing.tem_aula_ao_vivo;
+
     const payload = {
+      tipo: editing.tipo,
+      grupo_url: captacao ? editing.grupo_url?.trim() || null : null,
       slug: editing.slug.toLowerCase(),
       title: editing.title,
-      price: Number(editing.price),
+      price: captacao ? 0 : Number(editing.price),
       accent_color: editing.accent_color,
       accent_color_hover: editing.accent_color_hover,
       image_src: editing.image_src,
-      fb_pixel_id: editing.fb_pixel_id || null,
-      fb_capi_token: editing.fb_capi_token || null,
-      google_ads_conversion_id: editing.google_ads_conversion_id?.trim() || null,
-      google_ads_conversion_label: editing.google_ads_conversion_label?.trim() || null,
+      fb_pixel_id: captacao ? null : editing.fb_pixel_id || null,
+      fb_capi_token: captacao ? null : editing.fb_capi_token || null,
+      google_ads_conversion_id: captacao ? null : editing.google_ads_conversion_id?.trim() || null,
+      google_ads_conversion_label: captacao ? null : editing.google_ads_conversion_label?.trim() || null,
       landing_url: landing || null,
-      tem_aula_ao_vivo: editing.tem_aula_ao_vivo,
+      tem_aula_ao_vivo: temAula,
       // Desmarcar "aula ao vivo" limpa os campos do Zoom em vez de deixá-los
       // parados no banco: quem decide mandar o e-mail da sala é o webhook do
       // Asaas, olhando o zoom_link. Um link esquecido aqui viraria e-mail de
       // sala numa compra que não tem aula.
-      zoom_link: editing.tem_aula_ao_vivo ? editing.zoom_link : null,
+      zoom_link: temAula ? editing.zoom_link : null,
       // O state guarda o horário de Brasília digitado; converte pra UTC ao salvar.
-      zoom_datetime: editing.tem_aula_ao_vivo ? campoBrasiliaParaIso(editing.zoom_datetime) : null,
+      zoom_datetime: temAula ? campoBrasiliaParaIso(editing.zoom_datetime) : null,
     };
 
     const { error } = editing.id
@@ -246,9 +256,13 @@ export default function ProdutosPage() {
     fetchAll();
   };
 
-  const copyLink = (slug: string) => {
-    navigator.clipboard.writeText(`${CHECKOUT_BASE_URL}/${slug}`);
-    setCopied(slug);
+  // Captação não tem checkout: o endereço público dela é a landing.
+  const linkPublico = (p: Product) =>
+    p.tipo === "captacao" && p.landing_url ? p.landing_url : `${CHECKOUT_BASE_URL}/${p.slug}`;
+
+  const copyLink = (p: Product) => {
+    navigator.clipboard.writeText(linkPublico(p));
+    setCopied(p.slug);
     setTimeout(() => setCopied(null), 1500);
   };
 
@@ -304,6 +318,23 @@ export default function ProdutosPage() {
           <div className="bg-white p-6 rounded-xl border border-gray-200 mb-8 shadow-sm">
             <h2 className="text-lg font-bold mb-4 text-gray-900">{editing.id ? `Editar ${editing.title}` : "Criar Novo Produto"}</h2>
             <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <fieldset className="md:col-span-2">
+                <legend className="block text-sm font-semibold text-gray-700 mb-2">Tipo do produto</legend>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {([
+                    { valor: "venda", titulo: "Venda", texto: "Tem checkout e cobrança. O painel mostra as vendas." },
+                    { valor: "captacao", titulo: "Captação", texto: "Só coleta inscrições. O painel mostra os leads." },
+                  ] as const).map(({ valor, titulo, texto }) => (
+                    <label key={valor} className={`flex gap-3 rounded-xl border p-4 cursor-pointer ${editing.tipo === valor ? "border-emerald-600 bg-emerald-50" : "border-gray-200 bg-gray-50"}`}>
+                      <input type="radio" name="tipo" checked={editing.tipo === valor} onChange={() => setEditing({ ...editing, tipo: valor })} className="mt-1 accent-emerald-600" />
+                      <span className="text-sm">
+                        <span className="block font-semibold text-gray-800">{titulo}</span>
+                        <span className="block text-gray-500 mt-0.5">{texto}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Título do Produto</label>
                 <input required type="text" value={editing.title} onChange={e => setEditing({ ...editing, title: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="Ex: Teacher ADS" />
@@ -312,10 +343,10 @@ export default function ProdutosPage() {
                 <label className="block text-sm font-semibold text-gray-700 mb-1">URL (Slug)</label>
                 <input required type="text" value={editing.slug} onChange={e => setEditing({ ...editing, slug: e.target.value.toLowerCase().replace(/\s+/g, "-") })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="Ex: tft" />
               </div>
-              <div>
+              {editing.tipo !== "captacao" && <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Preço (R$)</label>
                 <input required type="number" step="0.01" value={editing.price} onChange={e => setEditing({ ...editing, price: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="49.90" />
-              </div>
+              </div>}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">URL do Banner Principal</label>
                 <input type="text" value={editing.image_src || ""} onChange={e => setEditing({ ...editing, image_src: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="https://..." />
@@ -334,6 +365,7 @@ export default function ProdutosPage() {
                   <input type="text" value={editing.accent_color_hover || ""} onChange={e => setEditing({ ...editing, accent_color_hover: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 uppercase focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="#059669" />
                 </div>
               </div>
+              {editing.tipo !== "captacao" && <>
               {/* Workshop com aula ao vivo? É isto que liga a obrigatoriedade do
                   Zoom — e o e-mail automático com a sala depois do pagamento.
                   Produto que não é aula ao vivo não precisa mais de link
@@ -376,10 +408,17 @@ export default function ProdutosPage() {
                   </div>
                 </>
               )}
+              </>}
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-1">URL da Landing Page <span className="font-normal text-gray-400">(opcional — os links da equipe apontam pra ela; sem ela, vão direto pro checkout)</span></label>
-                <input type="text" value={editing.landing_url || ""} onChange={e => setEditing({ ...editing, landing_url: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="https://riseeducacao.com.br/tft" />
+                <label className="block text-sm font-semibold text-gray-700 mb-1">URL da Landing Page <span className="font-normal text-gray-400">{editing.tipo === "captacao" ? "(obrigatória — é o endereço público da captação)" : "(opcional — os links da equipe apontam pra ela; sem ela, vão direto pro checkout)"}</span></label>
+                <input required={editing.tipo === "captacao"} type="text" value={editing.landing_url || ""} onChange={e => setEditing({ ...editing, landing_url: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="https://riseeducacao.com.br/tft" />
               </div>
+              {editing.tipo === "captacao" ? (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Link do Grupo de WhatsApp <span className="font-normal text-gray-400">(pra onde vai quem se inscreve)</span></label>
+                  <input required type="url" value={editing.grupo_url || ""} onChange={e => setEditing({ ...editing, grupo_url: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="https://chat.whatsapp.com/..." />
+                </div>
+              ) : <>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Facebook Pixel ID <span className="font-normal text-gray-400">(opcional)</span></label>
                 <input type="text" value={editing.fb_pixel_id || ""} onChange={e => setEditing({ ...editing, fb_pixel_id: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="1084815..." />
@@ -400,6 +439,7 @@ export default function ProdutosPage() {
                 Os dois campos do Google Ads andam juntos: o rótulo pertence a uma conta específica.
                 Preenchendo só um deles, o produto usa a conversão de Compra padrão da conta.
               </p>
+              </>}
 
               <div className="md:col-span-2 flex items-center gap-3 pt-2">
                 <button type="submit" disabled={saving} className="px-5 py-2 bg-emerald-600 text-white rounded-lg font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors">
@@ -456,10 +496,10 @@ export default function ProdutosPage() {
                     <h3 className="font-bold text-gray-900 leading-tight">{p.title}</h3>
                     <span className="text-xs font-mono bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded flex-shrink-0">/{p.slug}</span>
                   </div>
-                  <p className="text-sm font-semibold mb-4" style={{ color: p.accent_color || "#10b981" }}>{brl(Number(p.price || 0))}</p>
+                  <p className="text-sm font-semibold mb-4" style={{ color: p.accent_color || "#10b981" }}>{p.tipo === "captacao" ? "Captação de leads" : brl(Number(p.price || 0))}</p>
 
                   {/* Stats */}
-                  <div className="grid grid-cols-2 gap-3 mb-5">
+                  {p.tipo !== "captacao" && <div className="grid grid-cols-2 gap-3 mb-5">
                     <div className="bg-gray-50 rounded-lg p-3">
                       <div className="flex items-center gap-1.5 text-emerald-600 mb-1"><CheckCircle size={13} /><span className="text-[10px] font-bold text-gray-400 uppercase">Vendas</span></div>
                       <p className="text-lg font-bold text-gray-900">{s.paid}</p>
@@ -468,7 +508,7 @@ export default function ProdutosPage() {
                       <div className="flex items-center gap-1.5 text-blue-600 mb-1"><TrendingUp size={13} /><span className="text-[10px] font-bold text-gray-400 uppercase">Receita</span></div>
                       <p className="text-lg font-bold text-gray-900">{brl(s.revenue)}</p>
                     </div>
-                  </div>
+                  </div>}
 
                   {/* Ações */}
                   <div className="mt-auto flex items-center gap-2">
@@ -499,10 +539,10 @@ export default function ProdutosPage() {
                     )}
                     {!archived && (
                       <>
-                        <button onClick={() => copyLink(p.slug)} title="Copiar link do checkout" className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors relative">
+                        <button onClick={() => copyLink(p)} title={p.tipo === "captacao" ? "Copiar link da landing" : "Copiar link do checkout"} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors relative">
                           {copied === p.slug ? <CheckCircle size={16} className="text-emerald-500" /> : <LinkIcon size={16} />}
                         </button>
-                        <a href={`${CHECKOUT_BASE_URL}/${p.slug}`} target="_blank" rel="noopener noreferrer" title="Abrir checkout" className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                        <a href={linkPublico(p)} target="_blank" rel="noopener noreferrer" title={p.tipo === "captacao" ? "Abrir landing" : "Abrir checkout"} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                           <ExternalLink size={16} />
                         </a>
                       </>

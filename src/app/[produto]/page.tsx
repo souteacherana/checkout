@@ -47,6 +47,14 @@ export default async function ProdutoCheckout({ params, searchParams }: PageProp
     notFound();
   }
 
+  // Produto de captação não tem checkout: quem cai aqui segue pra landing.
+  if (workshopConfig.tipo === 'captacao') {
+    if (workshopConfig.landing_url) {
+      redirect(comQueryDaVisita(workshopConfig.landing_url, await searchParams));
+    }
+    notFound();
+  }
+
   // Google Ads do produto (cai na conversão padrão da conta quando o produto
   // não tem a própria cadastrada no painel).
   const contaAdsProduto = normalizarContaAds(workshopConfig.google_ads_conversion_id);
