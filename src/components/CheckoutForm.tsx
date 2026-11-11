@@ -70,12 +70,15 @@ export default function CheckoutForm({
   // conversão padrão da conta — elas também vendem, e sem isso a venda não
   // chegaria no Ads.
   conversaoGoogle = conversaoDeCompra(),
+  // Teto de parcelas no cartão (ver lib/parcelamento). Com 1, não há escolha.
+  maxParcelas = 9,
 }: {
   price: number;
   productName: string;
   productKey: string;
   productSlug?: string;
   conversaoGoogle?: string | null;
+  maxParcelas?: number;
 }) {
   const searchParams = useSearchParams();
   const [method, setMethod] = useState<PaymentMethod>("CREDIT_CARD");
@@ -574,7 +577,7 @@ export default function CheckoutForm({
               É o endereço da fatura do cartão. Ajuda o banco a aprovar a compra.
             </p>
 
-            <div>
+            {maxParcelas > 1 && <div>
               <label className="label-text">Opções de Parcelamento</label>
               <select
                 className="input-field appearance-none bg-no-repeat bg-right pr-10"
@@ -582,7 +585,7 @@ export default function CheckoutForm({
                 value={installments}
                 onChange={e => setInstallments(Number(e.target.value))}
               >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => {
+                {Array.from({ length: maxParcelas }, (_, i) => i + 1).map(num => {
                   // Mesma conta que o servidor faz ao criar a cobrança
                   // (lib/products): o total exibido é o total cobrado — e é
                   // ele que vai como `value` da conversão do Google.
@@ -596,7 +599,7 @@ export default function CheckoutForm({
                   );
                 })}
               </select>
-            </div>
+            </div>}
           </div>
         )}
 

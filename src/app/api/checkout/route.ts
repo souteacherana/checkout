@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/nextjs';
 import { asaasService } from '@/lib/asaas';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getProductPrice, calculateTotalValue, THEMES } from '@/lib/products';
+import { maxParcelas } from '@/lib/parcelamento';
 import { sendCapiEvent } from '@/lib/capi';
 
 export async function POST(request: Request) {
@@ -41,6 +42,13 @@ export async function POST(request: Request) {
     if (productDB?.tipo === 'captacao') {
       return NextResponse.json({ error: 'Este produto não aceita pagamento' }, { status: 400 });
     }
+
+    // O teto vale aqui, e não só na tela: quem manda a requisição na mão não
+    // passa pelo formulário.
+    paymentData.installments = Math.min(
+      Math.max(1, Number(paymentData.installments) || 1),
+      maxParcelas(paymentData.productKey)
+    );
 
     // 1. Criar Cliente no Asaas
     const customer = await asaasService.createCustomer({
