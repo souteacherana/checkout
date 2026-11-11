@@ -46,7 +46,7 @@ export default function Aplicacao() {
             <strong>Condição exclusiva de Black November</strong>
           </p>
           <ul>
-            <li>5 primeiros terão consultoria individual comigo</li>
+            <li>3 primeiros terão consultoria individual comigo</li>
             <li>
               Compradores na primeira hora vão ganhar uma análise de perfil, aula de edição de vídeo por
               IA para reduzir o seu tempo de produção e aula de tráfego no Meta.
