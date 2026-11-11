@@ -35,7 +35,7 @@ const LANDINGS: string[] = ['tnp', 'led', 'black'];
 // Páginas internas de landing. Precisam estar listadas porque qualquer outro
 // /{slug}/... vai pro checkout, onde /{slug}/obrigado é a página de compra e
 // dispara conversão no Google Ads.
-const PAGINAS_DE_LANDING: string[] = ['black/grupo'];
+const PAGINAS_DE_LANDING: string[] = ['black/grupo', 'black/sinal'];
 
 // Landing servida na RAIZ do domínio principal (riseeducacao.com.br/).
 // Use quando a landing da campanha vive DENTRO do projeto.

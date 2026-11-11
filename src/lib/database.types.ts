@@ -111,6 +111,26 @@ export type LeadRow = {
   deleted_at: string | null;
 };
 
+export type AplicacaoRow = {
+  id: string;
+  created_at: string;
+  campanha: string;
+  email: string;
+  nome: string;
+  whatsapp: string;
+  instagram: string | null;
+  /** Chave da pergunta (ver src/app/lp/black/_lib/aplicacao.ts) -> resposta. */
+  respostas: Record<string, string>;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+  utm_term: string | null;
+  fbclid: string | null;
+  gclid: string | null;
+  deleted_at: string | null;
+};
+
 // A PESSOA. Dados de contato + resumo financeiro bruto do Asaas.
 // (As colunas *_legado seguem no banco como backup pós-migração 012.)
 export type MentoradoRow = {
@@ -278,6 +298,7 @@ export interface Database {
       eduzz_sales: TableDef<EduzzSaleRow>;
       products: TableDef<ProductRow>;
       leads: TableDef<LeadRow>;
+      aplicacoes: TableDef<AplicacaoRow>;
       user_roles: TableDef<UserRoleRow>;
       mentorados: TableDef<MentoradoRow>;
       mentorado_ciclos: TableDef<MentoradoCicloRow>;

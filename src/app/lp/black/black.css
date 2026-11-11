@@ -219,6 +219,180 @@ html:has(.lp-black) {
   background: var(--verde-hover);
 }
 
+/* ============ APLICAÇÃO (SINAL) ============ */
+/*
+ * Tema claro, só nesta página. Da Black ficam o vermelho e o quadriculado,
+ * bem apagado. Contraste medido: tinta 15,6:1 no fundo, vermelho como texto
+ * 5,6:1, branco sobre o botão 5,9:1, borda dos campos 3,4:1.
+ */
+html:has(.aplicacao-pagina) {
+  color-scheme: light;
+}
+
+.lp-black:has(.aplicacao-pagina) {
+  background: #fbf8f8;
+}
+
+.lp-black .aplicacao-pagina {
+  --tinta: #1f1f1f;
+  --tinta-suave: #5c5c5c;
+  --vermelho-forte: #c81010;
+  --borda: #8a8a8a;
+
+  min-height: 100vh;
+  padding: 48px 16px 64px;
+  background-color: #fbf8f8;
+  background-image:
+    linear-gradient(rgba(200, 16, 16, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200, 16, 16, 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+  color: var(--tinta);
+}
+
+.lp-black .aplicacao-coluna {
+  width: min(100%, 640px);
+  margin: 0 auto;
+}
+
+.lp-black .aplicacao-selo {
+  display: inline-block;
+  margin-bottom: 12px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--vermelho-forte);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.lp-black .aplicacao-titulo {
+  margin-bottom: 20px;
+  font-family: var(--font-montserrat), system-ui, sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.lp-black .aplicacao-intro {
+  margin-bottom: 28px;
+  padding: 20px;
+  border-left: 4px solid var(--vermelho-forte);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.lp-black .aplicacao-intro p + p,
+.lp-black .aplicacao-intro ul {
+  margin-top: 10px;
+}
+
+.lp-black .aplicacao-intro ul {
+  padding-left: 20px;
+  list-style: disc;
+}
+
+.lp-black .aplicacao {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lp-black .aplicacao-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 18px;
+  border: 1px solid #e6dede;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.lp-black .aplicacao-campo legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.lp-black .aplicacao-campo input[type="email"],
+.lp-black .aplicacao-campo input[type="text"],
+.lp-black .aplicacao-campo input[type="tel"],
+.lp-black .aplicacao-campo textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--tinta);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.lp-black .aplicacao-campo input:focus,
+.lp-black .aplicacao-campo textarea:focus {
+  outline: 2px solid var(--vermelho-forte);
+  outline-offset: 1px;
+}
+
+.lp-black .aplicacao-opcao {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 4px 0;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.lp-black .aplicacao-opcao input {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--vermelho-forte);
+}
+
+.lp-black .aplicacao .form-isca {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.lp-black .aplicacao button {
+  padding: 16px 30px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--vermelho-forte);
+  color: #fff;
+  font: inherit;
+  font-size: 19px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.lp-black .aplicacao button:hover:not(:disabled) {
+  background: #a30d0d;
+}
+
+.lp-black .aplicacao button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.lp-black .aplicacao-pagina .form-erro {
+  color: var(--vermelho-forte);
+}
+
 /* ============ CONTADOR ============ */
 .lp-black .contador {
   display: flex;
