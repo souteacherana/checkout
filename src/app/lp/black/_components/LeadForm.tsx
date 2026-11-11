@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { newEventId } from "@/lib/pixel";
 import { CAMPANHA } from "../_lib/evento";
 
@@ -31,10 +31,15 @@ type Estado = "livre" | "enviando" | "ok" | "erro";
 export default function LeadForm() {
   const [estado, setEstado] = useState<Estado>("livre");
   const [mensagem, setMensagem] = useState("");
+  // Trava síncrona. O estado "enviando" só vale depois da próxima renderização,
+  // e um duplo clique rápido passava antes disso: cada clique virava um envio e
+  // um Lead com ID próprio, que a Meta contava separado.
+  const enviando = useRef(false);
 
   async function enviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
-    if (estado === "enviando") return;
+    if (enviando.current) return;
+    enviando.current = true;
 
     setEstado("enviando");
     setMensagem("");
@@ -63,10 +68,16 @@ export default function LeadForm() {
         const corpo = await resposta.json().catch(() => null);
         setEstado("erro");
         setMensagem(corpo?.erro ?? "Não conseguimos salvar sua inscrição. Tente de novo.");
+        enviando.current = false;
         return;
       }
 
-      window.fbq?.("track", "Lead", { content_name: "Black da Teacher" }, { eventID: eventId });
+      // Reinscrição do mesmo e-mail não conta como lead novo, nem aqui nem na
+      // Conversions API (a rota decide e avisa em `novo`).
+      const corpo = await resposta.json().catch(() => null);
+      if (corpo?.novo !== false) {
+        window.fbq?.("track", "Lead", { content_name: "Black da Teacher" }, { eventID: eventId });
+      }
       setEstado("ok");
 
       // Só chega aqui com a inscrição gravada. O caminho é relativo porque a
@@ -77,6 +88,7 @@ export default function LeadForm() {
     } catch {
       setEstado("erro");
       setMensagem("Sem conexão. Confira sua internet e tente de novo.");
+      enviando.current = false;
     }
   }
 

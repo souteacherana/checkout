@@ -79,6 +79,17 @@ export async function POST(request: NextRequest) {
       })
     );
 
+    // Quem já se inscreveu e preenche de novo não é um lead novo: atualiza o
+    // cadastro, mas não manda outro Lead pra Meta. Cada reenvio contava como
+    // um lead a mais na campanha (3 de 41 nos primeiros dias da Black).
+    const { data: existente } = await supabaseAdmin
+      .from('leads')
+      .select('id')
+      .eq('campanha', campanha)
+      .eq('email', email)
+      .maybeSingle();
+    const novo = !existente;
+
     const { data, error } = await supabaseAdmin
       .from('leads')
       .upsert(
@@ -104,18 +115,19 @@ export async function POST(request: NextRequest) {
 
     const [mailchimpOk] = await Promise.all([
       inscreverLead({ email, nome, telefone, campanha, campanhaTitulo }),
-      sendLeadCapi({
-        eventId: texto(body.eventId, 100),
-        eventSourceUrl: texto(body.eventSourceUrl, 1000),
-        email,
-        telefone,
-        nome,
-        campanhaTitulo,
-        fbp: request.cookies.get('_fbp')?.value,
-        fbc: request.cookies.get('_fbc')?.value,
-        clientIp: request.headers.get('x-forwarded-for')?.split(',')[0].trim(),
-        userAgent: request.headers.get('user-agent'),
-      }),
+      novo &&
+        sendLeadCapi({
+          eventId: texto(body.eventId, 100),
+          eventSourceUrl: texto(body.eventSourceUrl, 1000),
+          email,
+          telefone,
+          nome,
+          campanhaTitulo,
+          fbp: request.cookies.get('_fbp')?.value,
+          fbc: request.cookies.get('_fbc')?.value,
+          clientIp: request.headers.get('x-forwarded-for')?.split(',')[0].trim(),
+          userAgent: request.headers.get('user-agent'),
+        }),
     ]);
 
     const { error: erroMarca } = await supabaseAdmin
@@ -124,7 +136,7 @@ export async function POST(request: NextRequest) {
       .eq('id', data.id);
     if (erroMarca) console.error('Erro ao marcar mailchimp_ok:', erroMarca);
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, novo });
   } catch (error) {
     Sentry.captureException(error, { tags: { area: 'lead-api' } });
     console.error('Erro inesperado na captação de lead:', error);
