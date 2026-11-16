@@ -190,6 +190,24 @@ html:has(.lp-black) {
   text-align: center;
 }
 
+/* ============ CTA DO WHATSAPP ============ */
+/* Mesmo visual do botão do formulário que ele substituiu. */
+.lp-black .whatsapp-cta {
+  display: block;
+  padding: 15px 30px;
+  border-radius: 11px;
+  background: var(--verde);
+  color: #fff;
+  font-size: 19px;
+  font-weight: 700;
+  text-align: center;
+  transition: background 0.2s ease;
+}
+
+.lp-black .whatsapp-cta:hover {
+  background: var(--verde-hover);
+}
+
 /* ============ PÁGINA DO GRUPO ============ */
 .lp-black .grupo {
   min-height: 100vh;

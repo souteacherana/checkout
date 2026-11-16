@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Contador from "./_components/Contador";
-import LeadForm from "./_components/LeadForm";
+import WhatsAppCta from "./_components/WhatsAppCta";
 import SeloData from "./_components/SeloData";
 import {
   CARD_BONUS,
@@ -44,7 +44,7 @@ export default function BlackDaTeacher() {
             por todas a empreender como <strong className="realce">PROFESSOR</strong>, inscreva-se
             abaixo:
           </p>
-          <LeadForm />
+          <WhatsAppCta />
         </div>
       </section>
 

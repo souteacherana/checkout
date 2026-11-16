@@ -3,7 +3,7 @@
  *
  * Esta landing NÃO vende: ela inscreve gente numa transmissão ao vivo. Não há
  * CHECKOUT_URL nem preço aqui de propósito — a oferta é revelada no dia, e a
- * conversão da página é o formulário (ver _components/LeadForm.tsx).
+ * conversão da página é o clique no WhatsApp (ver _components/WhatsAppCta.tsx).
  *
  * A página original no WordPress escrevia a data à mão em dois lugares e a
  * do contador num terceiro (um timestamp Unix no widget do Elementor) — os
