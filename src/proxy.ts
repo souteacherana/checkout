@@ -30,7 +30,7 @@ const MAIN_DOMAIN_PATHS: string[] = ['/'];
 // O código do PHT segue em src/app/lp/pht/, só não é mais roteado — foi a
 // referência usada pra trazer o TNP, que veio de um projeto Next separado
 // (WORKSHOPS/TNP 2026/LP) e teve o CSS escopado em .lp-tnp na migração.
-const LANDINGS: string[] = ['tnp', 'led', 'black'];
+const LANDINGS: string[] = ['tnp', 'led', 'black', 'blackdateacher'];
 
 // Páginas internas de landing. Precisam estar listadas porque qualquer outro
 // /{slug}/... vai pro checkout, onde /{slug}/obrigado é a página de compra e

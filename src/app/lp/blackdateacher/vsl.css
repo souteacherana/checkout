@@ -1,0 +1,117 @@
+/*
+ * VSL da Black — tudo escopado em .lp-vsl, porque o layout raiz também serve o
+ * checkout e o admin.
+ *
+ * Mesmo visual claro da /black/sinal: fundo claro, vermelho de destaque e o
+ * quadriculado da Black bem apagado. Contraste medido: tinta 15,6:1 no fundo,
+ * vermelho como texto 5,6:1, branco sobre o verde do botão 3,45:1 (texto de
+ * 19px em negrito, que conta como grande).
+ */
+
+html:has(.lp-vsl) {
+  color-scheme: light;
+}
+
+.lp-vsl {
+  --tinta: #1f1f1f;
+  --tinta-suave: #5c5c5c;
+  --vermelho: #c81010;
+  --verde: #12a02f;
+  --verde-hover: #0f8f28;
+
+  width: 100%;
+  max-width: 100%;
+  min-height: 100vh;
+  overflow-x: clip;
+  background-color: #fbf8f8;
+  background-image:
+    linear-gradient(rgba(200, 16, 16, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200, 16, 16, 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+  color: var(--tinta);
+  font-family: var(--font-montserrat), system-ui, sans-serif;
+}
+
+.lp-vsl .vsl-pagina {
+  padding: 32px 16px 64px;
+}
+
+.lp-vsl .vsl-coluna {
+  width: min(100%, 880px);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.lp-vsl .vsl-selo {
+  display: inline-block;
+  margin-bottom: 12px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--vermelho);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.lp-vsl .vsl-titulo {
+  margin: 0 auto 20px;
+  max-width: 24ch;
+  font-size: clamp(22px, 4vw, 36px);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+/* Player 16:9 ocupando a largura da coluna, na primeira dobra. */
+.lp-vsl .vsl-player {
+  overflow: hidden;
+  border-radius: 12px;
+  background: #000;
+  box-shadow: 0 12px 40px -16px rgba(0, 0, 0, 0.35);
+}
+
+.lp-vsl .vsl-player iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+}
+
+.lp-vsl .vsl-apoio {
+  margin-top: 16px;
+  color: var(--tinta-suave);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.lp-vsl .vsl-oferta {
+  width: min(100%, 520px);
+  margin: 20px auto 0;
+}
+
+/* Mesmo botão do WhatsApp da landing da Black. */
+.lp-vsl .whatsapp-cta {
+  display: block;
+  padding: 16px 30px;
+  border-radius: 11px;
+  background: var(--verde);
+  color: #fff;
+  font-size: 19px;
+  font-weight: 700;
+  text-align: center;
+  transition: background 0.2s ease;
+}
+
+.lp-vsl .whatsapp-cta:hover {
+  background: var(--verde-hover);
+}
+
+@media (max-width: 700px) {
+  .lp-vsl .vsl-pagina {
+    padding: 20px 12px 48px;
+  }
+
+  .lp-vsl .vsl-player {
+    border-radius: 8px;
+  }
+}
