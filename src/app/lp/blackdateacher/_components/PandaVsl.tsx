@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { IFRAME_ID, PLAYER_SRC, SEGUNDO_DO_PITCH } from "../_lib/vsl";
+import { medir } from "../_lib/medir";
 
 const API_PANDA = "https://player.pandavideo.com.br/api.v2.js";
 const CHAVE_JA_VIU = `vsl_pitch_visto_${IFRAME_ID}`;
@@ -35,6 +36,7 @@ export default function PandaVsl({ oferta }: { oferta: ReactNode }) {
   const [revelado, setRevelado] = useState(false);
 
   useEffect(() => {
+    medir("acesso");
     try {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       if (localStorage.getItem(CHAVE_JA_VIU)) setRevelado(true);
@@ -57,7 +59,10 @@ export default function PandaVsl({ oferta }: { oferta: ReactNode }) {
         onReady() {
           player.onEvent((e) => {
             if (!ativo || e.message !== "panda_timeupdate" || e.isMutedIndicator) return;
+            // Primeiro tempo com som = a pessoa deu play de verdade.
+            medir("play");
             if ((e.currentTime ?? 0) >= SEGUNDO_DO_PITCH) {
+              medir("pitch");
               setRevelado(true);
               try {
                 localStorage.setItem(CHAVE_JA_VIU, "1");
@@ -88,7 +93,15 @@ export default function PandaVsl({ oferta }: { oferta: ReactNode }) {
         />
       </div>
       {revelado ? (
-        <div className="vsl-oferta">{oferta}</div>
+        // O botão é o mesmo da /black; o clique é medido aqui pra não mexer nele.
+        <div
+          className="vsl-oferta"
+          onClickCapture={(e) => {
+            if ((e.target as HTMLElement).closest("a")) medir("clique");
+          }}
+        >
+          {oferta}
+        </div>
       ) : (
         <p className="vsl-apoio">Assista até o final.</p>
       )}

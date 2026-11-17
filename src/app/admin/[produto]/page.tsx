@@ -16,6 +16,8 @@ import { getUserRole } from "../actions";
 import { PeriodFilter, rangeFromDays, type DateRange } from "@/components/PeriodFilter";
 import { dataBR, horaBR } from "@/lib/datas";
 import PainelLeads from "./PainelLeads";
+import PainelVsl from "./PainelVsl";
+import { CAMPANHAS_VSL } from "@/lib/vsl-metricas";
 
 type Product = {
   slug: string;
@@ -277,7 +279,12 @@ export default function ProductDashboard({ params }: { params: Promise<{ produto
   );
 
   const accent = product?.accent_color || "#10b981";
-  if (product?.tipo === "captacao") return <PainelLeads slug={product.slug} titulo={product.title} />;
+  if (product?.tipo === "captacao") {
+    // VSL não tem formulário: o painel dela é o funil de acessos e cliques.
+    return CAMPANHAS_VSL.includes(product.slug)
+      ? <PainelVsl slug={product.slug} titulo={product.title} />
+      : <PainelLeads slug={product.slug} titulo={product.title} />;
+  }
 
   const isFinanceVisible = ["ANA", "ADMIN", "SUPERADMIN"].includes(role);
 

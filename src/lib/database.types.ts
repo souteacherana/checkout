@@ -284,6 +284,20 @@ export type MentoradoDocRow = {
   created_at: string;
 };
 
+/** Passo do funil da VSL (scripts/migrations/027). */
+export type VslEventoRow = {
+  id: number;
+  created_at: string;
+  campanha: string;
+  visitante: string;
+  evento: 'acesso' | 'play' | 'pitch' | 'clique';
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+  utm_term: string | null;
+};
+
 type TableDef<Row> = {
   Row: Row;
   Insert: Partial<Row>;
@@ -299,6 +313,7 @@ export interface Database {
       products: TableDef<ProductRow>;
       leads: TableDef<LeadRow>;
       aplicacoes: TableDef<AplicacaoRow>;
+      vsl_eventos: TableDef<VslEventoRow>;
       user_roles: TableDef<UserRoleRow>;
       mentorados: TableDef<MentoradoRow>;
       mentorado_ciclos: TableDef<MentoradoCicloRow>;
@@ -316,6 +331,10 @@ export interface Database {
       vendas_stats_por_produto: {
         Args: Record<string, never>;
         Returns: { produto_slug: string | null; vendas: number; receita: number }[];
+      };
+      vsl_metricas: {
+        Args: { p_campanha: string; p_de: string; p_ate: string };
+        Returns: unknown;
       };
     };
     Enums: Record<string, never>;
