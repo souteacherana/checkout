@@ -17,6 +17,13 @@ export default function BlackDaTeacherVsl() {
         </h1>
         <PandaVsl oferta={<WhatsAppCta />} />
       </div>
+      {/*
+        Captura de UTMs do Panda (Analytics > UTM). Quando o player avisa
+        PANDA_READY, o script devolve a URL da página, que o iframe não consegue
+        ler sozinho. Vai no HTML, e não carregado pelo React depois, pra já estar
+        escutando quando o player ficar pronto.
+      */}
+      <script async src="https://player.pandavideo.com.br/embed.js" />
     </main>
   );
 }
