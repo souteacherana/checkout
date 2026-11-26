@@ -6,12 +6,14 @@ import { track } from "@/lib/pixel";
 const WHATSAPP_URL =
   "https://api.whatsapp.com/send/?phone=556791286394&text=Ol%C3%A1%2C+gostaria+de+receber+mais+informa%C3%A7%C3%B5es+sobre+a+Black+da+Teacher%21&type=phone_number&app_absent=0";
 
+const CHAVE_LEAD = "black_whatsapp_lead";
+
 /**
- * CTA da landing: abre a conversa no WhatsApp da equipe.
+ * CTA da landing e da VSL: abre a conversa no WhatsApp da equipe.
  *
- * Substituiu o formulário de inscrição. Sem formulário não há Lead, então o
- * clique vira `Contact` na Meta (navegador + Conversions API, mesmo eventId,
- * via lib/pixel). Uma vez por visita: clicar de novo não conta outro contato.
+ * Substituiu o formulário de inscrição. O clique é a conversão da campanha e
+ * vai como `Lead` na Meta (navegador + Conversions API, mesmo eventId, via
+ * lib/pixel). Uma vez por navegador.
  *
  * No GA4 o clique já é medido pelo GTM, que dispara `whatsapp` em todo clique
  * numa URL com "whatsapp".
@@ -28,7 +30,15 @@ export default function WhatsAppCta() {
       onClick={() => {
         if (registrado.current) return;
         registrado.current = true;
-        track("Contact", { content_name: "Black da Teacher" });
+        // Um Lead por navegador: quem volta e clica de novo não vira outro lead
+        // na Meta (a campanha otimiza por Lead e contaria em dobro).
+        try {
+          if (localStorage.getItem(CHAVE_LEAD)) return;
+          localStorage.setItem(CHAVE_LEAD, "1");
+        } catch {
+          // Sem localStorage: vale a trava por visita acima.
+        }
+        track("Lead", { content_name: "Black da Teacher" });
       }}
     >
       Clique aqui para mudar sua HISTÓRIA
