@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { gravarCookiesMeta, lerParamsMeta } from '@/lib/meta-params';
 
 // Separação de domínios (mesmo app Vercel servindo os dois):
 // - CHECKOUT_DOMAIN (checkout.riseeducacao.com.br) → só páginas de checkout;
@@ -57,6 +58,24 @@ const slugDe = (pathname: string) => pathname.replace(/^\/+|\/+$/g, '').toLowerC
 const EH_ARQUIVO = /\.[a-zA-Z0-9]+$/;
 
 export function proxy(request: NextRequest) {
+  const resposta = rotear(request);
+  const { pathname } = request.nextUrl;
+
+  // Páginas (landing, VSL, checkout): o servidor grava _fbc/_fbp com o
+  // Parameter Builder da Meta, a partir do fbclid do link do anúncio. Assim o
+  // clique fica salvo mesmo com o pixel bloqueado. APIs gravam por conta
+  // própria; arquivos e o painel não precisam.
+  const ehPagina =
+    request.method === 'GET' &&
+    !EH_ARQUIVO.test(pathname) &&
+    !pathname.startsWith('/api') &&
+    !pathname.startsWith('/admin');
+  if (!ehPagina) return resposta;
+
+  return gravarCookiesMeta(resposta, lerParamsMeta(request).cookies);
+}
+
+function rotear(request: NextRequest) {
   if (!CHECKOUT_HOST || !ADMIN_HOST) return NextResponse.next();
 
   const host = (request.headers.get('host') || '').toLowerCase();

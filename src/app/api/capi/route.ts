@@ -1,4 +1,5 @@
-import type { NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
+import { gravarCookiesMeta, lerParamsMeta } from "@/lib/meta-params";
 import { META_PIXEL_ID } from "@/app/lp/tnp/_lib/workshop";
 
 /**
@@ -23,13 +24,6 @@ type IncomingEvent = {
   eventSourceUrl?: string;
   customData?: Record<string, string | number | undefined>;
 };
-
-/** Extrai o IP real do visitante atrás de proxy/CDN. */
-function getClientIp(request: NextRequest): string | undefined {
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0].trim();
-  return request.headers.get("x-real-ip") ?? undefined;
-}
 
 export async function POST(request: NextRequest) {
   let body: IncomingEvent;
@@ -56,6 +50,12 @@ export async function POST(request: NextRequest) {
     return Response.json({ ok: false, reason: "capi_not_configured" });
   }
 
+  // fbc/fbp/IP pelo Parameter Builder da Meta: lê o fbclid da página do
+  // evento e devolve os cookies que faltarem (ver lib/meta-params).
+  const meta = lerParamsMeta(request, eventSourceUrl);
+  const responder = (corpo: object, status = 200) =>
+    gravarCookiesMeta(NextResponse.json(corpo, { status }), meta.cookies);
+
   const payload = {
     data: [
       {
@@ -66,9 +66,9 @@ export async function POST(request: NextRequest) {
         action_source: "website",
         user_data: {
           // Identificadores do browser: é o que temos sem formulário na página.
-          fbp: request.cookies.get("_fbp")?.value,
-          fbc: request.cookies.get("_fbc")?.value,
-          client_ip_address: getClientIp(request),
+          fbp: meta.fbp ?? undefined,
+          fbc: meta.fbc ?? undefined,
+          client_ip_address: meta.ip ?? undefined,
           client_user_agent: request.headers.get("user-agent") ?? undefined,
         },
         custom_data: customData,
@@ -94,12 +94,12 @@ export async function POST(request: NextRequest) {
 
     if (!res.ok) {
       console.error("[capi] Meta recusou o evento:", result);
-      return Response.json({ ok: false, error: result }, { status: 502 });
+      return responder({ ok: false, error: result }, 502);
     }
 
-    return Response.json({ ok: true, result });
+    return responder({ ok: true, result });
   } catch (error) {
     console.error("[capi] Falha ao enviar evento:", error);
-    return Response.json({ ok: false, error: "upstream_failure" }, { status: 502 });
+    return responder({ ok: false, error: "upstream_failure" }, 502);
   }
 }

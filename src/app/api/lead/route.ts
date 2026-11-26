@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/nextjs';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { inscreverLead } from '@/lib/mailchimp';
 import { sendLeadCapi } from '@/lib/capi';
+import { gravarCookiesMeta, lerParamsMeta } from '@/lib/meta-params';
 
 /**
  * Captação de lead das landings de campanha.
@@ -113,19 +114,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ erro: 'Não conseguimos salvar sua inscrição. Tente de novo.' }, { status: 500 });
     }
 
+    const eventSourceUrl = texto(body.eventSourceUrl, 1000);
+    // fbc/fbp/IP pelo Parameter Builder da Meta (ver lib/meta-params).
+    const meta = lerParamsMeta(request, eventSourceUrl);
+
     const [mailchimpOk] = await Promise.all([
       inscreverLead({ email, nome, telefone, campanha, campanhaTitulo }),
       novo &&
         sendLeadCapi({
           eventId: texto(body.eventId, 100),
-          eventSourceUrl: texto(body.eventSourceUrl, 1000),
+          eventSourceUrl,
           email,
           telefone,
           nome,
           campanhaTitulo,
-          fbp: request.cookies.get('_fbp')?.value,
-          fbc: request.cookies.get('_fbc')?.value,
-          clientIp: request.headers.get('x-forwarded-for')?.split(',')[0].trim(),
+          fbp: meta.fbp,
+          fbc: meta.fbc,
+          clientIp: meta.ip,
           userAgent: request.headers.get('user-agent'),
         }),
     ]);
@@ -136,7 +141,7 @@ export async function POST(request: NextRequest) {
       .eq('id', data.id);
     if (erroMarca) console.error('Erro ao marcar mailchimp_ok:', erroMarca);
 
-    return NextResponse.json({ ok: true, novo });
+    return gravarCookiesMeta(NextResponse.json({ ok: true, novo }), meta.cookies);
   } catch (error) {
     Sentry.captureException(error, { tags: { area: 'lead-api' } });
     console.error('Erro inesperado na captação de lead:', error);
